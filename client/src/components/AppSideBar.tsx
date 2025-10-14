@@ -147,7 +147,7 @@ const menuItems = [
     },
     {
         title: "Reportes",
-        url: "/panel-control/reportes",
+        url: "/mi-tienda/reportes",
         icon: BarChart,
     },
 
