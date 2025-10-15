@@ -5,9 +5,9 @@ import {
     TabsTrigger,
 } from "@/components/ui/tabs";
 import { Boxes, Package, Tags } from "lucide-react";
-import CatalogoCompleto from "./components/CatalogoCompleto";
-import ControlInventario from "./components/ControlInventario";
-import CategoriasEtiquetas from "./components/CategoriasEtiquetas";
+import CatalogoCompleto from "./_components/CatalogoCompleto";
+import ControlInventario from "./_components/ControlInventario";
+import CategoriasEtiquetas from "./_components/CategoriasEtiquetas";
 
 
 const ProductosPage = () => {

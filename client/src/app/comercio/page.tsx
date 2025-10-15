@@ -1,4 +1,4 @@
-import ContentMain from "./components/ContentMain";
+import ContentMain from "./_components/ContentMain";
 
 const PageComercios = () => {
     return (

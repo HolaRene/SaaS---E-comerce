@@ -1,10 +1,10 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ChartLine, DollarSign, Package, Users } from "lucide-react"
-import VentasRentabilidad from "./components/VentasRentabilidad"
-import DesenpenioProductos from "./components/DesenpenioProductos"
-import ComportamientoClientes from "./components/ComportamientoClientes"
-import EstadoFinanciero from "./components/EstadoFinanciero"
+import VentasRentabilidad from "./_components/VentasRentabilidad"
+import DesenpenioProductos from "./_components/DesenpenioProductos"
+import ComportamientoClientes from "./_components/ComportamientoClientes"
+import EstadoFinanciero from "./_components/EstadoFinanciero"
 
 const Reportes = () => {
     return (

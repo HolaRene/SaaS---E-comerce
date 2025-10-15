@@ -6,9 +6,9 @@ import {
     TabsTrigger,
 } from "@/components/ui/tabs";
 
-import Perfil from "./components/Perfil";
-import Horario from "./components/Horario";
-import Configuracion from "./components/Configuracion";
+import Perfil from "./_components/Perfil";
+import Horario from "./_components/Horario";
+import Configuracion from "./_components/Configuracion";
 
 
 // --- Componente Principal ---

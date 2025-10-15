@@ -18,6 +18,7 @@ import {
     StoreIcon,
     Plus,
     Shirt,
+    ToolCase,
 } from "lucide-react";
 
 
@@ -126,7 +127,7 @@ const menuItems = [
     },
     {
         title: "Panel de control",
-        url: "/panel-control",
+        url: "/",
         icon: Home,
     },
     {
@@ -150,9 +151,13 @@ const menuItems = [
         url: "/mi-tienda/reportes",
         icon: BarChart,
     },
+    {
+        title: "Herramientas",
+        url: "/mi-tienda/herramientas",
+        icon: ToolCase,
+    },
 
 ];
-
 // export const navigation= [
 //     {
 //         title: "Dashboard",
@@ -336,7 +341,7 @@ const AppSideBar = () => {
                         </SidebarGroupContent>
                     </SidebarGroup>
 
-                    <SidebarGroup>
+                    {/* <SidebarGroup>
                         <SidebarGroupLabel>Productos</SidebarGroupLabel>
                         <SidebarGroupAction>
                             <Plus /> <span className="sr-only">Add Producto</span>
@@ -393,7 +398,7 @@ const AppSideBar = () => {
 
                             </SidebarMenu>
                         </SidebarGroupContent>
-                    </SidebarGroup>
+                    </SidebarGroup> */}
 
                 </SidebarContent>) :
                 (
@@ -445,8 +450,6 @@ const AppSideBar = () => {
 
                     </SidebarContent>
                 )}
-
-
 
             <SidebarSeparator />
 

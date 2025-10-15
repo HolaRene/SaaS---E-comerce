@@ -9,6 +9,8 @@ import AppSideBar from "@/components/AppSideBar";
 import { cookies } from "next/headers";
 import Footer from "@/components/Footer";
 
+import { ToastContainer } from 'react-toastify';
+
 import "leaflet/dist/leaflet.css";
 
 const geistSans = Geist({
@@ -22,7 +24,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Don Pulperia",
+  title: "Comercio desde tu",
   description: "Don Pulperia App",
   icons: {
     icon: "/favicon-32x32.png",
@@ -55,6 +57,7 @@ export default async function RootLayout({
               <div className=" px-4">{children}</div>
               <Footer />
             </main>
+            <ToastContainer />
           </SidebarProvider>
         </ThemeProvider>
       </body>

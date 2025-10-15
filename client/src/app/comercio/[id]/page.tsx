@@ -1,27 +1,20 @@
-"use client";
 
-import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-    ArrowLeft,
     Star,
     MapPin,
     Phone,
     Mail,
     Clock,
-    MessageCircle,
     Verified,
 } from "lucide-react";
-import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
-import ProductCard from "./components/ProductCard";
 import { productos } from "@/data/mockProductos";
-import ResenaCard from "./components/ResenaCard";
-import { reseñasMock } from "@/data/resenas";
+import HeaderFlexi, { ComponentesPeque, Tabsa } from "./_components/componentesPeque";
+
+
+
 
 // Datos de ejemplo
 const comercioEjemplo = {
@@ -48,47 +41,42 @@ const comercioEjemplo = {
     activo: true,
 };
 
+export const generateMetadata = async ({
+    params,
+}: {
+    params: { id: string };
+}) => {
+    // TODO:get the product from db
+    // TEMPORARY
+    return {
+        title: comercioEjemplo.nombre,
+        describe: comercioEjemplo.descripcion,
+    };
+};
+
 const PerfilComercio = () => {
-    const router = useRouter();
+
     const comercio = productos
 
-    const rese = reseñasMock
 
-    const [activeTab, setActiveTab] = useState("productos");
 
     if (!comercio) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <h2 className="text-2xl font-bold mb-2">Comercio no encontrado</h2>
-                    <Button onClick={() => router.push("/")}>Volver al listado</Button>
                 </div>
             </div>
         );
     }
 
 
-    const handleWhatsAppClick = () => {
-        window.open(`https://wa.me/${comercioEjemplo.whatsapp}`, "_blank");
-    };
+
 
     return (
         <div className="min-h-screen ">
             {/* Header con botón de regreso */}
-            <header className=" shadow-sm p-4 mt-2">
-                <div className="max-w-7xl mx-auto flex items-center gap-4">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.push("/comercio")}
-                        className="gap-2"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                        Volver
-                    </Button>
-                    <h1 className="font-semibold">Perfil del comercio</h1>
-                </div>
-            </header>
+            <HeaderFlexi />
 
             {/* Cover Image y Logo */}
             <div className="relative">
@@ -114,11 +102,7 @@ const PerfilComercio = () => {
 
             {/* Información principal */}
             <div className="max-w-7xl mx-auto px-6 md:px-12 pt-16 pb-8">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                >
+                <div>
                     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
                         <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
@@ -170,45 +154,14 @@ const PerfilComercio = () => {
                         </div>
 
                         {/* Botones de acción */}
-                        <div className="flex flex-col gap-3 lg:min-w-48">
-                            <Button
-                                onClick={handleWhatsAppClick}
-                                className="bg-green-600 hover:bg-green-700 gap-2"
-                            >
-                                <MessageCircle className="h-4 w-4" />
-                                Contactar por WhatsApp
-                            </Button>
-                        </div>
+                        <ComponentesPeque />
+
                     </div>
-                </motion.div>
+                </div>
 
                 {/* Tabs */}
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
-                    <TabsList className="grid w-full grid-cols-2 lg:w-96">
-                        <TabsTrigger value="productos">Productos</TabsTrigger>
-                        <TabsTrigger value="reseñas">Reseñas</TabsTrigger>
-                    </TabsList>
+                <Tabsa />
 
-                    <TabsContent value="productos" className="mt-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {comercio.map((producto) => (
-                                <ProductCard key={producto.id} producto={producto} />
-                            ))}
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="reseñas" className="mt-6">
-                        <div className="space-y-4">
-                            {
-                                rese.sort(
-                                    (a, b) =>
-                                        new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
-                                )
-                                    .map((reseña) => (
-                                        <ResenaCard key={reseña.id} resenas={reseña} />
-                                    ))}
-                        </div>
-                    </TabsContent>
-                </Tabs>
             </div>
         </div>
     );

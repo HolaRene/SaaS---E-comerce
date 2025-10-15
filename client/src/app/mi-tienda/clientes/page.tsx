@@ -1,8 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Bell, CreditCard, Users } from "lucide-react"
-import BaseClientes from "./components/BaseClientes"
-import FiadosActivos from "./components/FiadosActivos"
-import RecordatoriosCobros from "./components/RecordatoriosCobros"
+import BaseClientes from "./_components/BaseClientes"
+import FiadosActivos from "./_components/FiadosActivos"
+import RecordatoriosCobros from "./_components/RecordatoriosCobros"
 
 const VentaPage = () => {
     return (

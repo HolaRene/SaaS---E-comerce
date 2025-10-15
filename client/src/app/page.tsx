@@ -1,6 +1,6 @@
 
 import { Features } from "@/components/Caracteristicas"
-import { Dashboard } from "@/app/components/EjemploDashboard"
+import { Dashboard } from "@/app/_components/EjemploDashboard"
 import { Hero } from "@/components/Hero"
 
 

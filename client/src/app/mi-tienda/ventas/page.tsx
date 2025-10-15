@@ -9,10 +9,10 @@ import {
     FileDown,
 
 } from "lucide-react"
-import PuntoVenta from "./components/PuntoVenta"
-import PedidosActivos from "./components/PedidosActivos"
-import HistorialVentas from "./components/HistorialVentas"
-import FacturacionElectronica from "./components/FacturacionElectronica"
+import PuntoVenta from "./_components/PuntoVenta"
+import PedidosActivos from "./_components/PedidosActivos"
+import HistorialVentas from "./_components/HistorialVentas"
+import FacturacionElectronica from "./_components/FacturacionElectronica"
 
 export default function VentasPage() {
 
