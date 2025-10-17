@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator"
 
 const Footer = () => {
     return (
-        <Card className="mt-16 border-0 border-t-1 border-gray-400 shadow-none bg-background text-muted-foreground">
+        <Card className="mt-16 border-0 border-t-1 border-gray-400 shadow-none bg-background text-muted-foreground flex-shrink-0">
             <CardContent className="flex flex-col gap-8 md:flex-row md:justify-between md:items-start p-8">
 
                 {/* Logo + info */}

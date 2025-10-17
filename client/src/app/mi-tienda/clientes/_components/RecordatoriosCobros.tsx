@@ -26,15 +26,15 @@ const morosos = [
 ]
 
 const chartData = [
-    { name: "Pagado", value: 65, color: "hsl(var(--chart-1))" },
-    { name: "Pendiente", value: 25, color: "hsl(var(--chart-2))" },
-    { name: "Vencido", value: 10, color: "hsl(var(--chart-3))" },
+    { name: "Pagado", value: 65, color: "var(--chart-1)" },
+    { name: "Pendiente", value: 25, color: "var(--chart-2)" },
+    { name: "Vencido", value: 10, color: "var(--chart-3)" },
 ]
 
 const chartConfig = {
-    pagado: { label: "Pagado", color: "hsl(var(--chart-1))" },
-    pendiente: { label: "Pendiente", color: "hsl(var(--chart-2))" },
-    vencido: { label: "Vencido", color: "hsl(var(--chart-3))" },
+    pagado: { label: "Pagado", color: "var(--chart-1)" },
+    pendiente: { label: "Pendiente", color: "var(--chart-2)" },
+    vencido: { label: "Vencido", color: "var(--chart-3)" },
 }
 
 
@@ -53,7 +53,7 @@ const RecordatoriosCobros = () => {
     }
 
     return (
-        <div className=''>
+        <div className='space-y-3'>
             {/* Notificaciones automáticas */}
             <Card>
                 <CardHeader>

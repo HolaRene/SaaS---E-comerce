@@ -10,7 +10,7 @@ const VentaPage = () => {
 
             {/* Header */}
             <header className="space-y-2">
-                <h1 className="text-balance text-4xl font-bold tracking-tight">Gestión de Clientes</h1>
+                <h1 className="text-balance lg:text-4xl font-bold tracking-tight md:text-3xl text-2xl">Gestión de Clientes</h1>
                 <p className="text-muted-foreground text-pretty">
                     Administra tu base de clientes, créditos y recordatorios de cobro
                 </p>

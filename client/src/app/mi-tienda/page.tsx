@@ -10,6 +10,19 @@ import Perfil from "./_components/Perfil";
 import Horario from "./_components/Horario";
 import Configuracion from "./_components/Configuracion";
 
+export const generateMetadata = async ({
+    params,
+}: {
+    params: { id: string };
+}) => {
+    // TODO:get the product from db
+    // TEMPORARY
+    return {
+        title: "FlexiDon",
+        describe: "Este comercio es fleci",
+    };
+};
+
 
 // --- Componente Principal ---
 export default function MiNegocio() {
