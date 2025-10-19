@@ -12,6 +12,7 @@ const MENU_ITEMS = [
     { label: "¿Cómo funciona?", href: "https://images.pexels.com/photos/12941772/pexels-photo-12941772.jpeg" },
     { label: "Precios", href: "#pricing" },
     { label: "Preguntas frecuentes", href: "#faq" },
+    { label: "Usuario DashBoard", href: "/user/dashboard" },
 ] as const;
 
 interface NavMenuItemsProps {

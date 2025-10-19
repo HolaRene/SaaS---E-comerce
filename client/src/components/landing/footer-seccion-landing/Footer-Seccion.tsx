@@ -52,11 +52,11 @@ export function Footer1() {
                 <div className="flex w-full flex-col-reverse items-center gap-12 text-sm lg:flex-row lg:justify-between lg:gap-6">
                     {/* Copyright Text */}
                     <p className="text-muted-foreground text-center lg:text-left">
-                        Desarrollado con ❤️ por{" "}
-                        <Link href="https://www.shadcndesign.com/" className="underline" target="_blank">
-                            ShadcnDesign
+                        Desarrollado con por el mero{" "}
+                        <Link href="https://github.com/HolaRene" className="underline" target="_blank">
+                            Don
                         </Link>
-                        . Todos los derechos reservados.
+                        . Todos los derechos reservados en el baul de los recuerdos.
                     </p>
 
                     {/* Legal Navigation */}

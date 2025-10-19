@@ -9,11 +9,11 @@ const onest = Onest({
 });
 
 export const metadata: Metadata = {
-  title: "MiPulpería Digital",
+  title: "MiTienda Digital",
   description:
     "Tu tienda conectada y siempre bajo control",
   icons: {
-    icon: "/favicon-32x32.png",
+    icon: "/logo-flexi.ico",
   },
 };
 
