@@ -24,6 +24,14 @@ const activeOrders = [
     },
 ]
 
+const statusVariants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+    Entregado: "default",
+    Pendiente: "secondary",
+    Cancelado: "destructive",
+    Enviado: "outline",
+};
+
+
 const OrdenesActivas = () => {
     return (
         <div className=''>
@@ -39,7 +47,7 @@ const OrdenesActivas = () => {
                                         <CardTitle className="text-base">Pedido #{order.id}</CardTitle>
                                         <CardDescription>{order.store}</CardDescription>
                                     </div>
-                                    <Badge variant={order.statusColor as any} className="gap-1">
+                                    <Badge variant={statusVariants[order.statusColor] || "secondary"} className="gap-1">
                                         <order.icon className="h-3 w-3" />
                                         {order.status}
                                     </Badge>

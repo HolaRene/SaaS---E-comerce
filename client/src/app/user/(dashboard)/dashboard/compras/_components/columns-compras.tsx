@@ -133,6 +133,13 @@ function DialogCompras({ order }: { order: Compras }) {
     );
 }
 
+const statusVariants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+    Entregado: "default",
+    Pendiente: "secondary",
+    Cancelado: "destructive",
+    Enviado: "outline",
+};
+
 
 // 🔹 Columnas principales
 export const columnsCompras: ColumnDef<Compras>[] = [
@@ -160,7 +167,7 @@ export const columnsCompras: ColumnDef<Compras>[] = [
         accessorKey: "status",
         header: "Estado",
         cell: ({ row }) => (
-            <Badge variant={row.original.statusColor as any} className="gap-1">
+            <Badge variant={statusVariants[row.original.statusColor] || "secondary"} className="gap-1">
                 <row.original.icon className="h-3 w-3" />
                 {row.original.status}
             </Badge>
