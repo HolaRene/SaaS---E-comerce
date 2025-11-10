@@ -16,7 +16,6 @@ import {
 import { Button } from "./ui/button";
 import { useTheme } from "next-themes";
 import { SidebarTrigger, } from "./ui/sidebar";
-import { isAuthenticated } from "./AppSideBar";
 
 
 
@@ -33,8 +32,8 @@ const Navegacion = () => {
             {/* <Button variant={"outline"} onClick={toggleSidebar}>Personalizar</Button> */}
             {/* lado derecho */}
             <div className="flex items-center gap-4">
-                <Link href={'/'}>Tablero</Link>
-                <Link href={'/comercio'}>Comercio</Link>
+                <Link href={'/'}>Inicio</Link>
+                <Link href={'#'}>Comercio</Link>
 
 
 
@@ -61,7 +60,7 @@ const Navegacion = () => {
                     </DropdownMenuContent>
                 </DropdownMenu>
                 {/* Componente de un dropdown para el usuario */}
-                {isAuthenticated ? <DropdownMenu>
+                <DropdownMenu>
                     <DropdownMenuTrigger>
                         {/* Componente de un avatar */}
                         <Avatar>
@@ -76,7 +75,7 @@ const Navegacion = () => {
                         <DropdownMenuItem><Settings className="h-[1.2rem] w-[1.2rem] mr-2" />Ajuste</DropdownMenuItem>
                         <DropdownMenuItem variant="destructive"><LogOut className="h-[1.2rem] w-[1.2rem] mr-2" />Salir</DropdownMenuItem>
                     </DropdownMenuContent>
-                </DropdownMenu> : <Button>Iniciar Sesión</Button>}
+                </DropdownMenu>
 
             </div>
         </nav>

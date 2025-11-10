@@ -44,7 +44,7 @@ export function LogoSection10() {
             <div className="container-padding-x container mx-auto">
                 <div className="flex flex-col items-center gap-8 md:gap-12">
                     <div className="section-title-gap-lg flex max-w-xl flex-col items-center text-center">
-                        <Tagline variant="ghost">Trusted by 10K+ remote teams</Tagline>
+                        <Tagline variant="ghost">Con más de 100 tiendas</Tagline>
                     </div>
 
                     <div className="relative w-full overflow-hidden mask-[linear-gradient(to_right,transparent_0%,black_12.5%,black_87.5%,transparent_100%)]">

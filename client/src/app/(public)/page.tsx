@@ -1,18 +1,23 @@
+"use client"
 import { BentoGrid6 } from "@/components/landing/BentoGrid/bento-grid"
 import { FeatureSection9 } from "@/components/landing/caracteristicas/Caracteristicas-seccion"
 import { FaqSection2 } from "@/components/landing/faq/Preguntas-Frecuentes"
 import { Footer1 } from "@/components/landing/footer-seccion-landing/Footer-Seccion"
 import { HeroSection2 } from "@/components/landing/hero-seccion/HeroSeccion"
 import { LogoSection10 } from "@/components/landing/logo-seccion/logo-seccions"
-import { LpNavbar1 } from "@/components/landing/nav/LpNavbar1"
 import { PricingSection3 } from "@/components/landing/seccion-precios/PreciosSeccion"
 import TestimonialsSection1 from "@/components/landing/testimonials-seccion/Testimonios-Seccion"
+import { useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
 
 const Page = () => {
+    const tasks = useQuery(api.tarea.get);
     return (
         <main className=''>
-            <LpNavbar1 />
             <HeroSection2 />
+            <main className="flex min-h-screen flex-col items-center justify-between p-24">
+                {tasks?.map(({ _id, text }) => <div key={_id}>{text}</div>)}
+            </main>
             <LogoSection10 />
             <TestimonialsSection1
                 quote="Desde que uso MiPulpería Digital, llevo el control de mis ventas y fiados sin complicaciones. ¡Ahora sé exactamente cuánto gano cada día y mis clientes reciben sus avisos al instante!"

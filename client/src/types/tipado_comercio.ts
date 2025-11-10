@@ -5,8 +5,11 @@ export type EstadoComercio = "activa" | "inactiva" | "mantenimiento";
 
 export interface Comercio {
   id: string;
+  avatar: string
+  imgBanner:string
   nombre: string;
   categoria: CategoriaComercio;
+  descripcion: string;
   direccion: string;
   lat: number;
   lng: number;
@@ -16,34 +19,28 @@ export interface Comercio {
   estado: EstadoComercio;
   ventasHoy: number; 
   departamento?: string; // opcional, pero recomendado
+  configuracion: {NIT:string,RUC:string, direccion:string, moneda:string, whatsapp:boolean, backup:string}
+  horarios:{ dia:string, apertura: string, cierre: string }[],
+  productos:Producto[]
+  resenas:Resena[]
 }
-
-// Para compatibilidad con componentes que esperan Pulperia
-export type Pulperia = Comercio;
 
 export interface Producto {
   id: string;
   nombre: string;
-  categoria: string;
+  categoria: string [];
   precio: number;
   stock: number;
-  imagen?: string;
-  descripcion?: string;
+  imagen: string[];
+  puntuacion:number;
+  vistasTotales:number;
+  descripcion: string;
+  estado: 'agotado'| 'disponible';
+  venta:{nombre:string,avatar:string,direccion:string}
   codigoBarras?: string;
+  inStock:boolean
 }
 
-export interface Venta {
-  id: string;
-  vendedor: string;
-  producto: string;     // nombre del producto (UI-friendly)
-  cantidad: number;
-  pulperiaNombre: string;
-  pulperiaId: string;   // FK -> Comercio.id
-  hora: string;         // "09:20"
-  total: number;        // C$
-  precio: number;       // C$/unidad
-  fechaISO?: ISODate;
-}
 
 export interface VentasResumen {
   ventasHoy: number;        // C$
@@ -68,22 +65,6 @@ export interface Usuario {
   ultimoAcceso: ISODate;
 }
 
-export type EstadoPedido = "pendiente" | "pagado" | "entregado" | "cancelado";
-
-export interface Pedido {
-  id: string;
-  clienteId: string;
-  clienteNombre: string;
-  fecha: ISODate;
-  total: number;
-  estado: EstadoPedido;
-  productos: Array<{
-    productoId: string;
-    nombre: string;
-    cantidad: number;
-    precio: number;
-  }>;
-}
 
 // --- Clientes ---
 export interface Cliente {
@@ -117,6 +98,34 @@ export interface Resena {
   avatar: string;
   rating: number;
   comentario: string;
-  fecha: Date;       // 👈 mejor manejarlo como Date directamente
+  fecha: string;       // 👈 mejor manejarlo como Date directamente
   verificada: boolean;
 }
+
+// Historial de eventos
+export type TipoEvento = 
+  | 'STOCK_ACTUALIZADO' 
+  | 'PRODUCTO_AGREGADO' 
+  | 'PRODUCTO_ELIMINADO'
+  | 'PRECIO_ACTUALIZADO'
+  | 'PRODUCTO_EDITADO';
+
+export interface EventoHistorial {
+  tipo: TipoEvento;
+  productoId: string;
+  productoNombre: string;
+  fecha: Date;
+  metadata?: {
+    stockAnterior?: number;
+    stockNuevo?: number;
+    precioAnterior?: number;
+    precioNuevo?: number;
+    cambios?: Partial<Producto>;
+  };
+}
+
+export interface EntradaHistorial {
+  fecha: string;
+  mensaje: string;
+}
+

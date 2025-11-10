@@ -8,8 +8,10 @@ import { Logo } from "@/components/logo";
 
 const MENU_ITEMS = [
     { label: "Comercios", href: "/" },
+    { label: "Productos", href: "/product" },
     { label: "Mi tienda", href: "/mi-tienda" },
-    { label: "¿Cómo funciona?", href: "https://images.pexels.com/photos/12941772/pexels-photo-12941772.jpeg" },
+    // { label: "¿Cómo funciona?", href: "https://images.pexels.com/photos/12941772/pexels-photo-12941772.jpeg" },
+    { label: "Empresa", href: "/empresarial" },
     { label: "Precios", href: "#pricing" },
     { label: "Preguntas frecuentes", href: "#faq" },
     { label: "Usuario DashBoard", href: "/user/dashboard" },
@@ -57,7 +59,7 @@ export function LpNavbar1() {
                 <div className="hidden w-full flex-row justify-end gap-5 md:flex">
                     <NavMenuItems />
                     <Link href="#pricing">
-                        <Button>Try for free</Button>
+                        <Button>Probar ahora</Button>
                     </Link>
                 </div>
 

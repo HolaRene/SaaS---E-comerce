@@ -53,8 +53,8 @@ export const Logo: React.FC<LogoProps> = ({
                     ${variant === 'bold'
                         ? 'text-2xl tracking-tight text-gray-900'
                         : variant === 'minimal'
-                            ? 'text-lg tracking-normal text-gray-800'
-                            : 'text-xl tracking-tight text-gray-900'
+                            ? 'text-lg tracking-normal text-gray-400'
+                            : 'text-xl tracking-tight text-gray-500'
                     }
                 `}>
                     MiTienda

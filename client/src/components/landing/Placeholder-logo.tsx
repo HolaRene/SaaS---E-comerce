@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 interface PlaceholderLogoProps {
     className?: string;
@@ -8,7 +9,7 @@ export function PlaceholderLogo({ className }: PlaceholderLogoProps) {
     return (
         <div className={cn(className)}>
             <div className="flex items-center gap-3">
-                <svg
+                {/* <svg
                     width="140"
                     height="28"
                     viewBox="0 0 160 32"
@@ -56,7 +57,8 @@ export function PlaceholderLogo({ className }: PlaceholderLogoProps) {
                             <rect width="160" height="32" fill="transparent" />
                         </clipPath>
                     </defs>
-                </svg>
+                </svg> */}
+                <Image alt="don" src={'/logo.png'} width={60} height={60} />
             </div>
         </div>
     );
