@@ -68,7 +68,7 @@ export function LpNavbar1() {
                     <div className="flex w-full flex-col justify-end gap-5 pb-2.5 md:hidden">
                         <NavMenuItems />
                         <Link href="#pricing">
-                            <Button className="w-full">Try for free</Button>
+                            <Button className="w-full">Probar ahora</Button>
                         </Link>
                     </div>
                 )}
