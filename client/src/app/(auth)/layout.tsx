@@ -1,6 +1,14 @@
-import { ClerkProvider } from "@clerk/nextjs";
+
+import { Metadata } from "next";
 import Image from "next/image";
-import ConvexClientProvider from "../providers/ConvexProviderWithClerk";
+
+export const metadata: Metadata = {
+    title: "MiTienda Digital",
+    description: "Dashboard corporativo multi-tienda para gestión de ventas y performance",
+    icons: {
+        icon: "/logo-flexi.ico",
+    },
+}
 
 export default function RootLayout({
     children,
@@ -8,34 +16,14 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="es">
-            <head />
-            <body >
-                <main className="relative w-full">
-                    <ClerkProvider appearance={{
-                        layout: {
-                            socialButtonsVariant: 'iconButton',
-                            logoImageUrl: '/logo.png'
-                        },
-                        variables: {
-                            colorBackground: '#16171c',
-                            colorPrimary: '',
-                            colorText: 'white',
-                            colorInputBackground: '#1b1f29',
-                            colorInputText: 'white',
-                        }
-                    }}>
-                        <ConvexClientProvider>
-                            {/* Imagen de fondo en el inicio de sesión y crear cuenta. */}
-                            <div className="absolute size-full">
-                                <Image alt="fondo" src={'/images/bg-img.png'} fill className="size-full" />
-                            </div>
-                            {children}
-                        </ConvexClientProvider>
-                    </ClerkProvider>
-                </main>
-            </body>
-        </html>
+
+        <main className="relative h-screen w-full">
+            {/* Imagen de fondo en el inicio de sesión y crear cuenta. */}
+            <div className="absolute size-full">
+                <Image alt="fondo" src={'/images/bg-img.png'} fill className="size-full" />
+            </div>
+            {children}
+        </main>
 
     );
 }

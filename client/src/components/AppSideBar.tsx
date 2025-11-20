@@ -48,12 +48,7 @@ import { cn } from "@/lib/utils";
 
 
 const menuItems = [
-    {
-        title: "Mi negocio",
-        url: "/mi-tienda",
-        icon: StoreIcon,
-        exact: true // Solo activo cuando es exactamente /mi-tienda
-    },
+
     {
         title: "Panel de control",
         url: "/",

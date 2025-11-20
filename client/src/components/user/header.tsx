@@ -1,7 +1,7 @@
 "use client"
 
 import { useSidebar } from "./sidebar-provider"
-import { Bell, Search, User, Menu, ShoppingCart, User2, BadgePlus, Cog, LogOut } from "lucide-react"
+import { Bell, Search, Menu, ShoppingCart, User2, BadgePlus, Cog, LogOut, Store } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -15,12 +15,56 @@ import {
 import { useState } from "react"
 import { Badge } from "../ui/badge"
 import Link from "next/link"
+import { useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+import { useClerk, useUser } from "@clerk/nextjs"
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
+import { useRouter } from "next/navigation"
 
 export function Header() {
     const [activeTab, setActiveTab] = useState("dashboard")
     const [cartCount] = useState(5)
     const [notificationCount] = useState(3)
     const { toggle } = useSidebar()
+    const { signOut } = useClerk()
+
+    const ruta = useRouter()
+
+    // Obtener usuario de Clerk
+    const { user: clerkUser, isLoaded } = useUser();
+
+    // Obtener usuario Convex
+    const usuario = useQuery(
+        api.users.getUserById,
+        clerkUser ? { clerkId: clerkUser.id } : "skip"
+    );
+
+    // Extraer ID de usuario Convex
+    const idUser = usuario?._id;
+
+    // Obtener tiendas del usuario
+    const tiendaUser = useQuery(
+        api.tienda.getTiendasByPropietario,
+        idUser ? { propietarioId: idUser } : "skip"
+    );
+
+    // Mientras carga o no hay usuario
+    if (!isLoaded || !clerkUser) {
+        return null; // o un skeleton
+    }
+
+    // Datos finales para mostrar
+    const nombreCompleto = usuario
+        ? `${usuario.nombre} ${usuario.apellido}`
+        : clerkUser.fullName || "Usuario";
+
+    const imagenUrl = usuario?.imgUrl
+        || clerkUser.imageUrl
+        || "/default-avatar.png";
+
+
+
+
 
     return (
         <header className="sticky top-0 z-40 border-b bg-background w-full overflow-hidden">
@@ -88,20 +132,51 @@ export function Header() {
                     {/* Usuario */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                                <User className="h-5 w-5" />
+                            <Button variant="ghost" size="icon" className="rounded-full">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={imagenUrl} alt={nombreCompleto} />
+                                    <AvatarFallback>
+                                        {nombreCompleto.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Ana López</DropdownMenuLabel>
+                        <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel className="font-normal">
+                                <div className="flex flex-col space-y-1">
+                                    <p className="text-sm font-medium leading-none">{nombreCompleto}</p>
+                                    <p className="text-xs leading-none text-muted-foreground">
+                                        {clerkUser.primaryEmailAddress?.emailAddress}
+                                    </p>
+                                </div>
+                            </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem><User2 />Mi perfil</DropdownMenuItem>
+                            {tiendaUser?.map((t) => (
+                                <DropdownMenuItem key={t._id}>
+                                    <Link href={`/mi-tienda/${t._id}`} className="flex gap-2">
+                                        <Store />
+                                        {t.nombre}
+                                    </Link>
+                                </DropdownMenuItem>
+                            ))}
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem>
-                                <BadgePlus />  <Link href={'/user/crear-tienda'}>Crear una tienda</Link>
+                                <User2 className="mr-2 h-4 w-4" />
+                                Mi perfil
                             </DropdownMenuItem>
-                            <DropdownMenuItem><Cog />Configuración</DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <BadgePlus className="mr-2 h-4 w-4" />
+                                <Link href="/user/crear-tienda">Crear una tienda</Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <Cog className="mr-2 h-4 w-4" />
+                                Configuración
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem><LogOut />Cerrar sesión</DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <Button onClick={() => signOut(() => ruta.push('/'))}> <LogOut className="mr-2 h-4 w-4" />
+                                    Cerrar sesión</Button>
+                            </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>

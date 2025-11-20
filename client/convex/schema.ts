@@ -2,117 +2,165 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
- tiendas: defineTable({
-    avatar: v.string(),
-    imgBanner: v.string(),
-    nombre: v.string(),
-    categoria: v.string(),
-    descripcion: v.string(),
-    direccion: v.string(),
-    lat: v.number(),
-    lng: v.number(),
-    puntuacion: v.number(),
-    telefono: v.string(),
-    propietario: v.id("usuarios"), // Dueño principal
-    estado: v.union(v.literal("activo"), v.literal("inactivo"), v.literal("pendiente")),
-    ventasHoy: v.number(),
-    departamento: v.string(),
-    
-    // NUEVO: Sistema de miembros/colaboradores
-    miembros: v.array(v.object({
-      usuarioId: v.id("usuarios"),
-      rol: v.union(
-        v.literal("admin"),     // Mismos permisos que el propietario
-        v.literal("vendedor"),  // Puede gestionar productos y ventas
-        v.literal("asistente")  // Solo ver estadísticas
-      ),
-      fechaUnion: v.string(),
-      permisos: v.array(v.string()) // Permisos específicos
-    })),
-    
-    configuracion: v.object({
-      NIT: v.string(),
-      RUC: v.string(),
-      moneda: v.string(),
-      whatsapp: v.string(),
-      backup: v.string(),
-      // NUEVO: Configuración de permisos
-      permisosTienda: v.object({
-        vendedoresPuedenCrearProductos: v.boolean(),
-        vendedoresPuedenModificarPrecios: v.boolean(),
-        vendedoresPuedenVerReportes: v.boolean(),
-        maxVendedores: v.number()
-      })
-    }),
-    
-    horarios: v.array(v.object({
-      dia: v.string(),
-      apertura: v.string(),
-      cierre: v.string()
-    })),
-    
-    // NUEVO: Métricas de equipo
-    metricasEquipo: v.object({
-      totalVendedores: v.number(),
-      ventasEsteMes: v.number(),
-      productoMasVendido: v.optional(v.id("productos"))
+tiendas: defineTable({
+  avatar: v.string(),
+  imgBanner: v.string(),
+  nombre: v.string(),
+  categoria: v.string(),
+  descripcion: v.string(),
+  direccion: v.string(),
+  lat: v.number(),
+  lng: v.number(),
+  departamento: v.string(),
+  telefono: v.string(),
+
+  propietario: v.id("usuarios"),
+
+  estado: v.union(
+    v.literal("activo"),
+    v.literal("inactivo"),
+    v.literal("pendiente"),
+    v.literal("suspendido"),
+    v.literal("cerradoTemporal"),
+    v.literal("borrado")
+  ),
+
+  ventasHoy: v.number(),
+
+  miembros: v.array(v.object({
+    usuarioId: v.id("usuarios"),
+    rol: v.union(
+      v.literal("admin"),
+      v.literal("vendedor"),
+      v.literal("asistente")
+    ),
+    fechaUnion: v.string(),
+    permisos: v.array(v.string())
+  })),
+
+  configuracion: v.object({
+    NIT: v.string(),
+    RUC: v.string(),
+    moneda: v.string(),
+    whatsapp: v.string(),
+    backup: v.string(),
+    permisosTienda: v.object({
+      vendedoresPuedenCrearProductos: v.boolean(),
+      vendedoresPuedenModificarPrecios: v.boolean(),
+      vendedoresPuedenVerReportes: v.boolean(),
+      maxVendedores: v.number()
     })
+  }),
+
+  horarios: v.array(
+  v.object({
+    dia: v.string(),
+    apertura: v.string(),
+    cierre: v.string(),
+    cerrado: v.boolean(),
+    aperturaEspecial: v.optional(v.string()),
+    cierreEspecial: v.optional(v.string()),
   })
-  .index("by_propietario", ["propietario"])
-  .index("by_categoria", ["categoria"])
-  .index("by_estado", ["estado"])
-  .index("by_ubicacion", ["lat", "lng"])
-  .index("by_miembros", ["miembros"]), // Nuevo índice para búsquedas por miembros,
+),
+
+
+  metricasEquipo: v.object({
+    totalVendedores: v.number(),
+    ventasEsteMes: v.number(),
+    productoMasVendido: v.optional(v.id("productos"))
+  }),
+
+  delivery: v.object({
+    habilitado: v.boolean(),
+    costo: v.number(),
+    tiempoEstimado: v.string(),
+    zonas: v.array(v.string())
+  }),
+
+  facturacion: v.object({
+    habilitada: v.boolean(),
+    tipo: v.union(
+      v.literal("manual"),
+      v.literal("automatica"),
+      v.literal("ninguna")
+    ),
+    serie: v.string(),
+    numeracionActual: v.number(),
+  }),
+
+  estadisticas: v.object({
+    ventasTotales: v.number(),
+    clientesTotales: v.number(),
+    productosActivos: v.number(),
+  }),
+
+  visitas: v.number(),
+  likes: v.number(),
+  favoritos: v.number(),
+  puntuacion:v.number(),
+
+  creadoEn: v.string(),
+  ultimaActualizacion: v.string(),
+})
+.index("by_propietario", ["propietario"])
+.index("by_categoria", ["categoria"])
+.index("by_estado", ["estado"])
+.index("by_ubicacion", ["lat", "lng"])
+.index("by_departamento", ["departamento"])
+.index("by_delivery", ["delivery.habilitado"])
+.index("by_estado_y_categoria", ["estado", "categoria"]),
+
 
   // EProductos flexis ----------------
 productos: defineTable({
-  tiendaId: v.id("tiendas"),        // Relación con la tienda
-  nombre: v.string(),
-  autorId: v.string(),
-  categorias: v.array(v.string()),   // Más claro en plural
-  precio: v.number(),
-  precioOriginal: v.optional(v.number()), // Para mostrar descuentos
-  stock: v.number(),
-  imagenes: v.array(v.string()),     // Más claro en plural
-  puntuacionPromedio: v.number(),    // Más descriptivo
-  vistasTotales: v.number(),
-  descripcion: v.string(),
-  estado: v.union(v.literal("activo"), v.literal("inactivo"), v.literal("agotado")),
-  codigoBarras: v.optional(v.string()),
-  sku: v.optional(v.string()),       // Código interno único
-  
-  // Campos adicionales importantes para ecommerce
-  etiquetas: v.array(v.string()),    // Para búsquedas y filtros
-  peso: v.optional(v.number()),      // Para envíos
-  dimensiones: v.optional(v.object({
-    largo: v.number(),
-    ancho: v.number(),
-    alto: v.number()
-  })),
-  
-  // Estadísticas (se calculan automáticamente)
-  ventasTotales: v.number(),
-  ultimaActualizacion: v.string(),
-  
-  // Variantes para productos con tallas/colores
-  variantes: v.optional(v.array(v.object({
-    nombre: v.string(),              // "Color", "Talla", etc.
-    opciones: v.array(v.object({
-      valor: v.string(),             // "Rojo", "XL", etc.
-      precioExtra: v.optional(v.number()),
-      stock: v.optional(v.number())
-    }))
-  })))
-})
-.index("by_tienda", ["tiendaId"])
-.index("by_categoria", ["categorias"])
-.index("by_estado", ["estado"])
-.index("by_precio", ["precio"])
-.index("by_ventas", ["ventasTotales"]),
+    tiendaId: v.id("tiendas"),
+    // Básicos
+    nombre: v.string(),
+    descripcion: v.string(),
+    precio: v.number(),
+    categoria: v.string(),
+
+    // Imágenes
+    imagenes: v.array(v.string()),
+
+    // Inventario
+    cantidad: v.number(),
+    estado: v.union(
+      v.literal("activo"),
+      v.literal("inactivo"),
+      v.literal("agotado")
+    ),
+
+    // Estadísticas
+    puntuacionPromedio: v.optional(v.number()),
+    ventasTotales: v.optional(v.number()),
+    vistasTotales: v.optional(v.number()),
+
+    // ⬇️ Atributos dinámicos por categoría (flexible y elegante)
+    attributes: v.optional(
+      v.record(
+        v.string(),
+        v.union(v.string(), v.number(), v.array(v.string()))
+      )
+    ),
+
+    // Identificación
+    codigoBarras: v.optional(v.string()),
+    sku: v.optional(v.string()),
+
+    autorId: v.id("usuarios"),
+    ultimaActualizacion: v.string(),
+  })
+    .index("by_tienda", ["tiendaId"])
+    .index("by_categoria", ["categoria"])
+    .index("by_estado", ["estado"])
+    .index("by_precio", ["precio"])
+    .index("by_ventas", ["ventasTotales"]),
 //  Usuario flexi ===========================
 usuarios: defineTable({
     nombre: v.string(),
     clerkId:v.string(),
+    apellido:v.string(),
     correo: v.string(),
     rol: v.union(v.literal("admin"), v.literal("vendedor"), v.literal("cliente")),
     imgUrl: v.string(),

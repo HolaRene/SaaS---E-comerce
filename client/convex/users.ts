@@ -90,6 +90,7 @@ export const crearUser = internalMutation({
     correo: v.string(),
     imgUrl: v.optional(v.string()),
     nombre: v.string(),
+    apellido:v.string(),
     numeroTelefono: v.optional(v.string()),
     rol: v.union(v.literal("admin"), v.literal("vendedor"), v.literal("cliente")),
   },
@@ -121,6 +122,7 @@ export const crearUser = internalMutation({
       imgUrl: args.imgUrl || "/default-avatar.png",
       nombre: args.nombre,
       numTelefono: args.numeroTelefono || "",
+      apellido:args.apellido,
       rol: args.rol,
       configuracion: {
         notificaciones: true,
@@ -311,3 +313,4 @@ export const updateProfile = mutation({
     return { success: true };
   },
 });
+

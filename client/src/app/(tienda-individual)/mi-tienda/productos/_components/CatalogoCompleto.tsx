@@ -19,6 +19,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { columns } from "./columns";
 import { DataTableCatalogo } from "./data-table";
 import { productos } from "@/lib/tiendas-datos";
+import AddProductPulperia from "./AgregarProducto";
+import {
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from "@/components/ui/sheet"
+import { Label } from "@/components/ui/label";
 
 // --- Datos Simulados ---
 // const catalogoData = [
@@ -39,47 +51,15 @@ const CatalogoCompleto = () => {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
                     <div className="flex gap-2 flex-wrap">
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <Button><PlusCircle className="mr-2 h-4 w-4" />Agregar Producto</Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-[425px]">
-                                <DialogHeader>
-                                    <DialogTitle>Agregar Nuevo Producto</DialogTitle>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                    <Input placeholder="Nombre del producto" />
-                                    <Textarea placeholder="Descripción del producto" />
-                                    <Select><SelectTrigger><SelectValue placeholder="Seleccionar categoría" /></SelectTrigger><SelectContent><SelectItem value="panaderia">Panadería</SelectItem></SelectContent></Select>
-                                    <Input type="number" placeholder="Precio (C$)" />
-                                    <Input type="number" placeholder="Stock inicial" />
-                                </div>
-                                <DialogFooter>
-                                    <Button type="submit">Guardar Producto</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <Button variant="outline"><Upload className="mr-2 h-4 w-4" />Importar CSV</Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Importar Productos desde CSV</DialogTitle>
-                                </DialogHeader>
-                                <div className="py-4 text-center">
-                                    <p className="mb-4 text-sm text-muted-foreground">Sube un archivo CSV con tus productos. Asegúrate de que siga el formato de la plantilla.</p>
-                                    <div className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted">
-                                        <Upload className="h-8 w-8 text-muted-foreground" />
-                                        <p className="text-sm text-muted-foreground">Arrastra y suelta o haz clic para subir</p>
-                                    </div>
-                                </div>
-                                <DialogFooter className="sm:justify-between">
-                                    <Button variant="ghost"><Download className="mr-2 h-4 w-4" />Descargar Plantilla</Button>
-                                    <Button>Importar Archivo</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+
+                        <Sheet>
+                            <SheetTrigger asChild>
+                                <Button>
+                                    <PlusCircle className="mr-2 h-4 w-4" />Agregar Producto
+                                </Button>
+                            </SheetTrigger>
+                            <AddProductPulperia />
+                        </Sheet>
                         <Button variant="outline"><Download className="mr-2 h-4 w-4" />Exportar Excel</Button>
                     </div>
                 </div>

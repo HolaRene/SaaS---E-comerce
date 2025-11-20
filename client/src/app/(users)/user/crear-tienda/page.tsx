@@ -1,114 +1,232 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChevronLeft, ChevronRight, Check } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { regions, storeTemplates } from "@/lib/data-store"
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 
-// Zod validation schema
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { ChevronLeft, ChevronRight, Check, Loader } from "lucide-react";
+
+import {
+    CATEGORIAS,
+    DEPARTAMENTOS_NIC,
+    DIAS_SEMANA,
+} from "@/lib/crear-tienda-datos";
+
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useMutation } from "convex/react";
+import { ConvexError } from "convex/values";
+import { api } from "../../../../../convex/_generated/api";
+import { Checkbox } from "@/components/ui/checkbox";
+
+// Componente para mostrar errores
+const ErrorMessage = ({ message }: { message?: string }) => {
+    if (!message) return null;
+    return <p className="text-sm text-red-500 mt-1">{message}</p>;
+};
+
+// Schema completo para validación
 const storeSchema = z.object({
-    name: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
-    region: z.string().min(1, "Selecciona una región"),
-    address: z.string().min(5, "La dirección debe tener al menos 5 caracteres"),
-    phone: z.string().regex(/^\+?[\d\s-()]+$/, "Formato de teléfono inválido"),
-    email: z.email("Email inválido"),
-    hours: z.string().min(1, "Especifica el horario"),
-    categories: z.string().min(1, "Selecciona al menos una categoría"),
-    manager: z.string().min(1, "Selecciona un administrador"),
-    template: z.string().min(1, "Selecciona una plantilla"),
-})
+    nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
+    categoria: z.string().min(1, "Selecciona una categoría"),
+    descripcion: z.string().min(5, "La descripción debe tener al menos 5 caracteres"),
+    direccion: z.string().min(5, "La dirección debe tener al menos 5 caracteres"),
+    telefono: z.string().regex(/^\+?[\d\s-()]+$/, "Formato de teléfono inválido"),
+    departamento: z.string().min(1, "Selecciona un departamento"),
 
-type StoreFormData = z.infer<typeof storeSchema>
+    configuracion: z.object({
+        NIT: z.string().optional(),
+        RUC: z.string().optional(),
+        moneda: z.string().min(1, "Selecciona una moneda"),
+        whatsapp: z.string().optional(),
+        permisosTienda: z.object({
+            vendedoresPuedenCrearProductos: z.boolean(),
+            vendedoresPuedenModificarPrecios: z.boolean(),
+            vendedoresPuedenVerReportes: z.boolean(),
+            maxVendedores: z.number().min(1, "Debe haber al menos 1 vendedor")
+        })
+    }),
+
+    horarios: z.array(
+        z.object({
+            dia: z.string(),
+            apertura: z.string().min(1, "Elige hora de apertura"),
+            cierre: z.string().min(1, "Elige hora de cierre"),
+            cerrado: z.boolean(),
+            aperturaEspecial: z.string().optional(),
+            cierreEspecial: z.string().optional(),
+        })
+    ).length(7, "Debes definir los 7 días de la semana"),
+});
+
+type StoreFormData = z.infer<typeof storeSchema>;
 
 const steps = [
     { id: 1, title: "Información Básica", description: "Datos generales de la tienda" },
-    { id: 2, title: "Configuración", description: "Horarios y categorías" },
-    { id: 3, title: "Administrador", description: "Asignar responsable" },
-    // { id: 4, title: "Plantilla", description: "Configuración base" },
-]
+    { id: 2, title: "Horarios", description: "Horario semanal de atención" },
+    { id: 3, title: "Configuración", description: "Datos administrativos" },
+];
 
-const mockManagers = ["Ana García", "Carlos Ruiz", "María López", "Roberto Sánchez", "Laura Martínez"]
-
-interface CreateStoreFormProps {
-    onSubmit: (data: StoreFormData) => void
-}
-
-export default function CreateStoreForm({ onSubmit }: CreateStoreFormProps) {
-    const [currentStep, setCurrentStep] = useState(1)
+export default function CreateStoreForm() {
+    const [currentStep, setCurrentStep] = useState(1);
+    const [cargando, setCargando] = useState(false);
+    const router = useRouter();
+    const crearTienda = useMutation(api.tienda.crearTienda);
 
     const {
         register,
         handleSubmit,
         formState: { errors },
         setValue,
-        watch,
         trigger,
+        control
     } = useForm<StoreFormData>({
         resolver: zodResolver(storeSchema),
         mode: "onChange",
-    })
+        defaultValues: {
 
-    const formData = watch()
+            // Campos del formulario
+            nombre: "La esperanza",
+            categoria: "",
+            descripcion: "Tienda flexi",
+            direccion: "LLegando a Allá",
+            telefono: "",
+            departamento: "",
 
-    // Validate current step before proceeding
+            configuracion: {
+                NIT: "",
+                RUC: "",
+                moneda: "Córdoba",
+                whatsapp: "",
+                permisosTienda: {
+                    vendedoresPuedenCrearProductos: true,
+                    vendedoresPuedenModificarPrecios: false,
+                    vendedoresPuedenVerReportes: false,
+                    maxVendedores: 3,
+                },
+            },
+
+            horarios: DIAS_SEMANA.map((dia) => ({
+                dia,
+                apertura: "08:00",
+                cierre: "17:00",
+            })),
+        },
+    });
+
+
     const validateStep = async () => {
-        let fieldsToValidate: (keyof StoreFormData)[] = []
+        const fields =
+            currentStep === 1
+                ? ["nombre", "categoria", "descripcion", "direccion", "telefono", "departamento"]
+                : currentStep === 2
+                    ? ["horarios"]
+                    : ["configuracion"];
 
-        switch (currentStep) {
-            case 1:
-                fieldsToValidate = ["name", "region", "address", "phone", "email"]
-                break
-            case 2:
-                fieldsToValidate = ["hours", "categories"]
-                break
-            case 3:
-                fieldsToValidate = ["manager"]
-                break
-            case 4:
-                fieldsToValidate = ["template"]
-                break
+        const result = await trigger(fields as any);
+        return result;
+    };
+
+    // 🔒 SOLUCIÓN: Asegurar que el botón Siguiente NUNCA haga submit
+    const handleNext = async (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault(); // 🛡️ Bloquear cualquier comportamiento de submit
+        e.stopPropagation(); // 🛡️ Detener propagación del evento
+        const isValid = await validateStep();
+        if (isValid && currentStep < 3) {
+            setCurrentStep((s) => s + 1);
         }
-
-        return await trigger(fieldsToValidate)
-    }
-
-    const handleNext = async () => {
-        const isValid = await validateStep()
-        if (isValid && currentStep < 4) {
-            setCurrentStep(currentStep + 1)
-        }
-    }
+    };
 
     const handlePrevious = () => {
-        if (currentStep > 1) {
-            setCurrentStep(currentStep - 1)
-        }
-    }
+        if (currentStep > 1) setCurrentStep((s) => s - 1);
+    };
 
-    const onFormSubmit = (data: StoreFormData) => {
-        onSubmit(data)
-    }
+    // 🔒 SOLUCIÓN: Guarda adicional - prevenir submit si no estamos en el paso 3
+    const onFormSubmit = async (data: StoreFormData) => {
+
+        if (currentStep !== 3) {
+            toast.error("Completa todos los pasos antes de enviar");
+            return;
+        }
+
+        try {
+            setCargando(true);
+            const response = await crearTienda({
+                nombre: data.nombre,
+                categoria: data.categoria,
+                descripcion: data.descripcion,
+                direccion: data.direccion,
+                departamento: data.departamento,
+                telefono: data.telefono,
+                lat: 12.415834,
+                lng: -85.746055,
+                configuracion: {
+                    NIT: data.configuracion.NIT || "",
+                    RUC: data.configuracion.RUC || "",
+                    moneda: data.configuracion.moneda,
+                    whatsapp: data.configuracion.whatsapp || "",
+                    permisosTienda: {
+                        vendedoresPuedenCrearProductos: data.configuracion.permisosTienda.vendedoresPuedenCrearProductos,
+                        vendedoresPuedenModificarPrecios: data.configuracion.permisosTienda.vendedoresPuedenModificarPrecios,
+                        vendedoresPuedenVerReportes: data.configuracion.permisosTienda.vendedoresPuedenVerReportes,
+                        maxVendedores: data.configuracion.permisosTienda.maxVendedores,
+                    }
+                },
+                horarios: data.horarios.map(h => ({
+                    dia: h.dia,
+                    apertura: h.apertura,
+                    cierre: h.cierre,
+                    cerrado: h.cerrado,
+                    aperturaEspecial: h.aperturaEspecial,
+                    cierreEspecial: h.cierreEspecial,
+                })),
+
+            });
+            toast.success("Tienda creada con éxito");
+            router.push("/user/dashboard");
+        } catch (error) {
+            console.error("❌ Error:", error);
+            setCargando(false)
+            if (error instanceof ConvexError) {
+                toast.error(error.data);
+            } else {
+                toast.error("Error inesperado al crear la tienda");
+            }
+        } finally {
+            setCargando(false);
+        }
+    };
 
     return (
-        <div>
+        <div className="max-w-4xl mx-auto p-6">
             {/* Progress Steps */}
             <div className="mb-8">
                 <div className="flex items-center justify-between">
-                    {steps.map((step, index) => (
+                    {steps.map((step, i) => (
                         <div key={step.id} className="flex items-center flex-1">
                             <div className="flex flex-col items-center flex-1">
                                 <div
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-colors ${currentStep > step.id
-                                        ? "bg-primary text-primary-foreground"
-                                        : currentStep === step.id
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-colors
+                  ${currentStep >= step.id
                                             ? "bg-primary text-primary-foreground"
                                             : "bg-muted text-muted-foreground"
                                         }`}
@@ -117,12 +235,16 @@ export default function CreateStoreForm({ onSubmit }: CreateStoreFormProps) {
                                 </div>
                                 <div className="mt-2 text-center">
                                     <p className="text-sm font-medium">{step.title}</p>
-                                    <p className="text-xs text-muted-foreground hidden sm:block">{step.description}</p>
+                                    <p className="text-xs text-muted-foreground hidden sm:block">
+                                        {step.description}
+                                    </p>
                                 </div>
                             </div>
-                            {index < steps.length - 1 && (
+
+                            {i < steps.length - 1 && (
                                 <div
-                                    className={`h-1 flex-1 mx-2 transition-colors ${currentStep > step.id ? "bg-primary" : "bg-muted"}`}
+                                    className={`h-1 flex-1 mx-2 ${currentStep > step.id ? "bg-primary" : "bg-muted"
+                                        }`}
                                 />
                             )}
                         </div>
@@ -130,164 +252,269 @@ export default function CreateStoreForm({ onSubmit }: CreateStoreFormProps) {
                 </div>
             </div>
 
+            {/* FORM */}
             <form onSubmit={handleSubmit(onFormSubmit)}>
                 <Card>
                     <CardHeader>
                         <CardTitle>{steps[currentStep - 1].title}</CardTitle>
                         <CardDescription>{steps[currentStep - 1].description}</CardDescription>
                     </CardHeader>
+
                     <CardContent className="space-y-4">
-                        {/* Step 1: Basic Information */}
+                        {/* STEP 1 */}
                         {currentStep === 1 && (
                             <>
                                 <div className="space-y-2">
-                                    <Label htmlFor="name">Nombre de la Tienda *</Label>
-                                    <Input id="name" placeholder="Ej: Flagship Downtown" {...register("name")} />
-                                    {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+                                    <Label>Nombre de la Tienda *</Label>
+                                    <Input {...register("nombre")} placeholder="Ej: El Buen Precio" />
+                                    <ErrorMessage message={errors.nombre?.message} />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="region">Región *</Label>
+                                    <Label>Categoría *</Label>
                                     <Select
-                                        value={formData.region}
-                                        onValueChange={(value) => setValue("region", value, { shouldValidate: true })}
+                                        onValueChange={(value) =>
+                                            setValue("categoria", value, { shouldValidate: true })
+                                        }
                                     >
-                                        <SelectTrigger id="region">
-                                            <SelectValue placeholder="Selecciona una región" />
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecciona una categoría" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {regions.map((region) => (
-                                                <SelectItem key={region} value={region}>
-                                                    {region}
+                                            {CATEGORIAS.map((c) => (
+                                                <SelectItem key={c} value={c}>
+                                                    {c}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    {errors.region && <p className="text-sm text-red-500">{errors.region.message}</p>}
+                                    <ErrorMessage message={errors.categoria?.message} />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="address">Dirección *</Label>
-                                    <Input id="address" placeholder="Ej: Av. Principal 123" {...register("address")} />
-                                    {errors.address && <p className="text-sm text-red-500">{errors.address.message}</p>}
+                                    <Label>Descripción *</Label>
+                                    <Input {...register("descripcion")} placeholder="Descripción de tu tienda" />
+                                    <ErrorMessage message={errors.descripcion?.message} />
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="phone">Teléfono *</Label>
-                                        <Input id="phone" placeholder="+1 234-567-8900" {...register("phone")} />
-                                        {errors.phone && <p className="text-sm text-red-500">{errors.phone.message}</p>}
-                                    </div>
+                                <div className="space-y-2">
+                                    <Label>Dirección *</Label>
+                                    <Input {...register("direccion")} placeholder="Av. Principal 123" />
+                                    <ErrorMessage message={errors.direccion?.message} />
+                                </div>
 
+                                <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="email">Email *</Label>
-                                        <Input id="email" type="email" placeholder="tienda@micomercio.com" {...register("email")} />
-                                        {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+                                        <Label>Teléfono *</Label>
+                                        <Input {...register("telefono")} placeholder="+505 87654321" />
+                                        <ErrorMessage message={errors.telefono?.message} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Departamento *</Label>
+                                        <Select
+                                            onValueChange={(value) =>
+                                                setValue("departamento", value, { shouldValidate: true })
+                                            }
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Departamento" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {DEPARTAMENTOS_NIC.map((d) => (
+                                                    <SelectItem key={d} value={d}>
+                                                        {d}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <ErrorMessage message={errors.departamento?.message} />
                                     </div>
                                 </div>
                             </>
                         )}
 
-                        {/* Step 2: Configuration */}
+                        {/* STEP 2 - HORARIOS */}
                         {currentStep === 2 && (
-                            <>
-                                <div className="space-y-2">
-                                    <Label htmlFor="hours">Horario de Atención *</Label>
-                                    <Input id="hours" placeholder="Ej: 9:00 - 21:00" {...register("hours")} />
-                                    {errors.hours && <p className="text-sm text-red-500">{errors.hours.message}</p>}
-                                </div>
+                            <div className="space-y-4">
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="categories">Categorías *</Label>
-                                    <Input
-                                        id="categories"
-                                        placeholder="Ej: Electrónica, Ropa, Hogar (separadas por comas)"
-                                        {...register("categories")}
-                                    />
-                                    {errors.categories && <p className="text-sm text-red-500">{errors.categories.message}</p>}
-                                    <p className="text-xs text-muted-foreground">Ingresa las categorías separadas por comas</p>
-                                </div>
-                            </>
-                        )}
+                                {DIAS_SEMANA.map((dia, index) => (
+                                    <div
+                                        key={dia}
+                                        className="grid grid-cols-1 md:grid-cols-5 gap-4 border p-3 rounded"
+                                    >
+                                        {/* Día */}
+                                        <p className="font-medium col-span-1">{dia}</p>
 
-                        {/* Step 3: Assign Manager */}
-                        {currentStep === 3 && (
-                            <div className="space-y-2">
-                                <Label htmlFor="manager">Administrador de Tienda *</Label>
-                                <Select
-                                    value={formData.manager}
-                                    onValueChange={(value) => setValue("manager", value, { shouldValidate: true })}
-                                >
-                                    <SelectTrigger id="manager">
-                                        <SelectValue placeholder="Selecciona un administrador" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {mockManagers.map((manager) => (
-                                            <SelectItem key={manager} value={manager}>
-                                                {manager}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {errors.manager && <p className="text-sm text-red-500">{errors.manager.message}</p>}
-                                <p className="text-xs text-muted-foreground">
-                                    El administrador será responsable de la gestión diaria de la tienda
-                                </p>
+                                        {/* Apertura */}
+                                        <div className="space-y-1">
+                                            <Label className="text-xs">Apertura</Label>
+                                            <Input
+                                                type="time"
+                                                {...register(`horarios.${index}.apertura` as const)}
+                                            />
+                                        </div>
+
+                                        {/* Cierre */}
+                                        <div className="space-y-1">
+                                            <Label className="text-xs">Cierre</Label>
+                                            <Input
+                                                type="time"
+                                                {...register(`horarios.${index}.cierre` as const)}
+                                            />
+                                        </div>
+
+                                        {/* CERRADO */}
+                                        {/* CERRADO */}
+                                        <Controller
+                                            name={`horarios.${index}.cerrado`}
+                                            control={control}
+                                            defaultValue={false}
+                                            render={({ field }) => (
+                                                <div className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                        checked={field.value}
+                                                        onCheckedChange={field.onChange}
+                                                    />
+                                                    <Label className="text-xs">Cerrado</Label>
+                                                </div>
+                                            )}
+                                        />
+
+
+                                        {/* HORARIO ESPECIAL */}
+                                        <div className="col-span-1 md:col-span-2 space-y-1">
+                                            <Label className="text-xs">Apertura especial (opcional)</Label>
+                                            <Input
+                                                type="time"
+                                                {...register(`horarios.${index}.aperturaEspecial` as const)}
+                                            />
+                                        </div>
+
+                                        <div className="col-span-1 md:col-span-2 space-y-1">
+                                            <Label className="text-xs">Cierre especial (opcional)</Label>
+                                            <Input
+                                                type="time"
+                                                {...register(`horarios.${index}.cierreEspecial` as const)}
+                                            />
+                                        </div>
+
+                                    </div>
+                                ))}
+
+                                <ErrorMessage message={errors.horarios?.message} />
                             </div>
                         )}
 
-                        {/* Step 4: Template Selection */}
-                        {currentStep === 4 && (
-                            <div className="space-y-4">
-                                <Label>Plantilla de Configuración *</Label>
-                                <div className="grid grid-cols-1 gap-4">
-                                    {storeTemplates.map((template) => (
-                                        <Card
-                                            key={template}
-                                            className={`cursor-pointer transition-all hover:border-primary ${formData.template === template ? "border-primary border-2" : ""
-                                                }`}
-                                            onClick={() => setValue("template", template, { shouldValidate: true })}
-                                        >
-                                            <CardHeader>
-                                                <div className="flex items-center justify-between">
-                                                    <CardTitle className="text-base">{template}</CardTitle>
-                                                    {formData.template === template && <Badge>Seleccionado</Badge>}
-                                                </div>
-                                                <CardDescription>
-                                                    {template === "Retail Standard" && "Configuración estándar para tiendas minoristas"}
-                                                    {template === "Premium Store" && "Configuración premium con características avanzadas"}
-                                                    {template === "Outlet Model" && "Configuración optimizada para outlets y liquidación"}
-                                                </CardDescription>
-                                            </CardHeader>
-                                        </Card>
-                                    ))}
+
+                        {/* STEP 3 */}
+                        {currentStep === 3 && (
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>NIT</Label>
+                                        <Input {...register("configuracion.NIT")} placeholder="001-123456-7890" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>RUC</Label>
+                                        <Input {...register("configuracion.RUC")} placeholder="J1230001234567" />
+                                    </div>
                                 </div>
-                                {errors.template && <p className="text-sm text-red-500">{errors.template.message}</p>}
+
+                                <div className="space-y-2">
+                                    <Label>Moneda *</Label>
+                                    <Select
+                                        onValueChange={(value) =>
+                                            setValue("configuracion.moneda", value, { shouldValidate: true })
+                                        }
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecciona moneda" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Córdoba">Córdoba</SelectItem>
+                                            <SelectItem value="USD">Dólar</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <ErrorMessage message={errors.configuracion?.moneda?.message} />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>WhatsApp</Label>
+                                        <Input {...register("configuracion.whatsapp")} placeholder="+505 88888888" />
+                                    </div>
+
+                                </div>
+
+                                {/* PERMISOS */}
+                                <div className="p-4 border rounded space-y-3">
+                                    <Label className="font-semibold">Permisos de vendedores</Label>
+
+                                    <label className="flex items-center gap-2">
+                                        <input type="checkbox" {...register("configuracion.permisosTienda.vendedoresPuedenCrearProductos")} />
+                                        Crear productos
+                                    </label>
+
+                                    <label className="flex items-center gap-2">
+                                        <input type="checkbox" {...register("configuracion.permisosTienda.vendedoresPuedenModificarPrecios")} />
+                                        Modificar precios
+                                    </label>
+
+                                    <label className="flex items-center gap-2">
+                                        <input type="checkbox" {...register("configuracion.permisosTienda.vendedoresPuedenVerReportes")} />
+                                        Ver reportes
+                                    </label>
+
+                                    <div className="space-y-2">
+                                        <Label>Máx. vendedores *</Label>
+                                        <Input
+                                            type="number"
+                                            min={1}
+                                            {...register("configuracion.permisosTienda.maxVendedores", {
+                                                valueAsNumber: true,
+                                            })}
+                                        />
+                                        <ErrorMessage message={errors.configuracion?.permisosTienda?.maxVendedores?.message} />
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </CardContent>
                 </Card>
 
-                {/* Navigation Buttons */}
+                {/* NAVIGATION */}
                 <div className="flex justify-between mt-6">
-                    <Button type="button" variant="outline" onClick={handlePrevious} disabled={currentStep === 1}>
+                    <Button type="button" variant="outline" disabled={currentStep === 1} onClick={handlePrevious}>
                         <ChevronLeft className="h-4 w-4 mr-1" />
                         Anterior
                     </Button>
 
-                    {currentStep < 4 ? (
-                        <Button type="button" onClick={handleNext}>
+                    {currentStep < 3 ? (
+                        // 🔒 BOTÓN SIGUIENTE CON PREVENT DEFAULT EXPLÍCITO
+                        <Button
+                            type="button"
+                            onClick={(e) => handleNext(e)}
+                        >
                             Siguiente
                             <ChevronRight className="h-4 w-4 ml-1" />
                         </Button>
                     ) : (
-                        <Button type="submit">
-                            <Check className="h-4 w-4 mr-1" />
-                            Crear Tienda
+                        <Button type="submit" disabled={cargando}>
+                            {cargando ? (
+                                <>
+                                    Enviando...
+                                    <Loader size={20} className="animate-spin ml-2" />
+                                </>
+                            ) : (
+                                <>
+                                    <Check className="h-4 w-4 mr-1" />
+                                    Crear Tienda
+                                </>
+                            )}
                         </Button>
                     )}
                 </div>
             </form>
         </div>
-    )
+    );
 }

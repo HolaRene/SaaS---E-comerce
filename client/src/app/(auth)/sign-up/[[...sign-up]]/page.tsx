@@ -2,7 +2,7 @@ import { SignUp } from "@clerk/nextjs"
 
 const SignUpPage = () => {
     return (
-        <div className='flex-center glassmorphism-auth h-screen w-full'>
+        <div className='flex justify-center items-center glassmorphism-auth h-screen w-full'>
             <SignUp />
         </div>
     )

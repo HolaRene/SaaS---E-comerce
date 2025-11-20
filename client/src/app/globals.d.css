@@ -112,6 +112,7 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -168,6 +169,7 @@
   .section-title-gap-sm {
     gap: 1rem;
   }
+
 }
 
 @media (max-width: 64rem) {
@@ -326,4 +328,14 @@
 }
 .cl-internal-wkkub3 {
   color: #f97535;
+}
+.glassmorphism-auth {
+  background: rgba(6, 3, 3, 0.711);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }

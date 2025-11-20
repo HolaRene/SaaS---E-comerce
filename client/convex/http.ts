@@ -21,7 +21,8 @@ const handleClerkWebhook = httpAction(async (ctx, request) => {
         correo: event.data.email_addresses[0].email_address,
         imgUrl: event.data.image_url,
         nombre: event.data.first_name as string,
-        rol: 'cliente'
+        rol: 'cliente',
+        apellido: event.data.last_name as string,
       });
       break;
     case "user.updated":
