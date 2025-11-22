@@ -4,6 +4,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import ConvexClientProvider from "./providers/ConvexProviderWithClerk";
 import { Alice } from 'next/font/google'
 import { Toaster } from "sonner";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 // Si la fuente está en Google Fonts
 const playwrite = Alice({
@@ -45,6 +46,7 @@ export default function RootLayout({
                     <ConvexClientProvider>
                         {children}
                         <Toaster />
+                        <SpeedInsights />
                     </ConvexClientProvider>
                 </ClerkProvider>
             </body>
