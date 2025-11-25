@@ -1,6 +1,6 @@
 "use client"
 import Link from "next/link"
-import { BadgePlus, Cog, LogOut, Moon, Settings, Store, Sun, User, User2 } from 'lucide-react';
+import { BadgePlus, Cog, LogOut, Moon, Store, Sun, User2 } from 'lucide-react';
 
 // Componentes de shadcn
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";

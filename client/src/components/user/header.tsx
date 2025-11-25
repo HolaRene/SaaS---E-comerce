@@ -22,7 +22,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { useRouter } from "next/navigation"
 
 export function Header() {
-    const [activeTab, setActiveTab] = useState("dashboard")
     const [cartCount] = useState(5)
     const [notificationCount] = useState(3)
     const { toggle } = useSidebar()
@@ -101,7 +100,6 @@ export function Header() {
                         variant="ghost"
                         size="icon"
                         className="relative"
-                        onClick={() => setActiveTab("notifications")}
                     >
                         <Bell className="h-5 w-5" />
                         {notificationCount > 0 && (
@@ -119,7 +117,6 @@ export function Header() {
                         variant="ghost"
                         size="icon"
                         className="relative"
-                        onClick={() => setActiveTab("cart")}
                     >
                         <ShoppingCart className="h-5 w-5" />
                         {cartCount > 0 && (

@@ -151,7 +151,7 @@ export function CreateUserForm() {
     // Paso 3: Configuración de rol
     const Step3 = () => {
         const [selectedRole, setSelectedRole] = useState<"super_admin" | "regional_manager" | "store_manager" | "employee">(
-            (formData.role as any) || "employee"
+            (formData.role as "super_admin" | "regional_manager" | "store_manager" | "employee") || "employee"
         )
 
 
@@ -163,7 +163,7 @@ export function CreateUserForm() {
         ]
 
         const handleNext = () => {
-            setFormData({ ...formData, role: selectedRole as any })
+            setFormData({ ...formData, role: selectedRole as "super_admin" | "regional_manager" | "store_manager" | "employee" })
             setCurrentStep(4)
         }
 

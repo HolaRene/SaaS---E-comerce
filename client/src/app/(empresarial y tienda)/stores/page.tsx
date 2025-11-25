@@ -64,114 +64,113 @@ const Page = () => {
         // In a real app, this would open an edit dialog or navigate to edit page
     }
 
+
     const handleDelete = (id: number) => {
         const store = stores.find((s) => s.id === id)
         setStores((prev) => prev.filter((s) => s.id !== id))
         toast(`${store?.name} ha sido eliminada`)
     }
 
-    const handleCreateStore = (data: any) => {
+    const handleCreateStore = (data: Record<string, unknown>) => {
         const newStore: Store = {
             id: Math.max(...stores.map((s) => s.id)) + 1,
-            name: data.name,
-            region: data.region,
+            name: data.name as string,
+            region: data.region as string,
             status: "active",
             sales: 0,
             employees: 0,
             lastUpdated: new Date().toISOString().split("T")[0],
-            address: data.address,
-            phone: data.phone,
-            email: data.email,
-            manager: data.manager,
-            hours: data.hours,
-            categories: data.categories.split(",").map((c: string) => c.trim()),
+            address: data.address as string | undefined,
+            phone: data.phone as string | undefined,
+            email: data.email as string | undefined,
+            manager: data.manager as string | undefined,
+            hours: data.hours as string | undefined,
+            categories: ((data.categories as string) || "").split(",").map((c: string) => c.trim()),
         }
 
         setStores((prev) => [...prev, newStore])
         toast("Tienda creada")
     }
-
-    const handleBulkUpdate = (storeIds: number[], updates: Partial<Store>) => {
-        setStores((prev) =>
-            prev.map((store) => {
-                if (storeIds.includes(store.id)) {
-                    return { ...store, ...updates, lastUpdated: new Date().toISOString().split("T")[0] }
-                }
-                return store
-            }),
-        )
-
-        toast(`${storeIds.length} tienda(s) actualizada(s) exitosamente`)
-    }
-
-    // Memoize search handler to prevent unnecessary re-renders
-    const handleSearch = useCallback((query: string) => {
-        setSearchQuery(query)
-    }, [])
-    return (
-        <div className="min-h-screen bg-background">
-            <div className="container mx-auto py-8 px-4">
-                <div className="mb-8">
-                    <h1 className="text-4xl font-bold mb-2">Gestión de Tiendas</h1>
-                    <p className="text-muted-foreground">Administra todas tus tiendas desde un solo lugar</p>
-                </div>
-                <Tabs defaultValue="list" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
-                        <TabsTrigger value="list" className="gap-2">
-                            <Eye className="h-4 w-4" />
-                            <span className="hidden sm:blok">Listado de</span> Tiendas
-                        </TabsTrigger>
-                        <TabsTrigger value="create" className="gap-2">
-                            <Plus className="h-4 w-4" />
-                            <span className="hidden sm:blok">Crear</span> Nueva Tienda
-                        </TabsTrigger>
-                        <TabsTrigger value="bulk" className="gap-2">
-                            <Edit3 className="h-4 w-4" />
-                            Edición <span className="hidden sm:blok">Masiva</span>
-                        </TabsTrigger>
-                    </TabsList>
-                    {/* Tab 1: Store Listing */}
-                    <TabsContent value="list" className="space-y-6">
-                        <div className="flex flex-col lg:flex-row gap-4">
-                            <div className="flex-1">
-                                <StoreSearch onSearch={handleSearch} />
-                            </div>
-                            <div className="lg:w-auto">
-                                <StoreFilters
-                                    selectedRegion={selectedRegion}
-                                    selectedStatus={selectedStatus}
-                                    onRegionChange={setSelectedRegion}
-                                    onStatusChange={setSelectedStatus}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                            <p className="text-sm text-muted-foreground">
-                                Mostrando {filteredStores.length} de {stores.length} tiendas
-                            </p>
-                        </div>
-
-                        <StoreGrid
-                            stores={filteredStores}
-                            onToggleStatus={handleToggleStatus}
-                            onEdit={handleEdit}
-                            onDelete={handleDelete}
-                        />
-                    </TabsContent>
-                    {/* Tab 2: Create New Store */}
-                    <TabsContent value="create">
-                        <CreateStoreForm onSubmit={handleCreateStore} />
-                    </TabsContent>
-                    {/* Tab 3: Bulk Edit */}
-                    <TabsContent value="bulk">
-                        <BulkActions stores={stores} onBulkUpdate={handleBulkUpdate} />
-                    </TabsContent>
-                </Tabs>
-
-            </div>
-        </div>
+    setStores((prev) =>
+        prev.map((store) => {
+            if (storeIds.includes(store.id)) {
+                return { ...store, ...updates, lastUpdated: new Date().toISOString().split("T")[0] }
+            }
+            return store
+        }),
     )
+
+    toast(`${storeIds.length} tienda(s) actualizada(s) exitosamente`)
+}
+
+// Memoize search handler to prevent unnecessary re-renders
+const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query)
+}, [])
+return (
+    <div className="min-h-screen bg-background">
+        <div className="container mx-auto py-8 px-4">
+            <div className="mb-8">
+                <h1 className="text-4xl font-bold mb-2">Gestión de Tiendas</h1>
+                <p className="text-muted-foreground">Administra todas tus tiendas desde un solo lugar</p>
+            </div>
+            <Tabs defaultValue="list" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+                    <TabsTrigger value="list" className="gap-2">
+                        <Eye className="h-4 w-4" />
+                        <span className="hidden sm:blok">Listado de</span> Tiendas
+                    </TabsTrigger>
+                    <TabsTrigger value="create" className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        <span className="hidden sm:blok">Crear</span> Nueva Tienda
+                    </TabsTrigger>
+                    <TabsTrigger value="bulk" className="gap-2">
+                        <Edit3 className="h-4 w-4" />
+                        Edición <span className="hidden sm:blok">Masiva</span>
+                    </TabsTrigger>
+                </TabsList>
+                {/* Tab 1: Store Listing */}
+                <TabsContent value="list" className="space-y-6">
+                    <div className="flex flex-col lg:flex-row gap-4">
+                        <div className="flex-1">
+                            <StoreSearch onSearch={handleSearch} />
+                        </div>
+                        <div className="lg:w-auto">
+                            <StoreFilters
+                                selectedRegion={selectedRegion}
+                                selectedStatus={selectedStatus}
+                                onRegionChange={setSelectedRegion}
+                                onStatusChange={setSelectedStatus}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm text-muted-foreground">
+                            Mostrando {filteredStores.length} de {stores.length} tiendas
+                        </p>
+                    </div>
+
+                    <StoreGrid
+                        stores={filteredStores}
+                        onToggleStatus={handleToggleStatus}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                    />
+                </TabsContent>
+                {/* Tab 2: Create New Store */}
+                <TabsContent value="create">
+                    <CreateStoreForm onSubmit={handleCreateStore} />
+                </TabsContent>
+                {/* Tab 3: Bulk Edit */}
+                <TabsContent value="bulk">
+                    <BulkActions stores={stores} onBulkUpdate={handleBulkUpdate} />
+                </TabsContent>
+            </Tabs>
+
+        </div>
+    </div>
+)
 }
 
 export default Page

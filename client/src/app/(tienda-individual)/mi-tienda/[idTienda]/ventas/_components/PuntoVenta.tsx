@@ -195,7 +195,7 @@ const PuntoVenta = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                     precioUnitario: p.precioUnitario,
                     nombreProducto: p.nombre,
                 })),
-                metodoPago: metodoPago as any,
+                metodoPago: metodoPago as "efectivo" | "tarjeta" | "transferencia" | "fiado",
                 subtotal: calcularSubtotal(),
                 impuesto: calcularImpuesto(),
                 total: calcularTotal(),
