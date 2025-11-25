@@ -72,7 +72,7 @@ export interface AlertConfig {
   id: string
   name: string
   trigger: string
-  conditions: Record<string, any>
+  conditions: Record<string, unknown>
   channels: string[]
   recipients: string[]
   enabled: boolean
@@ -101,7 +101,7 @@ export interface NotificationChannel {
   id: string
   type: "email" | "sms" | "push" | "webhook"
   name: string
-  config: Record<string, any>
+  config: Record<string, unknown>
   enabled: boolean
   lastTest?: Date
   status: "active" | "error" | "untested"
@@ -120,8 +120,8 @@ export interface AuditLog {
   userName: string
   action: string
   resource: string
-  oldValue?: any
-  newValue?: any
+  oldValue?: unknown
+  newValue?: unknown
   timestamp: Date
   ipAddress: string
   userAgent: string
