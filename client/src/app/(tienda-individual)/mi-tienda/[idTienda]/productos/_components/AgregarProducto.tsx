@@ -145,8 +145,8 @@ const AddProductPulperia = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                                     <FormControl>
                                         <Input
                                             {...field}
-                                            type="number"
-                                            onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                                            type="text"
+                                            onChange={e => field.onChange(e.target.value)}
                                         />
                                     </FormControl>
                                     <FormMessage />

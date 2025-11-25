@@ -17,6 +17,7 @@ import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 const etiquetasData = ["Ofertas", "Nuevo", "Popular", "SinBromato", "Importado"];
 
@@ -66,6 +67,38 @@ const CategoriasEtiquetas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
         }
         return <Badge variant="outline">Disponible</Badge>;
     };
+
+    const handleCrearEtiqueta = async () => {
+        if (!nuevaEtiqueta.trim()) {
+            toast.error("Ingresa un nombre")
+            return
+        }
+
+        try {
+            setCargando(true)
+            await crearEtiqueta({
+                nombre: nuevaEtiqueta.trim(),
+                tiendaId: idTienda,
+                color: "#" + Math.floor(Math.random() * 16777215).toString(16),
+            })
+            setNuevaEtiqueta("")
+            toast.success("Etiqueta creada")
+        } catch (error: any) {
+            toast.error(error.message || "Error al crear")
+        } finally {
+            setCargando(false)
+        }
+    }
+    const handleEliminarEtiqueta = async (etiquetaId: Id<"etiquetas">) => {
+        if (!confirm("¿Eliminar esta etiqueta? Se quitará de todos los productos.")) return
+
+        try {
+            await eliminarEtiqueta({ etiquetaId })
+            toast.success("Etiqueta eliminada")
+        } catch (error) {
+            toast.error("Error al eliminar")
+        }
+    }
 
 
 
@@ -196,45 +229,65 @@ const CategoriasEtiquetas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        {/* Etiquetas existentes */}
+                        {/* Etiquetas activas */}
                         <div>
                             <h4 className="text-sm font-medium mb-2">Etiquetas activas</h4>
                             <div className="flex flex-wrap gap-2">
-                                {etiquetasData.map(tag => (
-                                    <Badge key={tag} variant="secondary" className="px-3 py-1">
-                                        {tag}
-                                        <button className="ml-1 hover:text-destructive">×</button>
-                                    </Badge>
-                                ))}
+                                {estadisticasEtiquetas === undefined ? (
+                                    <p className="text-sm text-muted-foreground">Cargando...</p>
+                                ) : estadisticasEtiquetas.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground">No hay etiquetas</p>
+                                ) : (
+                                    estadisticasEtiquetas.map(etiqueta => (
+                                        <Badge
+                                            key={etiqueta._id}
+                                            variant="secondary"
+                                            className="px-3 py-1"
+                                            style={{ backgroundColor: etiqueta.color }}
+                                        >
+                                            {etiqueta.icono} {etiqueta.nombre}
+                                            <button
+                                                className="ml-2 hover:text-destructive"
+                                                onClick={() => handleEliminarEtiqueta(etiqueta._id)}
+                                            >
+                                                ×
+                                            </button>
+                                        </Badge>
+                                    ))
+                                )}
                             </div>
                         </div>
-
-                        {/* Estadísticas de uso de etiquetas */}
+                        {/* Estadísticas */}
                         <div>
                             <h4 className="text-sm font-medium mb-2">Uso en productos</h4>
                             <div className="space-y-2">
-                                {etiquetasData.map(tag => {
-                                    const productosConEtiqueta = productsTienda?.filter(p =>
-                                        p.categoria.includes(tag)
-                                    ).length || 0;
-                                    return (
-                                        <div key={tag} className="flex items-center justify-between text-sm">
-                                            <span>{tag}</span>
-                                            <Badge variant="outline">
-                                                {productosConEtiqueta} productos
-                                            </Badge>
-                                        </div>
-                                    );
-                                })}
+                                {estadisticasEtiquetas?.map(etiqueta => (
+                                    <div key={etiqueta._id} className="flex items-center justify-between text-sm">
+                                        <span>{etiqueta.icono} {etiqueta.nombre}</span>
+                                        <Badge variant="outline">
+                                            {etiqueta.cantidadProductos} productos
+                                        </Badge>
+                                    </div>
+                                ))}
                             </div>
                         </div>
-
-                        {/* Agregar nueva etiqueta */}
+                        {/* Crear nueva */}
                         <div className="pt-4 border-t">
                             <h4 className="text-sm font-medium mb-2">Agregar nueva etiqueta</h4>
                             <div className="flex gap-2">
-                                <Input placeholder="Ej: Orgánico, Sin gluten..." />
-                                <Button size="sm">Agregar</Button>
+                                <Input
+                                    placeholder="Ej: Orgánico, Sin gluten..."
+                                    value={nuevaEtiqueta}
+                                    onChange={(e) => setNuevaEtiqueta(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleCrearEtiqueta()}
+                                />
+                                <Button
+                                    size="sm"
+                                    onClick={handleCrearEtiqueta}
+                                    disabled={cargando || !nuevaEtiqueta.trim()}
+                                >
+                                    {cargando ? "Creando..." : "Agregar"}
+                                </Button>
                             </div>
                         </div>
                     </div>
