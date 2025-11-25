@@ -76,7 +76,7 @@ export interface ReportConfig {
 
 export interface ExportConfig {
   format: "excel" | "csv" | "pdf"
-  data: any[]
+  data: Record<string, unknown>[]
   fileName: string
   includeCharts: boolean
 }

@@ -31,7 +31,7 @@ export async function updateFiscalData(prevState: ActionState, formData: FormDat
   }
 }
 
-export async function updatePasswordPolicy(policy: any): Promise<ActionState> {
+export async function updatePasswordPolicy(policy: Record<string, unknown>): Promise<ActionState> {
   await new Promise((resolve) => setTimeout(resolve, 800))
 
   return {
@@ -49,7 +49,7 @@ export async function testNotificationChannel(channelId: string): Promise<Action
   }
 }
 
-export async function createAlert(alert: any): Promise<ActionState> {
+export async function createAlert(alert: Record<string, unknown>): Promise<ActionState> {
   await new Promise((resolve) => setTimeout(resolve, 1000))
 
   return {
@@ -58,7 +58,7 @@ export async function createAlert(alert: any): Promise<ActionState> {
   }
 }
 
-export async function scheduleReport(report: any): Promise<ActionState> {
+export async function scheduleReport(report: Record<string, unknown>): Promise<ActionState> {
   await new Promise((resolve) => setTimeout(resolve, 1000))
 
   return {

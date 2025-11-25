@@ -105,7 +105,7 @@ export function AlertsTab() {
                                             <Icon className="h-5 w-5 mt-0.5 text-muted-foreground" />
                                             <div className="space-y-2 flex-1">
                                                 <div className="flex items-center gap-2">
-                                                    <Badge variant={config.color as any}>{config.label}</Badge>
+                                                    <Badge variant={config.color as "destructive" | "default" | "secondary"}>{config.label}</Badge>
                                                     <span className="text-sm font-medium">{alert.productName}</span>
                                                 </div>
                                                 <p className="text-sm text-muted-foreground">{alert.storeName}</p>
@@ -136,7 +136,7 @@ export function AlertsTab() {
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="space-y-2 flex-1">
                                             <div className="flex items-center gap-2">
-                                                <Badge variant={config.color as any}>{config.label}</Badge>
+                                                <Badge variant={config.color as "destructive" | "default" | "secondary"}>{config.label}</Badge>
                                                 <span className="text-sm font-medium">{alert.productName}</span>
                                             </div>
                                             <p className="text-sm text-muted-foreground">{alert.storeName}</p>
@@ -198,7 +198,7 @@ export function AlertsTab() {
                                         <div key={alert.id} className="flex items-start justify-between gap-4 rounded-lg border p-3">
                                             <div className="space-y-1 flex-1">
                                                 <div className="flex items-center gap-2">
-                                                    <Badge variant={config.color as any} className="text-xs">
+                                                    <Badge variant={config.color as "destructive" | "default" | "secondary"} className="text-xs">
                                                         {config.label}
                                                     </Badge>
                                                     <span className="text-sm font-medium">{alert.productName}</span>

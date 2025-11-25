@@ -142,7 +142,7 @@ export default function CreateStoreForm() {
                     ? ["horarios"]
                     : ["configuracion"];
 
-        const result = await trigger(fields as any);
+        const result = await trigger(fields as ("nombre" | "categoria" | "descripcion" | "direccion" | "telefono" | "departamento" | "horarios" | "configuracion")[]);
         return result;
     };
 

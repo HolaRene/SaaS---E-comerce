@@ -81,7 +81,7 @@ export function GlobalAlertsPanel({ alerts }: GlobalAlertsPanelProps) {
                                 <div className="flex items-center gap-2">
                                     <Icon className="h-4 w-4" />
                                     <h4 className="text-sm font-semibold">{config.label}</h4>
-                                    <Badge variant={config.color as any} className="ml-auto">
+                                    <Badge variant={config.color as "destructive" | "default" | "secondary"} className="ml-auto">
                                         {severityAlerts.length}
                                     </Badge>
                                 </div>

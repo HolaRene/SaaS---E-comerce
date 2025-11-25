@@ -126,7 +126,7 @@ export function AnalysisTab() {
                             <Label>Tipo de Optimización</Label>
                             <RadioGroup
                                 value={strategy.type}
-                                onValueChange={(value) => setStrategy({ ...strategy, type: value as any })}
+                                onValueChange={(value) => setStrategy({ ...strategy, type: value as "balance" | "minimize_transfers" | "maximize_turnover" })}
                             >
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="balance" id="balance" />
@@ -153,7 +153,7 @@ export function AnalysisTab() {
                             <Label>Prioridad</Label>
                             <RadioGroup
                                 value={strategy.priority}
-                                onValueChange={(value) => setStrategy({ ...strategy, priority: value as any })}
+                                onValueChange={(value) => setStrategy({ ...strategy, priority: value as "cost" | "speed" | "balanced" })}
                             >
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="cost" id="cost" />
