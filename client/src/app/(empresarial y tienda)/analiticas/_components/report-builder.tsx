@@ -60,7 +60,7 @@ export function ReportBuilder() {
 
                     <div className="space-y-2">
                         <Label htmlFor="format">Formato de Exportación</Label>
-                        <Select value={format} onValueChange={(value) => setFormat(value as "excel" | "csv" | "pdf")}>
+                        <Select value={format} onValueChange={(value) => setFormat(value as any)}>
                             <SelectTrigger id="format">
                                 <SelectValue />
                             </SelectTrigger>

@@ -88,10 +88,7 @@ const Page = () => {
         }
 
         setStores((prev) => [...prev, newStore])
-        toast({
-            title: "Tienda creada",
-            description: `${newStore.name} ha sido creada exitosamente`,
-        })
+        toast("Tienda creada")
     }
 
     const handleBulkUpdate = (storeIds: number[], updates: Partial<Store>) => {
