@@ -9,7 +9,7 @@ import { RegionalMetrics } from "./_components/regional-metrics"
 import { Card, CardContent } from "@/components/ui/card"
 import { StoreRanking } from "./_components/store-ranking"
 import { CustomerSegmentation } from "./_components/customer-segmentation"
-// import { ReportBuilder } from "./_components/report-builder"
+import { ReportBuilder } from "./_components/report-builder"
 
 function SalesTabSkeleton() {
     return (
@@ -89,7 +89,7 @@ const AnalyticsPage = () => {
                 </TabsContent>
                 {/* reportes */}
                 <TabsContent value="reports" className="space-y-6">
-                    {/* <ReportBuilder /> */}
+                    <ReportBuilder />
                     don
                 </TabsContent>
             </Tabs>
