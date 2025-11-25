@@ -13,8 +13,11 @@ import PuntoVenta from "./_components/PuntoVenta"
 import PedidosActivos from "./_components/PedidosActivos"
 import HistorialVentas from "./_components/HistorialVentas"
 import FacturacionElectronica from "./_components/FacturacionElectronica"
+import { Id } from "../../../../../../convex/_generated/dataModel"
 
-export default function VentasPage() {
+export default async function VentasPage({ params }: { params: { idTienda: Id<"tiendas"> } }) {
+
+    const idTienda = await params.idTienda
 
     return (
         <div className="min-h-screen  p-4 md:p-8">
@@ -46,7 +49,7 @@ export default function VentasPage() {
 
                     {/* Punto de Venta */}
                     <TabsContent value="pos" className="">
-                        <PuntoVenta />
+                        <PuntoVenta idTienda={idTienda} />
                     </TabsContent>
 
                     {/* Pedidos Activos */}
@@ -56,7 +59,7 @@ export default function VentasPage() {
 
                     {/* Historial de Ventas */}
                     <TabsContent value="historial" className="">
-                        <HistorialVentas />
+                        <HistorialVentas idTienda={idTienda} />
                     </TabsContent>
 
                     {/* Facturación Electrónica */}

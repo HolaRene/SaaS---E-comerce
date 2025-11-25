@@ -18,26 +18,34 @@ import {
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { cajActual, productos } from "@/lib/tiendas-datos"
-import { Cliente, NuevoClienteForm, Producto, ProductoVenta, UsuarioCajero } from "../../../../../types/ventas-tipos"
-import { clientesData } from "@/data/clientes-data"
+import { Id, Doc } from "../../../../../../../convex/_generated/dataModel"
+import { useMutation, useQuery } from "convex/react"
+import { api } from "../../../../../../../convex/_generated/api"
+import { toast } from "sonner"
 
+// Tipo local para el carrito de compras
+interface ProductoCarrito {
+    id: Id<"productos">
+    nombre: string
+    cantidad: number
+    precioUnitario: number
+    stockDisponible: number
+    imagen?: string
+}
 
-
-
-const PuntoVenta = () => {
+const PuntoVenta = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
     // Estados principales
-    const [productosSeleccionados, setProductosSeleccionados] = useState<ProductoVenta[]>([])
+    const [productosSeleccionados, setProductosSeleccionados] = useState<ProductoCarrito[]>([])
     const [metodoPago, setMetodoPago] = useState("efectivo")
     const [mostrarTicket, setMostrarTicket] = useState(false)
     const [busquedaProducto, setBusquedaProducto] = useState("")
-    const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null)
+    const [clienteSeleccionado, setClienteSeleccionado] = useState<Doc<"clientes"> | null>(null)
     const [mostrarSelectorCliente, setMostrarSelectorCliente] = useState(false)
     const [mostrarCrearCliente, setMostrarCrearCliente] = useState(false)
     const [busquedaCliente, setBusquedaCliente] = useState("")
 
     // Estado para nuevo cliente
-    const [nuevoCliente, setNuevoCliente] = useState<NuevoClienteForm>({
+    const [nuevoCliente, setNuevoCliente] = useState({
         nombre: "",
         email: "",
         telefono: "",
@@ -45,57 +53,67 @@ const PuntoVenta = () => {
         notas: ""
     })
 
-    // Datos simulados - reemplaza con tus datos reales
-    const [cajeroActual] = useState<UsuarioCajero>(cajActual)
+    // Datos simulados para cajero (esto podría venir del auth)
+    const [cajeroActual] = useState({ nombre: "Cajero Actual", rol: "Vendedor" })
 
-    // Estado para clientes (ahora es mutable para poder agregar nuevos)
-    const [clientes, setClientes] = useState<Cliente[]>(clientesData)
+    const tienda = useQuery(api.tienda.getTiendaById, { tiendaId: idTienda })
+    // Obtener datos reales de Convex
+    const productosDB = useQuery(api.productos.getProductosByTienda, { tiendaId: idTienda })
+    const clientesDB = useQuery(api.clientes.getClientesByTienda, { tiendaId: idTienda })
+    // Mutations
+    const crearVentaMutation = useMutation(api.ventas.crearVenta)
+    const crearClienteMutation = useMutation(api.clientes.crearCliente)
 
-    // Filtrar productos basado en la búsqueda
-    const productosFiltrados = productos.filter(producto =>
+
+    /// Filtrar productos basado en la búsqueda (usando datos de Convex)
+    const productosFiltrados = (productosDB || []).filter(producto =>
         producto.nombre.toLowerCase().includes(busquedaProducto.toLowerCase()) ||
-        producto.categoria.some(cat => cat.toLowerCase().includes(busquedaProducto.toLowerCase()))
+        producto.categoria.toLowerCase().includes(busquedaProducto.toLowerCase())
     ).slice(0, 5)
 
-    // Filtrar clientes basado en la búsqueda
-    const clientesFiltrados = clientes.filter(cliente =>
+    // Filtrar clientes basado en la búsqueda (usando datos de Convex)
+    const clientesFiltrados = (clientesDB || []).filter(cliente =>
         cliente.nombre.toLowerCase().includes(busquedaCliente.toLowerCase()) ||
         cliente.telefono?.includes(busquedaCliente) ||
         cliente.email?.toLowerCase().includes(busquedaCliente.toLowerCase())
     )
 
     // Agregar producto a la venta
-    const agregarProducto = (producto: Producto) => {
-        const existe = productosSeleccionados.find(p => p.id === producto.id)
+    const agregarProducto = (producto: Doc<"productos">) => {
+        const existe = productosSeleccionados.find(p => p.id === producto._id)
 
         if (existe) {
-            if (existe.cantidad < producto.stock) {
+            if (existe.cantidad < producto.cantidad) {
                 setProductosSeleccionados(prev =>
                     prev.map(p =>
-                        p.id === producto.id ? { ...p, cantidad: p.cantidad + 1 } : p
+                        p.id === producto._id ? { ...p, cantidad: p.cantidad + 1 } : p
                     )
                 )
+            } else {
+                toast.error("No hay suficiente stock")
             }
         } else {
-            if (producto.stock > 0) {
+            if (producto.cantidad > 0) {
                 setProductosSeleccionados(prev => [
                     ...prev,
                     {
-                        id: producto.id,
+                        id: producto._id,
                         nombre: producto.nombre,
                         cantidad: 1,
                         precioUnitario: producto.precio,
-                        stockDisponible: producto.stock,
-                        imagen: producto.imagen[0]
+                        stockDisponible: producto.cantidad,
+                        imagen: producto.imagenes?.[0]
                     }
                 ])
+            } else {
+                toast.error("Producto sin stock")
             }
         }
         setBusquedaProducto("")
     }
 
     // Actualizar cantidad de producto
-    const actualizarCantidad = (productoId: string, nuevaCantidad: number) => {
+    const actualizarCantidad = (productoId: Id<"productos">, nuevaCantidad: number) => {
         if (nuevaCantidad < 1) return
 
         const producto = productosSeleccionados.find(p => p.id === productoId)
@@ -109,41 +127,43 @@ const PuntoVenta = () => {
     }
 
     // Remover producto de la venta
-    const removerProducto = (productoId: string) => {
+    const removerProducto = (productoId: Id<"productos">) => {
         setProductosSeleccionados(prev =>
             prev.filter(p => p.id !== productoId)
         )
     }
 
     // Crear nuevo cliente
-    const crearNuevoCliente = () => {
+    const crearNuevoCliente = async () => {
         if (!nuevoCliente.nombre.trim()) {
-            alert("El nombre del cliente es obligatorio")
+            toast.error("El nombre del cliente es obligatorio")
             return
         }
 
-        const cliente: Cliente = {
-            id: Date.now().toString(), // ID temporal
-            nombre: nuevoCliente.nombre,
-            email: nuevoCliente.email || undefined,
-            telefono: nuevoCliente.telefono || undefined,
-            direccion: nuevoCliente.direccion || undefined,
-            notas: nuevoCliente.notas || undefined,
-            fechaRegistro: new Date().toLocaleDateString('es-ES')
+        try {
+            const clienteId = await crearClienteMutation({
+                tiendaId: idTienda,
+                nombre: nuevoCliente.nombre,
+                email: nuevoCliente.email || undefined,
+                telefono: nuevoCliente.telefono || undefined,
+                direccion: nuevoCliente.direccion || undefined,
+                notas: nuevoCliente.notas || undefined,
+            })
+
+            toast.success("Cliente creado exitosamente")
+            setMostrarCrearCliente(false)
+
+            setNuevoCliente({
+                nombre: "",
+                email: "",
+                telefono: "",
+                direccion: "",
+                notas: ""
+            })
+        } catch (error) {
+            toast.error("Error al crear cliente")
+            console.error(error)
         }
-
-        setClientes(prev => [cliente, ...prev])
-        setClienteSeleccionado(cliente)
-        setMostrarCrearCliente(false)
-
-        // Resetear formulario
-        setNuevoCliente({
-            nombre: "",
-            email: "",
-            telefono: "",
-            direccion: "",
-            notas: ""
-        })
     }
 
     // Cálculos
@@ -159,21 +179,42 @@ const PuntoVenta = () => {
         return calcularSubtotal() + calcularImpuesto()
     }
 
-    const registrarVenta = () => {
+    const registrarVenta = async () => {
         if (productosSeleccionados.length === 0) {
-            alert("Agrega al menos un producto para registrar la venta")
+            toast.error("Agrega al menos un producto para registrar la venta")
             return
         }
-        setMostrarTicket(true)
 
-        // Aquí iría la lógica para guardar la venta en tu base de datos
-        console.log("Venta registrada:", {
-            productos: productosSeleccionados,
-            cliente: clienteSeleccionado,
-            metodoPago,
-            total: calcularTotal(),
-            cajero: cajeroActual
-        })
+        try {
+            await crearVentaMutation({
+                tiendaId: idTienda,
+                clienteId: clienteSeleccionado?._id,
+                productos: productosSeleccionados.map(p => ({
+                    productoId: p.id,
+                    cantidad: p.cantidad,
+                    precioUnitario: p.precioUnitario,
+                    nombreProducto: p.nombre,
+                })),
+                metodoPago: metodoPago as any,
+                subtotal: calcularSubtotal(),
+                impuesto: calcularImpuesto(),
+                total: calcularTotal(),
+            })
+
+            toast.success("Venta registrada exitosamente")
+            setMostrarTicket(true)
+
+            // Limpiar formulario después de unos segundos
+            setTimeout(() => {
+                setProductosSeleccionados([])
+                setClienteSeleccionado(null)
+                setBusquedaProducto("")
+                setMostrarTicket(false)
+            }, 3000)
+        } catch (error) {
+            toast.error("Error al registrar venta")
+            console.error(error)
+        }
     }
 
     // Obtener fecha actual formateada
@@ -241,14 +282,14 @@ const PuntoVenta = () => {
                                     <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-20 mt-1 max-h-60 overflow-auto">
                                         {productosFiltrados.map((producto) => (
                                             <div
-                                                key={producto.id}
+                                                key={producto._id}
                                                 className="flex items-center p-3 hover:bg-muted cursor-pointer border-b last:border-b-0"
                                                 onClick={() => agregarProducto(producto)}
                                             >
                                                 <div className="w-10 h-10 rounded bg-muted overflow-hidden mr-3 flex-shrink-0">
-                                                    {producto.imagen && producto.imagen.length > 0 ? (
+                                                    {producto.imagenes && producto.imagenes.length > 0 ? (
                                                         <img
-                                                            src={producto.imagen[0]}
+                                                            src={producto.imagenes[0]}
                                                             alt={producto.nombre}
                                                             className="w-full h-full object-cover"
                                                         />
@@ -265,13 +306,13 @@ const PuntoVenta = () => {
                                                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                         <span>C${producto.precio.toFixed(2)}</span>
                                                         <span>•</span>
-                                                        <span>Stock: {producto.stock}</span>
+                                                        <span>Stock: {producto.cantidad}</span>
                                                         <span>•</span>
-                                                        <span className={`text-xs ${producto.estado === 'disponible' && producto.stock > 0
+                                                        <span className={`text-xs ${producto.estado === 'activo' && producto.cantidad > 0
                                                             ? 'text-green-600'
                                                             : 'text-red-600'
                                                             }`}>
-                                                            {producto.estado === 'disponible' && producto.stock > 0
+                                                            {producto.estado === 'activo' && producto.cantidad > 0
                                                                 ? 'Disponible'
                                                                 : 'No disponible'}
                                                         </span>
@@ -279,7 +320,7 @@ const PuntoVenta = () => {
                                                 </div>
                                                 <Button
                                                     size="sm"
-                                                    disabled={producto.stock === 0 || !producto.inStock}
+                                                    disabled={producto.estado !== 'activo' || producto.cantidad === 0}
                                                     onClick={(e) => {
                                                         e.stopPropagation()
                                                         agregarProducto(producto)
@@ -524,8 +565,8 @@ const PuntoVenta = () => {
                         ) : (
                             clientesFiltrados.map((cliente) => (
                                 <div
-                                    key={cliente.id}
-                                    className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted ${clienteSeleccionado?.id === cliente.id ? 'bg-blue-50 border-blue-200' : ''
+                                    key={cliente._id}
+                                    className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted ${clienteSeleccionado?._id === cliente._id ? 'bg-blue-50 border-blue-200' : ''
                                         }`}
                                     onClick={() => {
                                         setClienteSeleccionado(cliente)
@@ -549,7 +590,7 @@ const PuntoVenta = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    {clienteSeleccionado?.id === cliente.id && (
+                                    {clienteSeleccionado?._id === cliente._id && (
                                         <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                                             Seleccionado
                                         </Badge>
@@ -569,7 +610,7 @@ const PuntoVenta = () => {
                         </Button>
                         <Button
                             onClick={() => {
-                                setClienteSeleccionado(clientes[0]) // Cliente General
+                                setClienteSeleccionado(null) // Cliente General (null)
                                 setMostrarSelectorCliente(false)
                                 setBusquedaCliente("")
                             }}
@@ -698,7 +739,7 @@ const PuntoVenta = () => {
                                 <span className="text-muted-foreground">Cajero:</span>
                                 <span>{cajeroActual.nombre}</span>
                             </div>
-                            {clienteSeleccionado && clienteSeleccionado.id !== "1" && (
+                            {clienteSeleccionado && (
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Cliente:</span>
                                     <span>{clienteSeleccionado.nombre}</span>

@@ -65,6 +65,12 @@ export default function Perfil({ id }: PerfilProps) {
         id ? { tiendaId: id } : "skip"
     );
 
+    const productosTienda = useQuery(
+        api.productos.getProductosByTienda,
+        id ? { tiendaId: id } : "skip"
+    );
+
+
     const { user: clerkUser } = useUser()
 
     // Obtener usuario Convex
@@ -150,26 +156,30 @@ export default function Perfil({ id }: PerfilProps) {
                             </CardHeader>
                             <CardContent>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    {productos.length > 0 ? (
-                                        productos.map((src) => (
-                                            <div key={src.id} className="group cursor-pointer">
-                                                <Link href={'/mi-tienda/productos'}>
-                                                    <Image
-                                                        src={src.imagen[0]}
-                                                        alt={src.nombre}
-                                                        className="rounded-lg object-cover aspect-square transition-transform group-hover:scale-105"
-                                                        width={200}
-                                                        height={200}
-                                                    />
-                                                </Link>
-                                                <h3 className="font-bold mt-2 text-sm">{src.nombre}</h3>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p className="col-span-full text-center text-muted-foreground py-8">
-                                            No hay productos aún
-                                        </p>
-                                    )}
+                                    {
+                                        productosTienda && (
+                                            productosTienda.length > 0 ? (
+                                                productosTienda.map((src) => (
+                                                    <div key={src._id} className="group cursor-pointer">
+                                                        <Link href={'/mi-tienda/productos'}>
+                                                            <Image
+                                                                src={src.imagenes[0]}
+                                                                alt={src.nombre}
+                                                                className="rounded-lg object-cover aspect-square transition-transform group-hover:scale-105"
+                                                                width={200}
+                                                                height={200}
+                                                            />
+                                                        </Link>
+                                                        <h3 className="font-bold mt-2 text-sm">{src.nombre}</h3>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="col-span-full text-center text-muted-foreground py-8">
+                                                    No hay productos aún
+                                                </p>
+                                            )
+                                        )
+                                    }
                                 </div>
                             </CardContent>
                         </Card>

@@ -148,7 +148,7 @@ productos: defineTable({
     codigoBarras: v.optional(v.string()),
     sku: v.optional(v.string()),
 
-    autorId: v.id("usuarios"),
+    autorId: v.array(v.id("usuarios")),
     ultimaActualizacion: v.string(),
   })
     .index("by_tienda", ["tiendaId"])
@@ -200,5 +200,149 @@ resenasProductos: defineTable({
 .index("by_producto", ["productoId"])
 .index("by_cliente_producto", ["clienteId", "productoId"]) // Una reseña por cliente-producto
 .index("by_fecha", ["fecha"])
-.index("by_calificacion", ["calificacion"]) // Para filtros por rating
+.index("by_calificacion", ["calificacion"]), // Para filtros por rating
+historialProductos: defineTable({
+    productoId: v.id("productos"),
+    tiendaId: v.id("tiendas"),
+    usuarioId: v.id("usuarios"),
+    
+    // Tipo de cambio
+    tipoEvento: v.union(
+      v.literal("CREADO"),
+      v.literal("ACTUALIZADO"),
+      v.literal("ELIMINADO"),
+      v.literal("PRECIO_CAMBIADO"),
+      v.literal("STOCK_AJUSTADO")
+    ),
+    
+    // Qué cambió
+    camposModificados: v.array(v.string()), // ["precio", "nombre"]
+    
+    // Valores anteriores y nuevos
+    valoresAnteriores: v.optional(v.any()),
+    valoresNuevos: v.optional(v.any()),
+    
+    // Metadata
+    descripcion: v.string(), // "Precio actualizado de C$10 a C$15"
+    fecha: v.string(), // ISO timestamp
+  })
+    .index("by_producto", ["productoId"])
+    .index("by_tienda", ["tiendaId"])
+    .index("by_fecha", ["fecha"]),
+
+  // Movimientos de Inventario
+    movimientosInventario: defineTable({
+    productoId: v.id("productos"),
+    tiendaId: v.id("tiendas"),
+    usuarioId: v.id("usuarios"),
+    
+    // Tipo de movimiento
+    tipo: v.union(
+      v.literal("ENTRADA"),    // Compra, devolución de cliente
+      v.literal("SALIDA"),      // Venta, devolución a proveedor
+      v.literal("AJUSTE"),      // Corrección manual, merma, robo
+      v.literal("TRANSFERENCIA") // Entre sucursales (futuro)
+    ),
+    
+    // Cantidad (positiva para entrada, negativa para salida)
+    cantidad: v.number(),
+    
+    // Stock antes y después
+    stockAnterior: v.number(),
+    stockNuevo: v.number(),
+    
+    // Razón del movimiento
+    razon: v.string(), // "Compra a proveedor", "Venta", "Producto vencido"
+    notas: v.optional(v.string()),
+    
+    // Metadata
+    fecha: v.string(),
+    
+    // Opcional: Relación con venta/compra
+    ventaId: v.optional(v.id("ventas")),
+    compraId: v.optional(v.id("compras")),
+  })
+    .index("by_producto", ["productoId"])
+    .index("by_tienda", ["tiendaId"])
+    .index("by_tipo", ["tipo"])
+    .index("by_fecha", ["fecha"]),
+    // Etiquetas
+  etiquetas: defineTable({
+    nombre: v.string(),           // "Ofertas", "Nuevo", "Popular"
+    tiendaId: v.id("tiendas"),   // A qué tienda pertenece
+    color: v.optional(v.string()), // "#FF5733" para UI
+    icono: v.optional(v.string()), // "🔥", "⭐", "🆕"
+    descripcion: v.optional(v.string()),
+    activa: v.boolean(),          // Si está activa o no
+})
+.index("by_tienda", ["tiendaId"])
+.index("by_nombre", ["tiendaId", "nombre"]), // Evitar duplicados
+
+// Producto-Etiquetas
+productoEtiquetas: defineTable({
+    productoId: v.id("productos"),
+    etiquetaId: v.id("etiquetas"),
+    tiendaId: v.id("tiendas"),     // Para filtrar por tienda
+    fechaAsignacion: v.string(),   // Cuándo se asignó
+})
+.index("by_producto", ["productoId"])
+.index("by_etiqueta", ["etiquetaId"])
+.index("by_tienda", ["tiendaId"])
+.index("by_producto_etiqueta", ["productoId", "etiquetaId"]), // Evitar duplicados
+
+  // Clientes
+  clientes: defineTable({
+    tiendaId: v.id("tiendas"),
+    nombre: v.string(),
+    email: v.optional(v.string()),
+    telefono: v.optional(v.string()),
+    direccion: v.optional(v.string()),
+    notas: v.optional(v.string()),
+    fechaRegistro: v.string(), // ISO string
+    totalCompras: v.number(), // Monto total de compras
+    cantidadCompras: v.number(), // Número de compras
+    ultimaCompra: v.optional(v.string()), // Fecha última compra
+  })
+  .index("by_tienda", ["tiendaId"])
+  .index("by_telefono", ["tiendaId", "telefono"])
+  .index("by_email", ["tiendaId", "email"]),
+
+  // Ventas
+  ventas: defineTable({
+    tiendaId: v.id("tiendas"),
+    clienteId: v.optional(v.id("clientes")), // Opcional para ventas sin cliente
+    usuarioId: v.id("usuarios"), // Cajero que realizó la venta
+    fecha: v.string(), // ISO string
+    subtotal: v.number(),
+    impuesto: v.number(),
+    total: v.number(),
+    metodoPago: v.union(
+      v.literal("efectivo"),
+      v.literal("tarjeta"),
+      v.literal("transferencia"),
+      v.literal("fiado")
+    ),
+    estado: v.union(
+      v.literal("completada"),
+      v.literal("cancelada"),
+      v.literal("pendiente")
+    ),
+    notas: v.optional(v.string()),
+  })
+  .index("by_tienda", ["tiendaId"])
+  .index("by_cliente", ["clienteId"])
+  .index("by_fecha", ["tiendaId", "fecha"])
+  .index("by_usuario", ["usuarioId"]),
+
+  // Detalles de Venta (items de cada venta)
+  detallesVenta: defineTable({
+    ventaId: v.id("ventas"),
+    productoId: v.id("productos"),
+    cantidad: v.number(),
+    precioUnitario: v.number(),
+    subtotal: v.number(), // cantidad * precioUnitario
+    nombreProducto: v.string(), // Guardado para historial
+  })
+  .index("by_venta", ["ventaId"])
+  .index("by_producto", ["productoId"]),
 });

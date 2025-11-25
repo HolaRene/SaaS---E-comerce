@@ -11,6 +11,7 @@ import {
     PackageOpen,
     StoreIcon,
     ToolCase,
+    BadgeInfo,
 } from "lucide-react";
 
 
@@ -47,45 +48,47 @@ import { cn } from "@/lib/utils";
 
 
 
-const menuItems = [
+interface AppSideBarProps {
+    idTienda?: string;
+}
 
-    {
-        title: "Panel de control",
-        url: "/",
-        icon: Home,
-        exact: true // Solo activo cuando es exactamente /
-    },
-    {
-        title: "Productos",
-        url: "/mi-tienda/productos",
-        icon: PackageOpen,
-    },
-    {
-        title: "Ventas/Pedidos",
-        url: "/mi-tienda/ventas",
-        icon: ShoppingCart,
-    },
-    {
-        title: "Clientes",
-        url: "/mi-tienda/clientes",
-        icon: Users,
-    },
-    {
-        title: "Reportes",
-        url: "/mi-tienda/reportes",
-        icon: BarChart,
-    },
-    {
-        title: "Herramientas",
-        url: "/mi-tienda/herramientas",
-        icon: ToolCase,
-    },
-];
-
-
-
-const AppSideBar = () => {
+const AppSideBar = ({ idTienda }: AppSideBarProps) => {
     const pathname = usePathname()
+
+    // Construir las rutas dinámicamente con el idTienda
+    const menuItems = [
+        {
+            title: "Perfil",
+            url: idTienda ? `/mi-tienda/${idTienda}` : "/",
+            icon: BadgeInfo,
+            exact: true
+        },
+        {
+            title: "Productos",
+            url: idTienda ? `/mi-tienda/${idTienda}/productos` : "/mi-tienda/productos",
+            icon: PackageOpen,
+        },
+        {
+            title: "Ventas/Pedidos",
+            url: idTienda ? `/mi-tienda/${idTienda}/ventas` : "/mi-tienda/ventas",
+            icon: ShoppingCart,
+        },
+        {
+            title: "Clientes",
+            url: idTienda ? `/mi-tienda/${idTienda}/clientes` : "/mi-tienda/clientes",
+            icon: Users,
+        },
+        {
+            title: "Reportes",
+            url: idTienda ? `/mi-tienda/${idTienda}/reportes` : "/mi-tienda/reportes",
+            icon: BarChart,
+        },
+        {
+            title: "Herramientas",
+            url: idTienda ? `/mi-tienda/${idTienda}/herramientas` : "/mi-tienda/herramientas",
+            icon: ToolCase,
+        },
+    ];
 
     // Función corregida para detectar el item activo
     const isActive = (url: string, exact: boolean = false) => {

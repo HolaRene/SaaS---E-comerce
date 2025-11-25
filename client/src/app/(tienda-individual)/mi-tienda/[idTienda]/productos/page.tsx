@@ -8,9 +8,12 @@ import { Boxes, Package, Tags } from "lucide-react";
 import CatalogoCompleto from "./_components/CatalogoCompleto";
 import ControlInventario from "./_components/ControlInventario";
 import CategoriasEtiquetas from "./_components/CategoriasEtiquetas";
+import { Id } from "../../../../../../convex/_generated/dataModel";
 
 
-const ProductosPage = () => {
+
+const ProductosPage = async ({ params }: { params: { idTienda: Id<"tiendas"> } }) => {
+    const idTienda = (await params).idTienda;
     return (
         <div className='flex flex-col gap-4'>
             {/* Header */}
@@ -32,17 +35,17 @@ const ProductosPage = () => {
 
                 {/* 1. Catálogo Completo */}
                 <TabsContent value="catalogo">
-                    <CatalogoCompleto />
+                    <CatalogoCompleto idTienda={idTienda} />
                 </TabsContent>
 
                 {/* 2. Control de Inventario */}
                 <TabsContent value="inventario" >
-                    <ControlInventario />
+                    <ControlInventario idTienda={idTienda} />
                 </TabsContent>
 
                 {/* 3. Categorías y Etiquetas */}
                 <TabsContent value="categorias" >
-                    <CategoriasEtiquetas />
+                    <CategoriasEtiquetas idTienda={idTienda} />
                 </TabsContent>
 
 

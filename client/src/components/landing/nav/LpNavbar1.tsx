@@ -9,7 +9,7 @@ import { Logo } from "@/components/logo";
 const MENU_ITEMS = [
     { label: "Comercios", href: "/" },
     { label: "Productos", href: "/product" },
-    { label: "Mi tienda", href: "/mi-tienda" },
+    { label: "Mi tienda", href: "/mi-tienda/productos" },
     // { label: "¿Cómo funciona?", href: "https://images.pexels.com/photos/12941772/pexels-photo-12941772.jpeg" },
     { label: "Empresa", href: "/empresarial" },
     { label: "Precios", href: "#pricing" },

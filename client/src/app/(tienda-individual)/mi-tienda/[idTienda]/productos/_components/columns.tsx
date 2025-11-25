@@ -1,33 +1,28 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-
 import * as React from "react";
-
-
-
-export type Catalogo = {
-    id: number;
-    nombre: string;
-    img: string;
-    categoria: string;
-    precio: number;
-    stock: number;
-    estado: string;
-};
-
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Edit, Eye, MoreHorizontal, Trash } from "lucide-react";
-import { Producto } from "@/types/tipado_comercio";
+import { Doc } from "../../../../../../../convex/_generated/dataModel";
 
-export const columns: ColumnDef<Producto>[] = [
+// Tipo de producto de Convex
+type ProductoConvex = Doc<"productos">;
+
+export const columns: ColumnDef<ProductoConvex>[] = [
     {
-        accessorKey: "img",
+        accessorKey: "imagenes",
         header: " Imagen",
-        cell: ({ row }) => <Image src={row.original.imagen[0]} alt={row.original.nombre} width={50} height={50} className="rounded-md" />,
+        cell: ({ row }) => {
+            const imagenes = row.original.imagenes;
+            const imagenUrl = imagenes && imagenes.length > 0
+                ? imagenes[0]
+                : 'https://images.pexels.com/photos/1695052/pexels-photo-1695052.jpeg';
+            return <Image src={imagenUrl} alt={row.original.nombre} width={50} height={50} className="rounded-md" />
+        },
         filterFn: "includesString",
     },
     {
@@ -49,14 +44,18 @@ export const columns: ColumnDef<Producto>[] = [
         cell: ({ row }) => <p className="font-medium">C${row.original.precio.toFixed(2)}</p>
     },
     {
-        accessorKey: "stock",
-        header: "Estock",
-        cell: ({ row }) => <p className="font-medium">{row.original.stock}</p>
+        accessorKey: "cantidad",
+        header: "Stock",
+        cell: ({ row }) => <p className="font-medium">{row.original.cantidad}</p>
     },
     {
         accessorKey: "estado",
         header: "Estado",
-        cell: ({ row }) => <Badge variant={row.original.estado === 'Disponible' ? 'default' : row.original.estado === 'Agotado' ? 'destructive' : 'secondary'}>{row.original.estado}</Badge>
+        cell: ({ row }) => {
+            const estado = row.original.estado;
+            const variant = estado === 'activo' ? 'default' : estado === 'agotado' ? 'destructive' : 'secondary';
+            return <Badge variant={variant}>{estado}</Badge>
+        }
 
     },
     {
@@ -75,5 +74,3 @@ export const columns: ColumnDef<Producto>[] = [
     }
 
 ];
-
-

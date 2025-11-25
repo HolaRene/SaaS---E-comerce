@@ -28,10 +28,12 @@ const playwrite = Aladin({
   display: 'swap',
 })
 
-export default async function RootLayout({
+export default async function TiendaLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params: { idTienda: string };
 }>) {
 
   // estado = abierto o cerrado
@@ -40,7 +42,7 @@ export default async function RootLayout({
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSideBar />
+      <AppSideBar idTienda={params.idTienda} />
       <main className={`w-full ${playwrite.className}`}>
         <Navegacion />
         <div className="px-2">{children}</div>
