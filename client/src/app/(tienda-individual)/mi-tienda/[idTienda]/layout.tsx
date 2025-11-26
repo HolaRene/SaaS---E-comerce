@@ -11,6 +11,7 @@ import "./mi-tienda.d.css"
 import { ToastContainer } from 'react-toastify';
 
 import "leaflet/dist/leaflet.css";
+import { ThemeProvider } from "next-themes";
 
 
 export const metadata: Metadata = {
@@ -41,13 +42,19 @@ export default async function TiendaLayout({
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSideBar idTienda={params.idTienda} />
-      <main className={`w-full ${playwrite.className}`}>
-        <Navegacion />
-        <div className="px-2">{children}</div>
-      </main>
-      <ToastContainer />
-    </SidebarProvider>
-  );
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <SidebarProvider defaultOpen={defaultOpen}>
+        <AppSideBar idTienda={params.idTienda} />
+        <main className={`w-full ${playwrite.className}`}>
+          <Navegacion />
+          <div className="px-2">{children}</div>
+        </main>
+        <ToastContainer />
+      </SidebarProvider>
+    </ThemeProvider>);
 }

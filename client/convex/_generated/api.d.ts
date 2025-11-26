@@ -9,13 +9,14 @@
  */
 
 import type * as clientes from "../clientes.js";
+import type * as creditos from "../creditos.js";
 import type * as etiquetas from "../etiquetas.js";
 import type * as historial from "../historial.js";
 import type * as http from "../http.js";
 import type * as movimientos from "../movimientos.js";
 import type * as productoEtiquetas from "../productoEtiquetas.js";
 import type * as productos from "../productos.js";
-import type * as tarea from "../tarea.js";
+import type * as recordatorios from "../recordatorios.js";
 import type * as tienda from "../tienda.js";
 import type * as users from "../users.js";
 import type * as ventas from "../ventas.js";
@@ -28,13 +29,14 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   clientes: typeof clientes;
+  creditos: typeof creditos;
   etiquetas: typeof etiquetas;
   historial: typeof historial;
   http: typeof http;
   movimientos: typeof movimientos;
   productoEtiquetas: typeof productoEtiquetas;
   productos: typeof productos;
-  tarea: typeof tarea;
+  recordatorios: typeof recordatorios;
   tienda: typeof tienda;
   users: typeof users;
   ventas: typeof ventas;

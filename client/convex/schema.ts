@@ -298,6 +298,11 @@ productoEtiquetas: defineTable({
     telefono: v.optional(v.string()),
     direccion: v.optional(v.string()),
     notas: v.optional(v.string()),
+    segmento: v.optional(v.union(
+      v.literal("frecuente"),
+      v.literal("ocasional"),
+      v.literal("mayorista")
+    )),
     fechaRegistro: v.string(), // ISO string
     totalCompras: v.number(), // Monto total de compras
     cantidadCompras: v.number(), // Número de compras
@@ -345,4 +350,82 @@ productoEtiquetas: defineTable({
   })
   .index("by_venta", ["ventaId"])
   .index("by_producto", ["productoId"]),
+
+  // Recordatorios de cobro
+  recordatoriosCobro: defineTable({
+    ventaId: v.id("ventas"),
+    fechaRecordatorio: v.string(), // ISO string
+    estado: v.union(
+      v.literal("pendiente"),
+      v.literal("completado"),
+      v.literal("cancelado")
+    ),
+    notas: v.optional(v.string()),
+  })
+  .index("by_venta", ["ventaId"]),
+// Creditos
+  creditos: defineTable({
+    tiendaId: v.id("tiendas"),
+    clienteId: v.id("clientes"),
+    limiteCredito: v.number(),
+    saldoActual: v.number(),
+    fechaInicio: v.string(),
+    fechaVencimiento: v.optional(v.string()),
+    estado: v.union(
+      v.literal("activo"),
+      v.literal("pagado"),
+      v.literal("vencido"),
+      v.literal("cancelado")
+    ),
+    notas: v.optional(v.string()),
+})
+.index("by_tienda", ["tiendaId"])
+.index("by_cliente", ["clienteId"])
+.index("by_estado", ["estado"])
+.index("by_vencimiento", ["fechaVencimiento"]),
+// Pagos de Creditos
+  pagosCredito: defineTable({
+    creditoId: v.id("creditos"),
+    clienteId: v.id("clientes"),
+    tiendaId: v.id("tiendas"),
+    monto: v.number(),
+    fecha: v.string(),
+    metodoPago: v.union(
+    v.literal("efectivo"),
+    v.literal("tarjeta"),
+    v.literal("transferencia")
+  ),
+  notas: v.optional(v.string()),
+  registradoPor: v.id("usuarios"),
+})
+.index("by_credito", ["creditoId"])
+.index("by_cliente", ["clienteId"])
+.index("by_tienda", ["tiendaId"])
+.index("by_fecha", ["fecha", "tiendaId"]),
+// Recordatorios de cobro
+recordatorios: defineTable({
+  tiendaId: v.id("tiendas"),
+  clienteId: v.id("clientes"),
+  creditoId: v.optional(v.id("creditos")),
+  tipo: v.union(
+    v.literal("cobro"),
+    v.literal("recordatorio"),
+    v.literal("vencimiento")
+  ),
+  fechaProgramada: v.string(),
+  monto: v.number(),
+  mensaje: v.optional(v.string()),
+  estado: v.union(
+    v.literal("pendiente"),
+    v.literal("enviado"),
+    v.literal("completado"),
+    v.literal("cancelado")
+  ),
+  fechaEnvio: v.optional(v.string()),
+  creadoPor: v.id("usuarios"),
+})
+.index("by_tienda", ["tiendaId"])
+.index("by_cliente", ["clienteId"])
+.index("by_fecha_programada", ["fechaProgramada", "tiendaId"])
+.index("by_estado", ["estado", "tiendaId"]),
 });

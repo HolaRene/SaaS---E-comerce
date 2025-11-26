@@ -23,6 +23,7 @@ import {
 } from "recharts"
 import { ArrowDownRight, ArrowUpRight, FileDown, TrendingUp } from "lucide-react"
 import { Label } from "@/components/ui/label"
+import { Id } from "../../../../../../../convex/_generated/dataModel"
 
 // Distribución de ventas por categoría para gráfico circular
 const ventasPorCategoria = [
@@ -50,14 +51,10 @@ const productosMasVendidos = [
     { producto: "Frijoles 1kg", ventas: 4900, participacion: 7 },
 ]
 
-const VentasRentabilidad = () => {
+const VentasRentabilidad = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
 
     const [periodo, setPeriodo] = useState("mes")
     const [comercio, setComercio] = useState("todos")
-
-    // ============================================
-    // CÁLCULOS DINÁMICOS
-    // ============================================
 
     const ventasTotales = 70500
     const costosEstimados = 45200

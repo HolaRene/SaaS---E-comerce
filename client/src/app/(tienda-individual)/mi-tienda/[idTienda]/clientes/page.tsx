@@ -3,8 +3,10 @@ import { Bell, CreditCard, Users } from "lucide-react"
 import BaseClientes from "./_components/BaseClientes"
 import FiadosActivos from "./_components/FiadosActivos"
 import RecordatoriosCobros from "./_components/RecordatoriosCobros"
+import { Id } from "../../../../../../convex/_generated/dataModel"
 
-const VentaPage = () => {
+const CleintesPage = ({ params }: { params: { idTienda: Id<"tiendas"> } }) => {
+    const idTienda = params.idTienda
     return (
         <div className="min-h-screen p-4 md:p-5 space-y-3">
             {/* Header */}
@@ -32,19 +34,19 @@ const VentaPage = () => {
                 </TabsList>
                 {/* Tab 1: Base de Clientes */}
                 <TabsContent value="base">
-                    <BaseClientes />
+                    <BaseClientes idTienda={idTienda} />
                 </TabsContent>
                 {/* Tab 2: Fiados Activos */}
                 <TabsContent value="fiados">
-                    <FiadosActivos />
+                    <FiadosActivos idTienda={idTienda} />
                 </TabsContent>
                 {/* Tab 3: Recordatorios y Cobros */}
                 <TabsContent value="recordatorios" className="space-y-6">
-                    <RecordatoriosCobros />
+                    <RecordatoriosCobros idTienda={idTienda} />
                 </TabsContent>
             </Tabs>
         </div>
     )
 }
 
-export default VentaPage
+export default CleintesPage

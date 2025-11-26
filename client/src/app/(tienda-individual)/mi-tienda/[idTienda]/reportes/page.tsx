@@ -5,8 +5,10 @@ import VentasRentabilidad from "./_components/VentasRentabilidad"
 import DesenpenioProductos from "./_components/DesenpenioProductos"
 import ComportamientoClientes from "./_components/ComportamientoClientes"
 import EstadoFinanciero from "./_components/EstadoFinanciero"
+import { Id } from "../../../../../../convex/_generated/dataModel"
 
-const Reportes = () => {
+const Reportes = async ({ params }: { params: { idTienda: Id<"tiendas"> } }) => {
+    const idTienda = await params.idTienda
     return (
         <div className="min-h-screen bg-background p-4 md:p-8">
             <div className="container mx-auto max-w-7xl">
@@ -37,7 +39,7 @@ const Reportes = () => {
                     </TabsList>
                     {/* Venta y rentabilidad */}
                     <TabsContent value="ventas">
-                        <VentasRentabilidad />
+                        <VentasRentabilidad idTienda={idTienda} />
                     </TabsContent>
                     {/* DESEMPEÑO DE PRODUCTOS Análisis de inventario y rotación */}
                     <TabsContent value="productos" className="space-y-6">

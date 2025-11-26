@@ -85,7 +85,35 @@ export const crearVenta = mutation({
       }
     }
 
-    // 5. Actualizar estadísticas del cliente (si existe)
+    // 5. Si es fiado, crear o actualizar crédito
+    if (args.metodoPago === "fiado" && args.clienteId) {
+      // Buscar si ya existe un crédito activo para este cliente
+      const creditoExistente = await ctx.db
+        .query("creditos")
+        .withIndex("by_cliente", (q) => q.eq("clienteId", args.clienteId!))
+        .filter((q) => q.eq(q.field("estado"), "activo"))
+        .first();
+
+      if (creditoExistente) {
+        // Actualizar crédito existente
+        await ctx.db.patch(creditoExistente._id, {
+          saldoActual: creditoExistente.saldoActual + args.total,
+        });
+      } else {
+        // Crear nuevo crédito
+        await ctx.db.insert("creditos", {
+          tiendaId: args.tiendaId,
+          clienteId: args.clienteId,
+          limiteCredito: 5000, // Límite por defecto, puedes ajustarlo
+          saldoActual: args.total,
+          fechaInicio: new Date().toISOString(),
+          estado: "activo",
+          notas: `Crédito iniciado con venta`,
+        });
+      }
+    }
+
+    // 6. Actualizar estadísticas del cliente (si existe)
     if (args.clienteId) {
       const cliente = await ctx.db.get(args.clienteId);
       if (cliente) {

@@ -2,12 +2,9 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { FileDown, Printer } from "lucide-react"
-import { useState } from "react"
-
+import { useState, useMemo } from "react"
 import {
     Dialog,
     DialogContent,
@@ -16,9 +13,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Id } from "../../../../../../../convex/_generated/dataModel"
 import { useQuery } from "convex/react"
 import { api } from "../../../../../../../convex/_generated/api"
+import { DataTableVentas } from "./TablaDatodVentas"
+import { getColumnsVentas } from "./columnsVentas"
 
 const HistorialVentas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
     // State para el diálogo de detalle
@@ -31,6 +31,8 @@ const HistorialVentas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
         api.ventas.getDetalleVenta,
         ventaIdSeleccionada ? { ventaId: ventaIdSeleccionada } : "skip"
     )
+
+    const columns = useMemo(() => getColumnsVentas(setVentaIdSeleccionada), [])
 
     return (
         <Card>
@@ -77,55 +79,8 @@ const HistorialVentas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                     </Card>
                 </div>
 
-                <div className="border rounded-lg">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>ID Venta</TableHead>
-                                <TableHead>Fecha</TableHead>
-                                <TableHead>Cliente</TableHead>
-                                <TableHead>Monto</TableHead>
-                                <TableHead>Método de Pago</TableHead>
-                                <TableHead className="text-right">Acciones</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {!ventas || ventas.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                                        No hay ventas registradas
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                ventas.map((venta) => (
-                                    <TableRow key={venta._id}>
-                                        <TableCell className="font-medium">
-                                            #{venta._id.slice(-6)}
-                                        </TableCell>
-                                        <TableCell>
-                                            {new Date(venta.fecha).toLocaleDateString('es-ES')}
-                                        </TableCell>
-                                        <TableCell>{venta.clienteNombre}</TableCell>
-                                        <TableCell>C${venta.total.toFixed(2)}</TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className="capitalize">
-                                                {venta.metodoPago}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setVentaIdSeleccionada(venta._id)}
-                                            >
-                                                Ver detalle
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                <div className="border rounded-lg p-4">
+                    <DataTableVentas columns={columns} data={ventas || []} />
                 </div>
             </CardContent>
 
