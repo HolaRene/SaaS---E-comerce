@@ -1,6 +1,6 @@
 
 import type { Metadata } from "next";
-import { Aladin } from "next/font/google";
+import { Aladin, Poppins } from "next/font/google";
 
 import Navegacion from "@/components/Navegacion";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 };
 
 // Si la fuente está en Google Fonts
-const playwrite = Aladin({
+const poppins = Poppins({
   subsets: ['latin'],
   weight: ['400'], // o los pesos disponibles
   display: 'swap',
@@ -34,12 +34,13 @@ export default async function TiendaLayout({
   params,
 }: Readonly<{
   children: React.ReactNode;
-  params: { idTienda: string };
+  params: Promise<{ idTienda: string }>;
 }>) {
 
   // estado = abierto o cerrado
   const cookieStore = await cookies()
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
+  const { idTienda } = await params
 
   return (
     <ThemeProvider
@@ -49,8 +50,8 @@ export default async function TiendaLayout({
       disableTransitionOnChange
     >
       <SidebarProvider defaultOpen={defaultOpen}>
-        <AppSideBar idTienda={params.idTienda} />
-        <main className={`w-full ${playwrite.className}`}>
+        <AppSideBar idTienda={idTienda} />
+        <main className={`w-full ${poppins.className}`}>
           <Navegacion />
           <div className="px-2">{children}</div>
         </main>

@@ -27,45 +27,43 @@ import { Id } from "../../../../../../../convex/_generated/dataModel"
 import { useQuery } from "convex/react"
 import { api } from "../../../../../../../convex/_generated/api"
 
-// Distribución de ventas por categoría para gráfico circular
-const ventasPorCategoria = [
-    { categoria: "Panadería", valor: 18500, color: "var(--chart-1)" },
-    { categoria: "Bebidas", valor: 15200, color: "var(--chart-2)" },
-    { categoria: "Granos", valor: 12800, color: "var(--chart-3)" },
-    { categoria: "Lácteos", valor: 10500, color: "var(--chart-4)" },
-    { categoria: "Otros", valor: 13500, color: "var(--chart-5)" },
+// Valores por defecto (se reemplazan por datos desde Convex)
+const defaultColors = [
+    "var(--chart-1)",
+    "var(--chart-2)",
+    "var(--chart-3)",
+    "var(--chart-4)",
+    "var(--chart-5)",
 ]
 
-// Datos mensuales de ventas para gráficos de barras y líneas
-const ventasMensuales = [
-    { mes: "Enero", ventas: 45000, costos: 28000 },
-    { mes: "Febrero", ventas: 52000, costos: 32000 },
-    { mes: "Marzo", ventas: 61000, costos: 38000 },
-    { mes: "Abril", ventas: 59000, costos: 37000 },
-    { mes: "Mayo", ventas: 70500, costos: 45200 },
-]
-// Productos más vendidos con participación porcentual
-const productosMasVendidos = [
-    { producto: "Pan Dulce", ventas: 12300, participacion: 18 },
-    { producto: "Refresco 1L", ventas: 8450, participacion: 12 },
-    { producto: "Café Tradicional", ventas: 6120, participacion: 9 },
-    { producto: "Arroz 1kg", ventas: 5800, participacion: 8 },
-    { producto: "Frijoles 1kg", ventas: 4900, participacion: 7 },
-]
 
 const VentasRentabilidad = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
+    const id = idTienda
 
 
     const [periodo, setPeriodo] = useState("mes")
     const [comercio, setComercio] = useState("todos")
 
-    const ventasTotales = 70500
-    const costosEstimados = 45200
-    const gananciaNeta = ventasTotales - costosEstimados
-    const margenGanancia = ((gananciaNeta / ventasTotales) * 100).toFixed(1)
+    // Queries Convex
+    const ventasMensualesQuery = useQuery(api.ventas.getVentasMensualesByTienda, { tiendaId: id, meses: 6 })
+    const topProductosQuery = useQuery(api.ventas.getTopProductosByTienda, { tiendaId: id, limit: 5 })
+    const estadisticas = useQuery(api.ventas.getEstadisticasVentas, { tiendaId: id })
 
-    // ventas totales
-    const ventasTotls = useQuery(api.ventas.getVentasByTienda, { tiendaId: idTienda })
+    const ventasMensuales = ventasMensualesQuery ?? []
+    const productosMasVendidos = (topProductosQuery ?? []).map((p: any) => ({ producto: p.nombre, ventas: p.ventas, participacion: Math.round(p.participacion) }))
+
+    // Ventas por categoría desde Convex
+    const ventasPorCategoriaQuery = useQuery(api.ventas.getVentasPorCategoria, { tiendaId: id })
+    const ventasPorCategoria = (ventasPorCategoriaQuery ?? []).map((v: any, i: number) => ({
+        categoria: v.categoria,
+        valor: v.valor,
+        color: v.color ?? defaultColors[i % defaultColors.length],
+    }))
+
+    const ventasTotales = estadisticas?.totalVentas ?? ventasMensuales.reduce((s: number, v: any) => s + (v.ventas || 0), 0)
+    const costosEstimados = ventasMensuales.reduce((s: number, v: any) => s + (v.costos || 0), 0)
+    const gananciaNeta = ventasTotales - costosEstimados
+    const margenGanancia = ventasTotales > 0 ? ((gananciaNeta / ventasTotales) * 100).toFixed(1) : "0.0"
 
 
     return (

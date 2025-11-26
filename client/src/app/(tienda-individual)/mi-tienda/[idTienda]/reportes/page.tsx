@@ -6,8 +6,8 @@ import ComportamientoClientes from "./_components/ComportamientoClientes"
 import EstadoFinanciero from "./_components/EstadoFinanciero"
 import { Id } from "../../../../../../convex/_generated/dataModel"
 
-const Reportes = async ({ params }: { params: { idTienda: Id<"tiendas"> } }) => {
-    const idTienda = await params.idTienda
+const Reportes = async ({ params }: { params: Promise<{ idTienda: Id<"tiendas"> }> }) => {
+    const { idTienda } = await params
     return (
         <div className="min-h-screen bg-background p-4 md:p-8">
             <div className="container mx-auto max-w-7xl">
@@ -42,12 +42,12 @@ const Reportes = async ({ params }: { params: { idTienda: Id<"tiendas"> } }) => 
                     </TabsContent>
                     {/* DESEMPEÑO DE PRODUCTOS Análisis de inventario y rotación */}
                     <TabsContent value="productos" className="space-y-6">
-                        <DesenpenioProductos />
+                        <DesenpenioProductos idTienda={idTienda} />
                     </TabsContent>
                     {/*  COMPORTAMIENTO DE CLIENTES
               Análisis de fidelidad y patrones de compra */}
                     <TabsContent value="clientes">
-                        <ComportamientoClientes />
+                        <ComportamientoClientes idTienda={idTienda} />
                     </TabsContent>
                     {/* ESTADO FINANCIERO
               Control de caja y resultados administrativos */}

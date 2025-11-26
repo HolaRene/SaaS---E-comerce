@@ -5,8 +5,8 @@ import FiadosActivos from "./_components/FiadosActivos"
 import RecordatoriosCobros from "./_components/RecordatoriosCobros"
 import { Id } from "../../../../../../convex/_generated/dataModel"
 
-const CleintesPage = ({ params }: { params: { idTienda: Id<"tiendas"> } }) => {
-    const idTienda = params.idTienda
+const ClientesPage = async ({ params }: { params: Promise<{ idTienda: Id<"tiendas"> }> }) => {
+    const { idTienda } = await params
     return (
         <div className="min-h-screen p-4 md:p-5 space-y-3">
             {/* Header */}
@@ -49,4 +49,4 @@ const CleintesPage = ({ params }: { params: { idTienda: Id<"tiendas"> } }) => {
     )
 }
 
-export default CleintesPage
+export default ClientesPage

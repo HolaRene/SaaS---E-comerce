@@ -118,6 +118,7 @@ productos: defineTable({
     nombre: v.string(),
     descripcion: v.string(),
     precio: v.number(),
+    costo: v.optional(v.number()),
     categoria: v.string(),
 
     // Imágenes
@@ -150,6 +151,7 @@ productos: defineTable({
 
     autorId: v.array(v.id("usuarios")),
     ultimaActualizacion: v.string(),
+    creadoEn: v.optional(v.string()),
   })
     .index("by_tienda", ["tiendaId"])
     .index("by_categoria", ["categoria"])
@@ -428,4 +430,22 @@ recordatorios: defineTable({
 .index("by_cliente", ["clienteId"])
 .index("by_fecha_programada", ["fechaProgramada", "tiendaId"])
 .index("by_estado", ["estado", "tiendaId"]),
+// Tabla agregada: clientesFrecuentes por tienda (informes)
+clientesFrecuentes: defineTable({
+  tiendaId: v.id("tiendas"),
+  clienteId: v.id("clientes"),
+  totalCompras: v.number(), // número de compras realizadas
+  montoTotal: v.number(), // monto total comprado
+  promedioMensual: v.optional(v.number()), // cálculo opcional para mostrar promedio mensual
+  segmento: v.optional(v.union(
+    v.literal("frecuente"),
+    v.literal("ocasional"),
+    v.literal("mayorista")
+  )),
+  ultimaCompra: v.optional(v.string()),
+  actualizadoEn: v.string(),
+})
+  .index("by_tienda", ["tiendaId"])
+  .index("by_cliente", ["clienteId"])
+  .index("by_tienda_totalCompras", ["tiendaId", "totalCompras"]),
 });

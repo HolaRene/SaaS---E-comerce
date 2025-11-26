@@ -1,8 +1,6 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import {
     BarChart,
@@ -17,34 +15,69 @@ import {
     ResponsiveContainer,
 } from "recharts"
 import { TrendingUp, Users } from "lucide-react"
+import { Id } from "../../../../../../../convex/_generated/dataModel"
+import { useQuery } from "convex/react"
+import { api } from "../../../../../../../convex/_generated/api"
+import * as React from "react"
+import ClientesFrecuentesTable from "./ClientesFrecuentesTable"
 
-// Clientes más frecuentes con historial de compras
-const clientesFrecuentes = [
-    { nombre: "Juan Pérez", compras: 26, promedioMensual: 9450, ultimaCompra: "05/10/2025" },
-    { nombre: "Ana López", compras: 19, promedioMensual: 7320, ultimaCompra: "03/10/2025" },
-    { nombre: "Carlos Gómez", compras: 15, promedioMensual: 5800, ultimaCompra: "04/10/2025" },
-    { nombre: "María Sánchez", compras: 12, promedioMensual: 4200, ultimaCompra: "02/10/2025" },
-]
+const defaultColors = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)"]
 
-// Patrones de compra por día de la semana
-const patronesPorDia = [
-    { dia: "Lun", compras: 60 },
-    { dia: "Mar", compras: 75 },
-    { dia: "Mié", compras: 80 },
-    { dia: "Jue", compras: 85 },
-    { dia: "Vie", compras: 130 },
-    { dia: "Sáb", compras: 120 },
-    { dia: "Dom", compras: 20 },
-]
+type CreditosStats = {
+    totalCreditosActivos?: number
+    creditosVencidos?: number
+    totalAdeudado?: number
+}
 
-// Efectividad de fiados (créditos)
-const efectividadFiados = [
-    { estado: "Pagados", valor: 75, color: "var(--chart-1)" },
-    { estado: "Pendientes", valor: 20, color: "var(--chart-2)" },
-    { estado: "Vencidos", valor: 5, color: "var(--chart-3)" },
-]
+const ComportamientoClientes = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
+    const id = idTienda
 
-const ComportamientoClientes = () => {
+    // Queries Convex
+    const clientesQuery = useQuery(api.clientes.getClientesByTienda, { tiendaId: id })
+    const ventasQuery = useQuery(api.ventas.getVentasByTienda, { tiendaId: id, limit: 1000 })
+    const creditosStats = useQuery(api.creditos.getEstadisticasCreditos, { tiendaId: id }) as CreditosStats | null
+
+    // Top clientes: ordenar por cantidadCompras o totalCompras
+    const topClientes = React.useMemo(() => {
+        const clientes = (clientesQuery ?? []) as any[]
+        return clientes
+            .slice()
+            .sort((a, b) => (b.cantidadCompras || 0) - (a.cantidadCompras || 0))
+            .slice(0, 5)
+            .map((c) => ({ nombre: c.nombre, compras: c.cantidadCompras || 0, promedioMensual: Math.round((c.totalCompras || 0) / Math.max(1, (new Date().getMonth() + 1))), ultimaCompra: c.ultimaCompra }))
+    }, [clientesQuery])
+
+    // Patrones por día: contar ventas por día de la semana
+    const patronesPorDia = React.useMemo(() => {
+        const ventas = (ventasQuery ?? []) as any[]
+        const counts: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 }
+        for (const v of ventas) {
+            try {
+                const d = new Date(v.fecha)
+                const dow = d.getDay()
+                counts[dow] = (counts[dow] || 0) + 1
+            } catch {
+                // ignore
+            }
+        }
+        const labels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
+        return labels.map((lab, i) => ({ dia: lab, compras: counts[i] || 0 }))
+    }, [ventasQuery])
+
+    // Efectividad de fiados: usar stats de créditos
+    const efectividadFiados = React.useMemo(() => {
+        const stats = (creditosStats ?? {}) as CreditosStats
+        const totalActivos = stats.totalCreditosActivos ?? 0
+        const totalVencido = stats.creditosVencidos ?? 0
+        // Distribución aproximada
+        const pagados = Math.max(0, (totalActivos - totalVencido))
+        const pendientes = Math.max(0, totalActivos - pagados)
+        return [
+            { estado: "Activos", valor: pagados, color: defaultColors[0] },
+            { estado: "Vencidos", valor: totalVencido, color: defaultColors[1] },
+            { estado: "Pendientes", valor: pendientes, color: defaultColors[2] },
+        ]
+    }, [creditosStats])
     return (
         <div className='space-y-3'>
             {/* Métricas clave de clientes */}
@@ -80,28 +113,7 @@ const ComportamientoClientes = () => {
                     <CardDescription>Top clientes por número de compras</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Nombre</TableHead>
-                                <TableHead className="text-center">Compras Totales</TableHead>
-                                <TableHead className="text-right">Promedio Mensual</TableHead>
-                                <TableHead className="text-right">Última Compra</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {clientesFrecuentes.map((cliente) => (
-                                <TableRow key={cliente.nombre}>
-                                    <TableCell className="font-medium">{cliente.nombre}</TableCell>
-                                    <TableCell className="text-center">
-                                        <Badge>{cliente.compras}</Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">C${cliente.promedioMensual.toLocaleString()}</TableCell>
-                                    <TableCell className="text-right">{cliente.ultimaCompra}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                    <ClientesFrecuentesTable data={topClientes} />
                 </CardContent>
             </Card>
 

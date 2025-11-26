@@ -229,3 +229,131 @@ export const getEstadisticasVentas = query({
     };
   },
 });
+
+// Top productos por tienda (agrega cantidades y totales desde detallesVenta)
+export const getTopProductosByTienda = query({
+  args: { tiendaId: v.id("tiendas"), limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const ventas = await ctx.db
+      .query("ventas")
+      .withIndex("by_tienda", (q) => q.eq("tiendaId", args.tiendaId))
+      .collect();
+
+    // Map productoId -> { nombreProducto, cantidad, total }
+    const acumulado: Record<string, { nombre: string; cantidad: number; total: number }> = {};
+
+    for (const venta of ventas) {
+      const detalles = await ctx.db
+        .query("detallesVenta")
+        .withIndex("by_venta", (q) => q.eq("ventaId", venta._id))
+        .collect();
+
+      for (const d of detalles) {
+        const key = String(d.productoId);
+        if (!acumulado[key]) acumulado[key] = { nombre: d.nombreProducto, cantidad: 0, total: 0 };
+        acumulado[key].cantidad += d.cantidad;
+        acumulado[key].total += d.subtotal;
+      }
+    }
+
+    const totalAll = Object.values(acumulado).reduce((s, x) => s + x.total, 0) || 1;
+
+    const items = Object.entries(acumulado)
+      .map(([productoId, v]) => ({ productoId, nombre: v.nombre, ventas: v.total, cantidad: v.cantidad, participacion: (v.total / totalAll) * 100 }))
+      .sort((a, b) => b.ventas - a.ventas)
+      .slice(0, args.limit || 5);
+
+    return items;
+  },
+});
+
+// Ventas mensuales por tienda (últimos N meses)
+export const getVentasMensualesByTienda = query({
+  args: { tiendaId: v.id("tiendas"), meses: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const meses = args.meses ?? 6;
+    const ventas = await ctx.db
+      .query("ventas")
+      .withIndex("by_tienda", (q) => q.eq("tiendaId", args.tiendaId))
+      .filter((q) => q.eq(q.field("estado"), "completada"))
+      .collect();
+
+    const ahora = new Date();
+    const resultadosVentas: Record<string, number> = {};
+    const resultadosCostos: Record<string, number> = {};
+
+    // Inicializar últimos N meses
+    for (let i = meses - 1; i >= 0; i--) {
+      const d = new Date(ahora.getFullYear(), ahora.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}`;
+      resultadosVentas[key] = 0;
+      resultadosCostos[key] = 0;
+    }
+
+    for (const vta of ventas) {
+      const f = new Date(vta.fecha);
+      const key = `${f.getFullYear()}-${(f.getMonth() + 1).toString().padStart(2, "0")}`;
+      if (!(key in resultadosVentas)) continue;
+
+      resultadosVentas[key] += vta.total || 0;
+
+      // Calcular costo asociado a esta venta
+      const detalles = await ctx.db
+        .query("detallesVenta")
+        .withIndex("by_venta", (q) => q.eq("ventaId", vta._id))
+        .collect();
+
+      for (const d of detalles) {
+        const producto = await ctx.db.get(d.productoId);
+        const costoUnitario = producto?.costo ?? 0;
+        resultadosCostos[key] += (costoUnitario || 0) * (d.cantidad || 0);
+      }
+    }
+
+    // Convertir a array con nombre de mes
+    const salida = Object.entries(resultadosVentas).map(([key, total]) => {
+      const [y, m] = key.split("-");
+      const fecha = new Date(Number(y), Number(m) - 1, 1);
+      const nombreMes = fecha.toLocaleString("es-ES", { month: "long" });
+      return { mes: nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1), ventas: total, costos: resultadosCostos[key] || 0 };
+    });
+
+    return salida;
+  },
+});
+
+// Ventas por categoría (suma subtotal/total por categoría según productos)
+export const getVentasPorCategoria = query({
+  args: { tiendaId: v.id("tiendas") },
+  handler: async (ctx, args) => {
+    // Recolectar ventas completadas de la tienda
+    const ventas = await ctx.db
+      .query("ventas")
+      .withIndex("by_tienda", (q) => q.eq("tiendaId", args.tiendaId))
+      .filter((q) => q.eq(q.field("estado"), "completada"))
+      .collect();
+
+    // Map categoria -> total
+    const porCategoria: Record<string, number> = {};
+
+    for (const vta of ventas) {
+      const detalles = await ctx.db
+        .query("detallesVenta")
+        .withIndex("by_venta", (q) => q.eq("ventaId", vta._id))
+        .collect();
+
+      for (const d of detalles) {
+        const producto = await ctx.db.get(d.productoId);
+        const categoria = producto?.categoria || "Sin categoría";
+        porCategoria[categoria] = (porCategoria[categoria] || 0) + (d.subtotal || 0);
+      }
+    }
+
+    // Convertir a array ordenado por valor desc
+    const items = Object.entries(porCategoria)
+      .map(([categoria, valor]) => ({ categoria, valor }))
+      .sort((a, b) => b.valor - a.valor);
+
+    return items;
+  },
+});

@@ -3,87 +3,47 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { AlertTriangle, Calendar } from "lucide-react"
+import { Calendar } from "lucide-react"
+import { Id } from "../../../../../../../convex/_generated/dataModel"
 
-// Rotación de inventario con entradas, salidas y días en stock
-const rotacionInventario = [
-    { producto: "Pan Dulce", entradas: 200, salidas: 190, stock: 10, dias: 2 },
-    { producto: "Refresco 1L", entradas: 300, salidas: 295, stock: 5, dias: 1 },
-    { producto: "Arroz 1kg", entradas: 150, salidas: 140, stock: 10, dias: 3 },
-    { producto: "Café 500g", entradas: 80, salidas: 75, stock: 5, dias: 2 },
-    { producto: "Aceite 1L", entradas: 100, salidas: 85, stock: 15, dias: 5 },
-]
+import { useQuery } from "convex/react"
+import { api } from "../../../../../../../convex/_generated/api"
+import StockEstancado from "./StockEstancado"
+import RotacionInventario from "./RotacionInventario"
 
-// Productos sin movimiento (stock estancado)
-const stockEstancado = [
-    { producto: "Aceite Vegetal 1L", unidades: 15, diasSinVenta: 20 },
-    { producto: "Salsa de Tomate", unidades: 8, diasSinVenta: 15 },
-    { producto: "Galletas Premium", unidades: 12, diasSinVenta: 18 },
-]
-// Comparación de precios con el mercado
-const comparacionPrecios = [
-    { producto: "Pan Dulce", miPrecio: 25.0, promedioMercado: 27.0, diferencia: -2.0 },
-    { producto: "Refresco 1L", miPrecio: 35.0, promedioMercado: 33.5, diferencia: 1.5 },
-    { producto: "Arroz 1kg", miPrecio: 42.0, promedioMercado: 43.0, diferencia: -1.0 },
-    { producto: "Café 500g", miPrecio: 85.0, promedioMercado: 87.0, diferencia: -2.0 },
-]
+// Valores por defecto mientras cargan las queries
+const emptyPrices: Array<{ producto: string; miPrecio: number; promedioMercado: number; diferencia: number }> = []
 
-const DesenpenioProductos = () => {
+const DesenpenioProductos = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
+    const id = idTienda
+
+    // Queries Convex
+    const comparacionPreciosQuery = useQuery(api.productos.getComparacionPreciosByTienda, { tiendaId: id, limit: 10 })
+
+    const comparacionPrecios = comparacionPreciosQuery ?? emptyPrices
+
     return (
         <div className='space-y-3'>
-            {/* Rotación de inventario */}
+            {/* Rotación de inventario: tabla reutilizable */}
             <Card>
                 <CardHeader>
                     <CardTitle>Rotación de Inventario</CardTitle>
                     <CardDescription>Movimiento de productos en el período</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Producto</TableHead>
-                                <TableHead className="text-center">Entradas</TableHead>
-                                <TableHead className="text-center">Salidas</TableHead>
-                                <TableHead className="text-center">Stock Actual</TableHead>
-                                <TableHead className="text-right">Días en Inventario</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {rotacionInventario.map((item) => (
-                                <TableRow key={item.producto}>
-                                    <TableCell className="font-medium">{item.producto}</TableCell>
-                                    <TableCell className="text-center">{item.entradas}</TableCell>
-                                    <TableCell className="text-center">{item.salidas}</TableCell>
-                                    <TableCell className="text-center">
-                                        <Badge variant={item.stock < 10 ? "destructive" : "secondary"}>{item.stock}</Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">{item.dias} días</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                    <RotacionInventario idTienda={id} />
                 </CardContent>
             </Card>
 
             <div className="grid lg:grid-cols-2 gap-6">
-                {/* Stock estancado */}
+                {/* Stock estancado: tabla reutilizable */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Stock Estancado</CardTitle>
                         <CardDescription>Productos sin movimiento reciente</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        {stockEstancado.map((item) => (
-                            <div key={item.producto} className="flex items-start gap-4 p-4 border rounded-lg">
-                                <AlertTriangle className="h-5 w-5 text-orange-500 mt-0.5" />
-                                <div className="flex-1">
-                                    <p className="font-medium">{item.producto}</p>
-                                    <p className="text-sm text-muted-foreground">
-                                        {item.unidades} unidades — {item.diasSinVenta} días sin venta
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
+                    <CardContent>
+                        <StockEstancado idTienda={id} />
                     </CardContent>
                 </Card>
 

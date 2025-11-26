@@ -2,7 +2,6 @@
 
 import {
     SheetContent,
-    SheetDescription,
     SheetHeader,
     SheetTitle,
 } from "@/components/ui/sheet";
@@ -16,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useWatch } from "react-hook-form";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
@@ -42,6 +42,7 @@ const formSchema = z.object({
     name: z.string().min(1),
     description: z.string().min(1),
     price: z.number().min(1),
+    costo: z.optional(z.number()),
 
     category: z.enum(pulperiaCategories),
     cantidad: z.number({ message: "debe ser núm" }).min(1),
@@ -67,6 +68,7 @@ const AddProductPulperia = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
             name: "prueba 1",
             description: "esta es una prueba",
             price: 45,
+            costo: 45,
             category: pulperiaCategories[0],
             cantidad: 10,
             attributes: {
@@ -83,8 +85,19 @@ const AddProductPulperia = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
 
     const crearProductos = useMutation(api.productos.crearProducto)
 
+    // Watch price and costo to show advertencia
+    const watchedPrice = useWatch({ control: form.control, name: "price" }) as number | undefined
+    const watchedCosto = useWatch({ control: form.control, name: "costo" }) as number | undefined
+    const margenNegativo = (watchedCosto ?? 0) >= (watchedPrice ?? 0)
+    const [confirmarMargenNegativo, setConfirmarMargenNegativo] = useState(false)
+
     const manejoEnvío = async (data: productoFormData) => {
         try {
+            if (margenNegativo && !confirmarMargenNegativo) {
+                // Si hay margen negativo y no está confirmado, prevenir envío
+                toast.error("El costo es mayor o igual al precio. Marca la casilla para confirmar y continuar.")
+                return
+            }
             setCargando(true)
             const newProductId = await crearProductos({
                 nombre: data.name,
@@ -92,6 +105,7 @@ const AddProductPulperia = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                 cantidad: data.cantidad,
                 descripcion: data.description,
                 precio: data.price,
+                costo: data.costo ?? data.price,
                 codigoBarras: data.attributes.codigoBarras,
                 tiendaId: idTienda,
                 // Campos requeridos adicionales
@@ -205,6 +219,37 @@ const AddProductPulperia = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                                 </FormItem>
                             )}
                         />
+
+                        {/* Costo (unitario) */}
+                        <FormField
+                            control={form.control}
+                            name="costo"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Costo unitario (opcional)</FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            {...field}
+                                            type="number"
+                                            onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        {/* Advertencia si costo >= precio */}
+                        {((form.getValues("costo") ?? 0) >= (form.getValues("price") ?? 0)) && (
+                            <div className="p-3 mt-2 rounded-md bg-red-50 border border-red-200 text-sm text-red-700">
+                                <p className="font-medium">Advertencia: El costo es mayor o igual al precio de venta.</p>
+                                <p className="text-sm">Esto resultará en margen cero o negativo. Marca la casilla abajo para confirmar y continuar.</p>
+                                <div className="mt-2 flex items-center gap-2">
+                                    <input type="checkbox" checked={confirmarMargenNegativo} onChange={(e) => setConfirmarMargenNegativo(e.target.checked)} />
+                                    <label className="text-sm">Confirmo que deseo guardar este producto con margen negativo</label>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Categoría interna */}
                         <FormField

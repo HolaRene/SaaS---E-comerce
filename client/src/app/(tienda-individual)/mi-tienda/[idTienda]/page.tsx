@@ -21,9 +21,9 @@ export const metadata: Metadata = {
 };
 
 // --- Componente Principal ---
-const MiNegocio = async ({ params }: { params: { idTienda: Id<"tiendas"> } }) => {
+const MiNegocio = async ({ params }: { params: Promise<{ idTienda: Id<"tiendas"> }> }) => {
 
-    const id = await params.idTienda
+    const { idTienda: id } = await params
     return (
         <ErrorBoundary>
             <Tabs defaultValue="perfil" className="w-full mt-3">

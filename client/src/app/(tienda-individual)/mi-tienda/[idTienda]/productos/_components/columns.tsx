@@ -6,7 +6,11 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Edit, Eye, MoreHorizontal, Trash } from "lucide-react";
+import { useMutation } from "convex/react";
+import { api } from "../../../../../../../convex/_generated/api";
+import { toast } from "sonner";
+import { Eye, MoreHorizontal, Trash } from "lucide-react";
+import EditarProducto from "./EditarProducto";
 import { Doc } from "../../../../../../../convex/_generated/dataModel";
 
 // Tipo de producto de Convex
@@ -61,16 +65,39 @@ export const columns: ColumnDef<ProductoConvex>[] = [
     {
         accessorKey: "",
         header: "Acciones",
-        cell: () => <DropdownMenu>
-            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuItem><Edit className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
-                <DropdownMenuItem><Eye className="mr-2 h-4 w-4" />Ver Detalle</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-500"><Trash className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
-
+        cell: ({ row }) => <ActionsMenu producto={row.original} />
     }
 
-];
+]
+
+function ActionsMenu({ producto }: { producto: ProductoConvex }) {
+    const eliminarProducto = useMutation(api.productos.eliminarProducto);
+
+    const handleEliminar = async () => {
+        const ok = confirm(`¿Eliminar producto "${producto.nombre}"? Esta acción no se puede deshacer.`)
+        if (!ok) return
+        try {
+            await eliminarProducto({ productoId: producto._id })
+            toast.success("Producto eliminado")
+            // Convex actualizará las queries suscritas; no recargamos la página para mejor UX
+        } catch (err) {
+            console.error(err)
+            toast.error("No se pudo eliminar el producto")
+        }
+    }
+
+    return (
+        <div className="flex items-center gap-2">
+            <EditarProducto producto={producto} />
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => alert('Ver detalle no implementado aún')}><Eye className="mr-2 h-4 w-4" />Ver Detalle</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="text-red-500" onSelect={handleEliminar}><Trash className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+    )
+
+};

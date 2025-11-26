@@ -16,6 +16,7 @@ import type * as http from "../http.js";
 import type * as movimientos from "../movimientos.js";
 import type * as productoEtiquetas from "../productoEtiquetas.js";
 import type * as productos from "../productos.js";
+import type * as productosMutations from "../productosMutations.js";
 import type * as recordatorios from "../recordatorios.js";
 import type * as tienda from "../tienda.js";
 import type * as users from "../users.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   movimientos: typeof movimientos;
   productoEtiquetas: typeof productoEtiquetas;
   productos: typeof productos;
+  productosMutations: typeof productosMutations;
   recordatorios: typeof recordatorios;
   tienda: typeof tienda;
   users: typeof users;

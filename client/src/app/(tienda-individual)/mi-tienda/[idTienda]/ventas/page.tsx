@@ -15,9 +15,9 @@ import HistorialVentas from "./_components/HistorialVentas"
 import FacturacionElectronica from "./_components/FacturacionElectronica"
 import { Id } from "../../../../../../convex/_generated/dataModel"
 
-export default async function VentasPage({ params }: { params: { idTienda: Id<"tiendas"> } }) {
+export default async function VentasPage({ params }: { params: Promise<{ idTienda: Id<"tiendas"> }> }) {
 
-    const idTienda = await params.idTienda
+    const { idTienda } = await params
 
     return (
         <div className="min-h-screen  p-4 md:p-8">
