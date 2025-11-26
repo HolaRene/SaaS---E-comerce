@@ -24,6 +24,8 @@ import {
 import { ArrowDownRight, ArrowUpRight, FileDown, TrendingUp } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Id } from "../../../../../../../convex/_generated/dataModel"
+import { useQuery } from "convex/react"
+import { api } from "../../../../../../../convex/_generated/api"
 
 // Distribución de ventas por categoría para gráfico circular
 const ventasPorCategoria = [
@@ -53,6 +55,7 @@ const productosMasVendidos = [
 
 const VentasRentabilidad = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
 
+
     const [periodo, setPeriodo] = useState("mes")
     const [comercio, setComercio] = useState("todos")
 
@@ -60,6 +63,10 @@ const VentasRentabilidad = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
     const costosEstimados = 45200
     const gananciaNeta = ventasTotales - costosEstimados
     const margenGanancia = ((gananciaNeta / ventasTotales) * 100).toFixed(1)
+
+    // ventas totales
+    const ventasTotls = useQuery(api.ventas.getVentasByTienda, { tiendaId: idTienda })
+
 
     return (
         <div className='space-y-3'>

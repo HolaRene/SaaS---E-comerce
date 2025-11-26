@@ -1,4 +1,3 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ChartLine, DollarSign, Package, Users } from "lucide-react"
 import VentasRentabilidad from "./_components/VentasRentabilidad"
