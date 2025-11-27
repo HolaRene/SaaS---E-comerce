@@ -27,15 +27,11 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarMenuSub,
-    SidebarMenuSubButton,
-    SidebarMenuSubItem,
     SidebarSeparator,
 } from "./ui/sidebar";
 
 
 import Link from "next/link";
-import Image from "next/image";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -52,8 +48,11 @@ interface AppSideBarProps {
     idTienda?: string;
 }
 
+import { useClerk } from "@clerk/nextjs";
+
 const AppSideBar = ({ idTienda }: AppSideBarProps) => {
     const pathname = usePathname()
+    const { signOut } = useClerk()
 
     // Construir las rutas dinámicamente con el idTienda
     const menuItems = [
@@ -181,17 +180,24 @@ const AppSideBar = ({ idTienda }: AppSideBarProps) => {
                                 </SidebarMenuButton>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem>
-                                    <User2 className="mr-2 h-4 w-4" />
-                                    Cuenta
+                                <DropdownMenuItem asChild>
+                                    <Link href={'/cuenta'} className="w-full cursor-pointer">
+                                        <User2 className="mr-2 h-4 w-4" />
+                                        <span>Cuenta</span>
+                                    </Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                    <Settings className="mr-2 h-4 w-4" />
-                                    Ajustes
+                                <DropdownMenuItem asChild>
+                                    <Link href={`/mi-tienda/${idTienda}/configuracion`} className="w-full cursor-pointer">
+                                        <Settings className="mr-2 h-4 w-4" />
+                                        <span>Ajustes</span>
+                                    </Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-red-500">
+                                <DropdownMenuItem
+                                    className="text-red-500 cursor-pointer"
+                                    onClick={() => signOut({ redirectUrl: '/' })}
+                                >
                                     <LogOut className="mr-2 h-4 w-4" />
-                                    Cerrar sesión
+                                    <span>Cerrar sesión</span>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

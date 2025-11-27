@@ -7,6 +7,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { DataTableCatalogo } from "./data-table"
 
 type RotItem = {
+    productoId: any
     producto: string
     entradas: number
     salidas: number

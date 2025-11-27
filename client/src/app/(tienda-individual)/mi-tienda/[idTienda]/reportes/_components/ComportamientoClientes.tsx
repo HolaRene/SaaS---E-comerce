@@ -36,6 +36,8 @@ const ComportamientoClientes = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
     const clientesQuery = useQuery(api.clientes.getClientesByTienda, { tiendaId: id })
     const ventasQuery = useQuery(api.ventas.getVentasByTienda, { tiendaId: id, limit: 1000 })
     const creditosStats = useQuery(api.creditos.getEstadisticasCreditos, { tiendaId: id }) as CreditosStats | null
+    const clientesActivosQuery = useQuery(api.clientes.getClientesActivosMes, { tiendaId: id, minProductos: 5 })
+    const valorPromedioQuery = useQuery(api.clientes.getValorPromedioCliente, { tiendaId: id })
 
     // Top clientes: ordenar por cantidadCompras o totalCompras
     const topClientes = React.useMemo(() => {
@@ -69,13 +71,11 @@ const ComportamientoClientes = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
         const stats = (creditosStats ?? {}) as CreditosStats
         const totalActivos = stats.totalCreditosActivos ?? 0
         const totalVencido = stats.creditosVencidos ?? 0
-        // Distribución aproximada
-        const pagados = Math.max(0, (totalActivos - totalVencido))
-        const pendientes = Math.max(0, totalActivos - pagados)
+        // Créditos activos (no vencidos) y vencidos
+        const activos = Math.max(0, totalActivos - totalVencido)
         return [
-            { estado: "Activos", valor: pagados, color: defaultColors[0] },
+            { estado: "Activos", valor: activos, color: defaultColors[0] },
             { estado: "Vencidos", valor: totalVencido, color: defaultColors[1] },
-            { estado: "Pendientes", valor: pendientes, color: defaultColors[2] },
         ]
     }, [creditosStats])
     return (
@@ -87,7 +87,7 @@ const ComportamientoClientes = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-muted-foreground">Valor Promedio por Cliente</p>
-                                <p className="text-3xl font-bold">C$1,850</p>
+                                <p className="text-3xl font-bold">C${(valorPromedioQuery?.promedio ?? 0).toFixed(2)}</p>
                             </div>
                             <Users className="h-10 w-10 text-primary" />
                         </div>
@@ -98,7 +98,7 @@ const ComportamientoClientes = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-muted-foreground">Clientes Activos Este Mes</p>
-                                <p className="text-3xl font-bold">120</p>
+                                <p className="text-3xl font-bold">{clientesActivosQuery?.total ?? 0}</p>
                             </div>
                             <TrendingUp className="h-10 w-10 text-green-500" />
                         </div>
@@ -187,7 +187,7 @@ const ComportamientoClientes = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                         </ChartContainer>
                         <div className="mt-4 p-4 bg-muted rounded-lg">
                             <p className="text-sm font-medium">Total de Cartera de Crédito</p>
-                            <p className="text-2xl font-bold text-primary">C$5,430</p>
+                            <p className="text-2xl font-bold text-primary">C${(creditosStats?.totalAdeudado ?? 0).toFixed(2)}</p>
                         </div>
                     </CardContent>
                 </Card>

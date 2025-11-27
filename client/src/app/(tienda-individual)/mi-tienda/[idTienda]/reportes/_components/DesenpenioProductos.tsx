@@ -12,7 +12,7 @@ import StockEstancado from "./StockEstancado"
 import RotacionInventario from "./RotacionInventario"
 
 // Valores por defecto mientras cargan las queries
-const emptyPrices: Array<{ producto: string; miPrecio: number; promedioMercado: number; diferencia: number }> = []
+const emptyPrices: Array<{ productoId: any; producto: string; miPrecio: number; promedioMercado: number; diferencia: number }> = []
 
 const DesenpenioProductos = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
     const id = idTienda
@@ -65,7 +65,7 @@ const DesenpenioProductos = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                             </TableHeader>
                             <TableBody>
                                 {comparacionPrecios.map((item) => (
-                                    <TableRow key={item.producto}>
+                                    <TableRow key={item.productoId}>
                                         <TableCell className="font-medium">{item.producto}</TableCell>
                                         <TableCell className="text-right">C${item.miPrecio.toFixed(2)}</TableCell>
                                         <TableCell className="text-right">C${item.promedioMercado.toFixed(2)}</TableCell>

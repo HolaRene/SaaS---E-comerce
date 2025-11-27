@@ -7,6 +7,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { DataTableCatalogo } from "./data-table"
 
 type StalledItem = {
+    productoId: any
     producto: string
     unidades: number
     diasSinVenta: number | null

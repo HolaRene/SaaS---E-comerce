@@ -62,6 +62,8 @@ export function DataTableCatalogo<TData, TValue>({
         getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
         onRowSelectionChange: setRowSelection,
+        // Usar productoId como identificador único de cada fila
+        getRowId: (row: any) => row.productoId || String(Math.random()),
         state: {
             sorting,
             columnFilters,

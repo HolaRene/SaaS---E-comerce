@@ -52,7 +52,7 @@ const Reportes = async ({ params }: { params: Promise<{ idTienda: Id<"tiendas"> 
                     {/* ESTADO FINANCIERO
               Control de caja y resultados administrativos */}
                     <TabsContent value="financiero">
-                        <EstadoFinanciero />
+                        <EstadoFinanciero idTienda={idTienda} />
                     </TabsContent>
                 </Tabs>
             </div>
