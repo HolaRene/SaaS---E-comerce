@@ -48,6 +48,7 @@ export const crearProducto = mutation({
       precio: args.precio,
       costo: args.costo ?? 0,
       tiendaId: args.tiendaId,
+      publica: true, // ✔ Por defecto visible para usuarios
       sku: args.sku,
       attributes: {
         contenido: args.attributes?.contenido || '-',

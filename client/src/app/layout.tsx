@@ -14,8 +14,8 @@ const playwrite = Alice({
 })
 
 export const metadata: Metadata = {
-    title: "PodCastr",
-    description: "Crea y comparte tus podcasts fácilmente",
+    title: "Mi Comercio flexi",
+    description: "Crea tu tienda en minutos y revisa tus ventas en tiempo real",
     icons: {
         icon: "/icons/logo.svg",
     },

@@ -17,10 +17,36 @@ import {
     Package2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Id } from "../../../convex/_generated/dataModel";
 
-export function Sidebar() {
+export function Sidebar({ idUser }: { idUser: Id<"usuarios"> }) {
     const pathname = usePathname();
     const { isOpen, toggle } = useSidebar();
+
+    const navItems = [
+        { name: "Dashboard", href: `/user/dashboard`, icon: LayoutDashboard, badge: 0 },
+        { name: "Ver Productos", href: `/user/productos`, icon: Package2, badge: 0 },
+        { name: "Compras", href: `/user/compras`, icon: Package, badge: 52 },
+        { name: "Favoritos", href: `/user/favoritos`, icon: Heart, badge: 6 },
+        { name: "Carrito", href: `/user/carrito`, icon: ShoppingCart, badge: 5 },
+        { name: "Notificaciones", href: `/user/notificacion`, icon: Bell, badge: 3 },
+    ];
+
+    const footerItems = [
+        {
+            name: "Configuración",
+            href: `/user/dashboard/configuracion`,
+            icon: Settings,
+            subItems: [
+                { name: "Perfil", href: `/user/dashboard/configuracion/perfil`, description: "Update your details" },
+                { name: "Seguridad", href: `/user/dashboard/configuracion/seguridad`, description: "Manage your password" },
+                { name: "Comunicación", href: `/user/dashboard/configuracion/comunicacion`, description: "Correo y teléfono" },
+                { name: "Permisos", href: `/user/dashboard/configuracion/permisos`, description: "Permisos de control" },
+            ],
+        },
+        { name: "Ayuda", href: "#", icon: HelpCircle, description: "Get support" },
+        { name: "Salir/Inicio", href: "/", icon: LogOut, description: "Exit the app" },
+    ];
 
     const handleLinkClick = () => {
         // si quieres que también cierre al clicar en desktop, descomenta:
@@ -144,27 +170,4 @@ export function Sidebar() {
     );
 }
 
-const navItems = [
-    { name: "Dashboard", href: "/user/dashboard", icon: LayoutDashboard, badge: 0 },
-    { name: "Ver Productos", href: "/user/productos", icon: Package2, badge: 0 },
-    { name: "Compras", href: "/user/compras", icon: Package, badge: 52 },
-    { name: "Favoritos", href: "/user/favoritos", icon: Heart, badge: 6 },
-    { name: "Carrito", href: "/user/carrito", icon: ShoppingCart, badge: 5 },
-    { name: "Notificaciones", href: "/user/notificacion", icon: Bell, badge: 3 },
-];
 
-const footerItems = [
-    {
-        name: "Configuración",
-        href: "/user/dashboard/configuracion",
-        icon: Settings,
-        subItems: [
-            { name: "Perfil", href: "/user/dashboard/configuracion/perfil", description: "Update your details" },
-            { name: "Seguridad", href: "/user/dashboard/configuracion/seguridad", description: "Manage your password" },
-            { name: "Comunicación", href: "/user/dashboard/configuracion/comunicacion", description: "Correo y teléfono" },
-            { name: "Permisos", href: "/user/dashboard/configuracion/permisos", description: "Permisos de control" },
-        ],
-    },
-    { name: "Ayuda", href: "#", icon: HelpCircle, description: "Get support" },
-    { name: "Salir/Inicio", href: "/", icon: LogOut, description: "Exit the app" },
-];

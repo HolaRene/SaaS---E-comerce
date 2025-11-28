@@ -1,47 +1,68 @@
-import { ConvexError, v } from "convex/values";
-import { internalMutation, query, mutation } from "./_generated/server";
+import { ConvexError, v } from 'convex/values'
+import { internalMutation, query, mutation } from './_generated/server'
 
 // ========== QUERIES ==========
+// Obtener usuario por ID de Convex (más eficiente cuando ya tienes el ID)
+export const getUser = query({
+  args: { userId: v.id('usuarios') },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId)
+
+    if (!user) {
+      throw new ConvexError('Usuario no encontrado')
+    }
+
+    return user
+  },
+})
+
+// Obtener usuario por Clerk ID (para autenticación)
 export const getUserById = query({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
     const user = await ctx.db
-      .query("usuarios")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .first();
+      .query('usuarios')
+      .withIndex('by_clerkId', q => q.eq('clerkId', args.clerkId))
+      .first()
 
     if (!user) {
-      throw new ConvexError("Usuario no encontrado");
+      throw new ConvexError('Usuario no encontrado')
     }
 
-    return user;
+    return user
   },
-});
+})
 
 export const getUserByEmail = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
     const user = await ctx.db
-      .query("usuarios")
-      .withIndex("by_correo", (q) => q.eq("correo", args.email))
-      .first();
+      .query('usuarios')
+      .withIndex('by_correo', q => q.eq('correo', args.email))
+      .first()
 
-    return user;
+    return user
   },
-});
+})
 
 // Obtener usuarios por rol (para admin)
 export const getUsersByRole = query({
-  args: { rol: v.union(v.literal("admin"), v.literal("vendedor"), v.literal("cliente")) },
+  args: {
+    rol: v.union(
+      v.literal('admin'),
+      v.literal('vendedor'),
+      v.literal('cliente')
+    ),
+  },
   handler: async (ctx, args) => {
     const users = await ctx.db
-      .query("usuarios")
-      .withIndex("by_rol", (q) => q.eq("rol", args.rol))
-      .collect();
+      .query('usuarios')
+      .withIndex('by_rol', q => q.eq('rol', args.rol))
+      .collect()
 
-    return users;
+    return users
   },
-});
+})
 
 // Top vendedores por ventas (similar al ejemplo de podcasts)
 // export const getTopVendedores = query({
@@ -90,52 +111,56 @@ export const crearUser = internalMutation({
     correo: v.string(),
     imgUrl: v.optional(v.string()),
     nombre: v.string(),
-    apellido:v.string(),
+    apellido: v.string(),
     numeroTelefono: v.optional(v.string()),
-    rol: v.union(v.literal("admin"), v.literal("vendedor"), v.literal("cliente")),
+    rol: v.union(
+      v.literal('admin'),
+      v.literal('vendedor'),
+      v.literal('cliente')
+    ),
   },
   handler: async (ctx, args) => {
     // Validar que el usuario no exista
     const usuarioExistente = await ctx.db
-      .query("usuarios")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .first();
+      .query('usuarios')
+      .withIndex('by_clerkId', q => q.eq('clerkId', args.clerkId))
+      .first()
 
     if (usuarioExistente) {
-      throw new ConvexError(`Usuario con clerkId ${args.clerkId} ya existe`);
+      throw new ConvexError(`Usuario con clerkId ${args.clerkId} ya existe`)
     }
 
     // Validar que el email no esté en uso
     const emailExistente = await ctx.db
-      .query("usuarios")
-      .withIndex("by_correo", (q) => q.eq("correo", args.correo))
-      .first();
+      .query('usuarios')
+      .withIndex('by_correo', q => q.eq('correo', args.correo))
+      .first()
 
     if (emailExistente) {
-      throw new ConvexError(`El email ${args.correo} ya está registrado`);
+      throw new ConvexError(`El email ${args.correo} ya está registrado`)
     }
 
     // Crear usuario
     const userId = await ctx.db.insert('usuarios', {
       clerkId: args.clerkId,
       correo: args.correo,
-      imgUrl: args.imgUrl || "/default-avatar.png",
+      imgUrl: args.imgUrl || '/default-avatar.png',
       nombre: args.nombre,
-      numTelefono: args.numeroTelefono || "",
-      apellido:args.apellido,
+      numTelefono: args.numeroTelefono || '',
+      apellido: args.apellido,
       rol: args.rol,
       configuracion: {
         notificaciones: true,
-        tema: "claro",
+        tema: 'claro',
       },
-    //   fechaCreacion: new Date().toISOString(),
-    //   estado: "activo"
-    });
+      //   fechaCreacion: new Date().toISOString(),
+      //   estado: "activo"
+    })
 
-    console.log(`Usuario creado: ${args.nombre} (${userId})`);
-    return userId;
-  }
-});
+    console.log(`Usuario creado: ${args.nombre} (${userId})`)
+    return userId
+  },
+})
 
 export const updateUser = internalMutation({
   args: {
@@ -144,27 +169,29 @@ export const updateUser = internalMutation({
     correo: v.optional(v.string()),
     nombre: v.optional(v.string()),
     numeroTelefono: v.optional(v.string()),
-    rol: v.optional(v.union(v.literal("admin"), v.literal("vendedor"), v.literal("cliente"))),
+    rol: v.optional(
+      v.union(v.literal('admin'), v.literal('vendedor'), v.literal('cliente'))
+    ),
   },
   async handler(ctx, args) {
     const user = await ctx.db
-      .query("usuarios")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .first();
+      .query('usuarios')
+      .withIndex('by_clerkId', q => q.eq('clerkId', args.clerkId))
+      .first()
 
     if (!user) {
-      throw new ConvexError("Usuario no encontrado");
+      throw new ConvexError('Usuario no encontrado')
     }
 
     // Si se actualiza el email, verificar que no esté en uso
     if (args.correo && args.correo !== user.correo) {
       const emailExistente = await ctx.db
-        .query("usuarios")
-        .withIndex("by_correo", (q) => q.eq("correo", args.correo!))
-        .first();
+        .query('usuarios')
+        .withIndex('by_correo', q => q.eq('correo', args.correo!))
+        .first()
 
       if (emailExistente) {
-        throw new ConvexError("El email ya está en uso por otro usuario");
+        throw new ConvexError('El email ya está en uso por otro usuario')
       }
     }
 
@@ -174,7 +201,7 @@ export const updateUser = internalMutation({
       ...(args.nombre && { nombre: args.nombre }),
       ...(args.numeroTelefono && { numTelefono: args.numeroTelefono }),
       ...(args.rol && { rol: args.rol }),
-    });
+    })
 
     // Actualizar referencias en otras tablas (similar al ejemplo de podcasts)
     // Actualizar imagen en reseñas
@@ -190,9 +217,9 @@ export const updateUser = internalMutation({
     //   })
     // );
 
-    return user._id;
+    return user._id
   },
-});
+})
 
 // export const deleteUser = internalMutation({
 //   args: { clerkId: v.string() },
@@ -271,7 +298,7 @@ export const updateUser = internalMutation({
 
 //     // 4. Finalmente eliminar el usuario
 //     await ctx.db.delete(user._id);
-    
+
 //     console.log(`Usuario eliminado: ${user.nombre} (${user._id})`);
 //     return { success: true };
 //   },
@@ -283,24 +310,26 @@ export const updateProfile = mutation({
     nombre: v.optional(v.string()),
     imgUrl: v.optional(v.string()),
     numeroTelefono: v.optional(v.string()),
-    configuracion: v.optional(v.object({
-      notificaciones: v.boolean(),
-      tema: v.string(),
-    })),
+    configuracion: v.optional(
+      v.object({
+        notificaciones: v.boolean(),
+        tema: v.string(),
+      })
+    ),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
+    const identity = await ctx.auth.getUserIdentity()
     if (!identity) {
-      throw new ConvexError("No autenticado");
+      throw new ConvexError('No autenticado')
     }
 
     const user = await ctx.db
-      .query("usuarios")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .first();
+      .query('usuarios')
+      .withIndex('by_clerkId', q => q.eq('clerkId', identity.subject))
+      .first()
 
     if (!user) {
-      throw new ConvexError("Usuario no encontrado");
+      throw new ConvexError('Usuario no encontrado')
     }
 
     await ctx.db.patch(user._id, {
@@ -308,9 +337,8 @@ export const updateProfile = mutation({
       ...(args.imgUrl && { imgUrl: args.imgUrl }),
       ...(args.numeroTelefono && { numTelefono: args.numeroTelefono }),
       ...(args.configuracion && { configuracion: args.configuracion }),
-    });
+    })
 
-    return { success: true };
+    return { success: true }
   },
-});
-
+})

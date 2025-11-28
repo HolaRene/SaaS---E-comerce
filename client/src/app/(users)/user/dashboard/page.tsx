@@ -4,31 +4,26 @@ import StatsCards from "./_components/StatsCards"
 import OrdenesActivas from "./_components/OrdenesActivas"
 import ActividadesNovedades from "./_components/ActividadesNovedades"
 import Recomendaciones from "./_components/Recomendaciones"
-import { useUser } from "@clerk/nextjs"
+import { useUserId } from "@/app/providers/UserIdProvider"
 import { useQuery } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
 
 
 
-
 const DashBoardUser = () => {
-    const { user: clerkUser, isLoaded } = useUser();
+    // Obtener el ID del usuario desde el contexto (viene de la URL)
+    const idUser = useUserId();
 
-    // Obtener usuario de Convex usando el clerkId real
-    const usuario = useQuery(
-        api.users.getUserById,
-        clerkUser ? { clerkId: clerkUser.id } : "skip"
-    );
+    // Obtener datos del usuario usando el ID de Convex directamente
+    const usuario = useQuery(api.users.getUser, { userId: idUser });
 
-    // Mientras carga o no hay usuario
-    if (!isLoaded || !clerkUser) {
+    // Mientras carga
+    if (!usuario) {
         return null; // o un skeleton
     }
 
     // Datos finales para mostrar
-    const nombreCompleto = usuario
-        ? `${usuario.nombre} ${usuario.apellido}`
-        : clerkUser.fullName || "Usuario";
+    const nombreCompleto = `${usuario.nombre} ${usuario.apellido}`;
 
     return (
         <div className="space-y-6">

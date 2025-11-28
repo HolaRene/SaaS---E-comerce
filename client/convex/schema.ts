@@ -16,6 +16,9 @@ export default defineSchema({
 
     propietario: v.id('usuarios'),
 
+    // Visibilidad pública (opcional para soportar datos existentes)
+    publica: v.boolean(), // true = visible para usuarios, false = oculta
+
     estado: v.union(
       v.literal('activo'),
       v.literal('inactivo'),
@@ -109,7 +112,9 @@ export default defineSchema({
     .index('by_ubicacion', ['lat', 'lng'])
     .index('by_departamento', ['departamento'])
     .index('by_delivery', ['delivery.habilitado'])
-    .index('by_estado_y_categoria', ['estado', 'categoria']),
+    .index('by_estado_y_categoria', ['estado', 'categoria'])
+    .index('by_publica', ['publica'])
+    .index('by_publica_estado', ['publica', 'estado']),
 
   // EProductos flexis ----------------
   productos: defineTable({
@@ -120,6 +125,9 @@ export default defineSchema({
     precio: v.number(),
     costo: v.optional(v.number()),
     categoria: v.string(),
+
+    // Visibilidad pública (opcional para soportar datos existentes)
+    publica: v.optional(v.boolean()), // true = visible para usuarios, false = oculta
 
     // Imágenes
     imagenes: v.array(v.string()),
@@ -154,7 +162,9 @@ export default defineSchema({
     .index('by_categoria', ['categoria'])
     .index('by_estado', ['estado'])
     .index('by_precio', ['precio'])
-    .index('by_ventas', ['ventasTotales']),
+    .index('by_ventas', ['ventasTotales'])
+    .index('by_publica', ['publica'])
+    .index('by_tienda_publica', ['tiendaId', 'publica']),
   //  Usuario flexi ===========================
   usuarios: defineTable({
     nombre: v.string(),

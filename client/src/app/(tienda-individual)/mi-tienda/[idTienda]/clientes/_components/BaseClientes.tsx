@@ -134,7 +134,7 @@ const BaseClientes = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                                 className="pl-10"
                             />
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-col md:flex-row">
                             <Select value={filterEstado} onValueChange={setFilterEstado}>
                                 <SelectTrigger className="w-[180px]">
                                     <Filter className="mr-2 h-4 w-4" />

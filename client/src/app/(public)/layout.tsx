@@ -10,9 +10,9 @@ const onest = Onest({
 });
 
 export const metadata: Metadata = {
-  title: "MiTienda Digital",
+  title: "MiComercio Digital",
   description:
-    "Tu tienda conectada y siempre bajo control",
+    "Tu Negocio conectado y siempre bajo control en tiempo real",
   icons: {
     icon: "/logo-flexi.ico",
   },

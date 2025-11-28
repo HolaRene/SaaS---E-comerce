@@ -1,8 +1,8 @@
-import { ConvexError, v } from "convex/values";
-import { mutation, query, internalMutation } from "./_generated/server";
-import { useUser } from "@clerk/nextjs";
-import { useQuery } from "convex/react";
-import { api } from "./_generated/api";
+import { ConvexError, v } from 'convex/values'
+import { mutation, query, internalMutation } from './_generated/server'
+import { useUser } from '@clerk/nextjs'
+import { useQuery } from 'convex/react'
+import { api } from './_generated/api'
 
 // ========== TIPOS Y FUNCIONES HELPER ==========
 // type Rol = "admin" | "vendedor" | "asistente";
@@ -47,38 +47,39 @@ import { api } from "./_generated/api";
 
 // // ========== QUERIES ==========
 
- // Obtener tienda por ID (solo si eres miembro o propietario)
+// Obtener tienda por ID (solo si eres miembro o propietario)
 export const getTiendaById = query({
-  args: { tiendaId: v.id("tiendas") },
+  args: { tiendaId: v.id('tiendas') },
   handler: async (ctx, args) => {
     try {
-      const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      console.warn("⚠️ Usuario no autenticado");
-        return null;
-    }
+      const identity = await ctx.auth.getUserIdentity()
+      if (!identity) {
+        console.warn('⚠️ Usuario no autenticado')
+        return null
+      }
 
-    const user = await ctx.db
-      .query("usuarios")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .first();
+      const user = await ctx.db
+        .query('usuarios')
+        .withIndex('by_clerkId', q => q.eq('clerkId', identity.subject))
+        .first()
 
-    if (!user) {
-      console.warn("⚠️ Usuario no encontrado en base de datos");
-        return null;
-    }
+      if (!user) {
+        console.warn('⚠️ Usuario no encontrado en base de datos')
+        return null
+      }
 
-    const tienda = await ctx.db.get(args.tiendaId);
-    if (!tienda) {
-      console.warn("⚠️ Tienda no encontrada:", args.tiendaId);
-        return null;
-    }
-    return tienda 
+      const tienda = await ctx.db.get(args.tiendaId)
+      if (!tienda) {
+        console.warn('⚠️ Tienda no encontrada:', args.tiendaId)
+        return null
+      }
+      return tienda
     } catch (error) {
       console.error(error)
       return null
     }
-  }})
+  },
+})
 
 //     // Verificar que el usuario tenga acceso
 //     const esMiembro = tienda.miembros.some((m: any) => m.usuarioId === user._id);
@@ -92,21 +93,21 @@ export const getTiendaById = query({
 
 // Obtener todas las tiendas de un propietario
 export const getTiendasByPropietario = query({
-  args: { propietarioId: v.id("usuarios") },
+  args: { propietarioId: v.id('usuarios') },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
+    const identity = await ctx.auth.getUserIdentity()
     if (!identity) {
-      throw new ConvexError("No autenticado");
+      throw new ConvexError('No autenticado')
     }
 
     const tiendas = await ctx.db
-      .query("tiendas")
-      .withIndex("by_propietario", (q) => q.eq("propietario", args.propietarioId))
-      .collect();
+      .query('tiendas')
+      .withIndex('by_propietario', q => q.eq('propietario', args.propietarioId))
+      .collect()
 
-    return tiendas ?? null;
+    return tiendas ?? null
   },
-});
+})
 
 //  Obtener tiendas por categoría (solo activas)
 // export const getTiendasByCategoria = query({
@@ -137,13 +138,13 @@ export const getTiendasByPropietario = query({
 
 // // Buscar tiendas cercanas (por ubicación)
 // export const getTiendasCercanas = query({
-//   args: { 
-//     lat: v.number(), 
-//     lng: v.number(), 
-//     radioKm: v.number() 
+//   args: {
+//     lat: v.number(),
+//     lng: v.number(),
+//     radioKm: v.number()
 //   },
 //   handler: async (ctx, args) => {
-     // Radio en grados aproximados (1 grado ≈ 111 km)
+// Radio en grados aproximados (1 grado ≈ 111 km)
 //     const radioGrados = args.radioKm / 111;
 //     const latMin = args.lat - radioGrados;
 //     const latMax = args.lat + radioGrados;
@@ -173,7 +174,7 @@ export const getTiendasByPropietario = query({
 //       .collect();
 
 //     // Filtrar tiendas donde el usuario es miembro
-//     return tiendas.filter((tienda) => 
+//     return tiendas.filter((tienda) =>
 //       tienda.miembros.some((m: any) => m.usuarioId === args.usuarioId)
 //     );
 //   },
@@ -221,7 +222,6 @@ export const getTiendasByPropietario = query({
 
 // Crear nueva tienda
 
-
 export const crearTienda = mutation({
   args: {
     nombre: v.string(),
@@ -234,7 +234,6 @@ export const crearTienda = mutation({
     lng: v.number(),
     avatar: v.optional(v.string()),
     imgBanner: v.optional(v.string()),
-    
 
     configuracion: v.object({
       NIT: v.optional(v.string()),
@@ -250,104 +249,111 @@ export const crearTienda = mutation({
       }),
     }),
 
-   horarios: v.array(
-  v.object({
-    dia: v.string(),
-    apertura: v.string(),
-    cierre: v.string(),
-    cerrado: v.boolean(),
-    aperturaEspecial: v.optional(v.string()),
-    cierreEspecial: v.optional(v.string()),
-  })
-),
-
+    horarios: v.array(
+      v.object({
+        dia: v.string(),
+        apertura: v.string(),
+        cierre: v.string(),
+        cerrado: v.boolean(),
+        aperturaEspecial: v.optional(v.string()),
+        cierreEspecial: v.optional(v.string()),
+      })
+    ),
   },
 
   handler: async (ctx, args) => {
-   
     // Obtener usuario actual desde Clerk
     const identity = await ctx.auth.getUserIdentity()
-    if (!identity) throw new ConvexError("No autenticado este diablo falla");
- 
-    // Buscar usuario en la DB Convex
-    const user = await ctx.db.query('usuarios').filter((q) => q.eq(q.field('correo'), identity.email)).collect()
-        if(user.length === 0) throw new ConvexError('Usuario no encontrado')
+    if (!identity) throw new ConvexError('No autenticado este diablo falla')
 
-        const tiendaId = await ctx.db.insert("tiendas", {
-        avatar: args.avatar ?? "https://images.pexels.com/photos/1833586/pexels-photo-1833586.jpeg",
-        imgBanner: args.imgBanner ?? "https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg",
-        nombre: args.nombre,
-        categoria: args.categoria,
-        descripcion: args.descripcion,
-        direccion: args.direccion,
-        lat: args.lat,
-        lng: args.lng,
-        puntuacion: 5, // ✔ obligatorio
-        telefono: args.telefono,
-        propietario: user[0]._id, // ✔ tu ID del usuario logueado
-        estado: "pendiente", // ✔ obligatorio
-        ventasHoy: 0, // ✔ obligatorio
-        departamento: args.departamento,
+    // Buscar usuario en la DB Convex
+    const user = await ctx.db
+      .query('usuarios')
+      .filter(q => q.eq(q.field('correo'), identity.email))
+      .collect()
+    if (user.length === 0) throw new ConvexError('Usuario no encontrado')
+
+    const tiendaId = await ctx.db.insert('tiendas', {
+      avatar:
+        args.avatar ??
+        'https://images.pexels.com/photos/1833586/pexels-photo-1833586.jpeg',
+      imgBanner:
+        args.imgBanner ??
+        'https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg',
+      nombre: args.nombre,
+      categoria: args.categoria,
+      descripcion: args.descripcion,
+      direccion: args.direccion,
+      lat: args.lat,
+      lng: args.lng,
+      puntuacion: 5, // ✔ obligatorio
+      telefono: args.telefono,
+      propietario: user[0]._id, // ✔ tu ID del usuario logueado
+      estado: 'pendiente', // ✔ obligatorio
+      ventasHoy: 0, // ✔ obligatorio
+      departamento: args.departamento,
       miembros: [
         {
-        usuarioId: user[0]._id,
-        rol: "admin",
-        fechaUnion: new Date().toISOString(),
-        permisos: ["full_access"]
-        }
-  ],
-  configuracion: {
-    NIT: args.configuracion?.NIT ?? "",
-    RUC: args.configuracion?.RUC ?? "",
-    moneda: args.configuracion?.moneda ?? "NIO",
-    whatsapp: args.configuracion?.whatsapp ?? "",
-    backup: args.configuracion?.backup ?? "",
-    permisosTienda: {
-      vendedoresPuedenCrearProductos:
-        args.configuracion?.permisosTienda?.vendedoresPuedenCrearProductos ?? true,
-      vendedoresPuedenModificarPrecios:
-        args.configuracion?.permisosTienda?.vendedoresPuedenModificarPrecios ?? false,
-      vendedoresPuedenVerReportes:
-        args.configuracion?.permisosTienda?.vendedoresPuedenVerReportes ?? false,
-      maxVendedores:
-        args.configuracion?.permisosTienda?.maxVendedores ?? 5
-    }
-  },
-  favoritos:0,
-  likes:0,
-  visitas:0,
-  estadisticas:{
-    clientesTotales:0,
-    productosActivos:0,
-    ventasTotales:0
-  },
-  delivery:{
-    costo:10,
-    habilitado: true,
-    tiempoEstimado: '1h',
-    zonas:['boaco']   
-  },
-  facturacion:{
-    habilitada:true,
-    numeracionActual:1234,
-    serie: "lo que venga me da igual",
-    tipo: "automatica"
-  },
-  ultimaActualizacion:new Date().toISOString(),
-  
-  horarios: args.horarios,
-  metricasEquipo: {
-    totalVendedores: 0,
-    ventasEsteMes: 0,
-    productoMasVendido: undefined
-  },
-  creadoEn:new Date().toISOString()
-});
+          usuarioId: user[0]._id,
+          rol: 'admin',
+          fechaUnion: new Date().toISOString(),
+          permisos: ['full_access'],
+        },
+      ],
+      configuracion: {
+        NIT: args.configuracion?.NIT ?? '',
+        RUC: args.configuracion?.RUC ?? '',
+        moneda: args.configuracion?.moneda ?? 'NIO',
+        whatsapp: args.configuracion?.whatsapp ?? '',
+        backup: args.configuracion?.backup ?? '',
+        permisosTienda: {
+          vendedoresPuedenCrearProductos:
+            args.configuracion?.permisosTienda
+              ?.vendedoresPuedenCrearProductos ?? true,
+          vendedoresPuedenModificarPrecios:
+            args.configuracion?.permisosTienda
+              ?.vendedoresPuedenModificarPrecios ?? false,
+          vendedoresPuedenVerReportes:
+            args.configuracion?.permisosTienda?.vendedoresPuedenVerReportes ??
+            false,
+          maxVendedores: args.configuracion?.permisosTienda?.maxVendedores ?? 5,
+        },
+      },
+      favoritos: 0,
+      likes: 0,
+      publica: true,
+      visitas: 0,
+      estadisticas: {
+        clientesTotales: 0,
+        productosActivos: 0,
+        ventasTotales: 0,
+      },
+      delivery: {
+        costo: 10,
+        habilitado: true,
+        tiempoEstimado: '1h',
+        zonas: ['boaco'],
+      },
+      facturacion: {
+        habilitada: true,
+        numeracionActual: 1234,
+        serie: 'lo que venga me da igual',
+        tipo: 'automatica',
+      },
+      ultimaActualizacion: new Date().toISOString(),
 
-    return tiendaId;
-  },
-});
+      horarios: args.horarios,
+      metricasEquipo: {
+        totalVendedores: 0,
+        ventasEsteMes: 0,
+        productoMasVendido: undefined,
+      },
+      creadoEn: new Date().toISOString(),
+    })
 
+    return tiendaId
+  },
+})
 
 // Actualizar tienda (solo propietario o admin)
 // export const actualizarTienda = mutation({
@@ -387,7 +393,7 @@ export const crearTienda = mutation({
 //     // Verificar permisos (solo propietario o admin)
 //     const esPropietario = await isOwner(ctx, args.tiendaId, user._id);
 //     const esAdmin = await hasTiendaPermission(ctx, args.tiendaId, user._id, "admin");
-    
+
 //     if (!esPropietario && !esAdmin) {
 //       throw new ConvexError("No tienes permiso para actualizar esta tienda");
 //     }
@@ -485,7 +491,7 @@ export const crearTienda = mutation({
 //     if (args.rol === "vendedor") {
 //       const vendedoresActuales = tienda.miembros.filter((m: any) => m.rol === "vendedor").length;
 //       const maxVendedores = tienda.configuracion.permisosTienda.maxVendedores;
-      
+
 //       if (vendedoresActuales >= maxVendedores) {
 //         throw new ConvexError(`Límite de vendedores alcanzado (máx: ${maxVendedores})`);
 //       }
@@ -620,7 +626,7 @@ export const crearTienda = mutation({
 //     if (args.nuevoRol === "vendedor") {
 //       const vendedoresActuales = tienda.miembros.filter((m: any) => m.rol === "vendedor").length;
 //       const maxVendedores = tienda.configuracion.permisosTienda.maxVendedores;
-      
+
 //       if (tienda.miembros[miembroIndex].rol !== "vendedor" && vendedoresActuales >= maxVendedores) {
 //         throw new ConvexError(`Límite de vendedores alcanzado (máx: ${maxVendedores})`);
 //       }

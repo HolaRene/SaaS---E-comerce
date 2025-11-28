@@ -81,7 +81,7 @@ const ComportamientoClientes = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
     return (
         <div className='space-y-3'>
             {/* Métricas clave de clientes */}
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
