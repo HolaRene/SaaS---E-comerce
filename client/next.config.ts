@@ -1,9 +1,9 @@
 // next.config.ts
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  typescript:{
-    ignoreBuildErrors: true
+  typescript: {
+    ignoreBuildErrors: true,
   },
   images: {
     remotePatterns: [
@@ -15,11 +15,12 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
-      
-     
+      {
+        protocol: 'https',
+        hostname: '*.convex.cloud',
+      },
     ],
   },
-  
-};
+}
 
-export default nextConfig;
+export default nextConfig

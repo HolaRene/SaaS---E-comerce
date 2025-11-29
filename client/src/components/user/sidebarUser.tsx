@@ -15,6 +15,7 @@ import {
     ShoppingCart,
     Bell,
     Package2,
+    Store,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -26,7 +27,8 @@ export function Sidebar({ idUser }: { idUser: Id<"usuarios"> }) {
     const navItems = [
         { name: "Dashboard", href: `/user/dashboard`, icon: LayoutDashboard, badge: 0 },
         { name: "Ver Productos", href: `/user/productos`, icon: Package2, badge: 0 },
-        { name: "Compras", href: `/user/compras`, icon: Package, badge: 52 },
+        { name: "Ver Negocios", href: `/user/negocios`, icon: Package2, badge: 0 },
+        { name: "Compras", href: `/user/compras`, icon: Store, badge: 52 },
         { name: "Favoritos", href: `/user/favoritos`, icon: Heart, badge: 6 },
         { name: "Carrito", href: `/user/carrito`, icon: ShoppingCart, badge: 5 },
         { name: "Notificaciones", href: `/user/notificacion`, icon: Bell, badge: 3 },

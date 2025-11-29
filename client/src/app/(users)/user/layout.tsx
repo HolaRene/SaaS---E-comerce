@@ -4,10 +4,12 @@ import { SidebarProvider } from "@/components/user/sidebar-provider";
 import { Sidebar } from "@/components/user/sidebarUser";
 import { Header } from "@/components/user/header";
 import { UserIdProvider } from "@/app/providers/UserIdProvider";
-import "@/app/globals.d.css";
+
 import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
+
+
 
 export default function UserLayout({ children }: { children: React.ReactNode }) {
     const { user: clerkUser, isLoaded } = useUser();
@@ -20,11 +22,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
 
     // Mientras carga
     if (!isLoaded || !clerkUser || !usuario) {
-        return (
-            <div className="min-h-screen bg-background flex items-center justify-center">
-                <div>Cargando...</div>
-            </div>
-        );
+        return <h1>hola</h1>
     }
 
     return (

@@ -169,3 +169,98 @@ export const deleteTienda = mutation({
     await ctx.db.delete(tiendaId)
   },
 })
+
+// ==========================================
+// QUERIES PARA MARKETPLACE PÚBLICO
+// ==========================================
+
+/**
+ * Obtiene todas las tiendas públicas activas o pendientes
+ * Para mostrar en el marketplace de usuarios
+ */
+export const getTiendasPublicas = query({
+  args: {},
+  handler: async ctx => {
+    const tiendas = await ctx.db
+      .query('tiendas')
+      .withIndex('by_publica', q => q.eq('publica', true))
+      .filter(q =>
+        q.or(
+          q.eq(q.field('estado'), 'activo'),
+          q.eq(q.field('estado'), 'pendiente')
+        )
+      )
+      .collect()
+
+    return tiendas
+  },
+})
+
+/**
+ * Obtiene una tienda pública por ID
+ * Retorna si es pública y está activa o pendiente
+ */
+export const getTiendaPublicaById = query({
+  args: { id: v.id('tiendas') },
+  handler: async (ctx, args) => {
+    const tienda = await ctx.db.get(args.id)
+
+    // Solo retornar si es pública y activa/pendiente
+    if (
+      !tienda ||
+      !tienda.publica ||
+      (tienda.estado !== 'activo' && tienda.estado !== 'pendiente')
+    ) {
+      return null
+    }
+
+    return tienda
+  },
+})
+
+/**
+ * Obtiene productos públicos de una tienda
+ * Solo productos activos y públicos
+ */
+export const getProductosPublicosByTienda = query({
+  args: { tiendaId: v.id('tiendas') },
+  handler: async (ctx, args) => {
+    const productos = await ctx.db
+      .query('productos')
+      .withIndex('by_tienda_publica', q =>
+        q.eq('tiendaId', args.tiendaId).eq('publica', true)
+      )
+      .filter(q => q.eq(q.field('estado'), 'activo'))
+      .collect()
+
+    return productos
+  },
+})
+
+/**
+ * Obtiene reseñas activas de una tienda
+ */
+export const getResenasPublicasByTienda = query({
+  args: { tiendaId: v.id('tiendas') },
+  handler: async (ctx, args) => {
+    const resenas = await ctx.db
+      .query('resenasTienda')
+      .withIndex('by_tienda', q => q.eq('tiendaId', args.tiendaId))
+      .filter(q => q.eq(q.field('estado'), 'activa'))
+      .collect()
+
+    // Obtener información de los clientes para cada reseña
+    const resenasConCliente = await Promise.all(
+      resenas.map(async resena => {
+        const cliente = await ctx.db.get(resena.clienteId)
+        return {
+          ...resena,
+          clienteNombre: cliente?.nombre || 'Usuario',
+          clienteImagen: cliente?.imgUrl || '/placeholder.svg',
+        }
+      })
+    )
+
+    return resenasConCliente
+  },
+})
