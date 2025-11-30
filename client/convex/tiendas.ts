@@ -8,6 +8,91 @@ export const getTiendaById = query({
   },
 })
 
+export const buscarTiendas = query({
+  args: {
+    search: v.optional(v.string()),
+    departamento: v.optional(v.string()),
+    categoria: v.optional(v.string()),
+    puntuacionMinima: v.optional(v.number()),
+    limite: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limite = args.limite ?? 20;
+
+    // ✅ CASO 1: Con búsqueda de texto (sin .order() - ya está ordenado por relevancia)
+    if (args.search && args.search.trim() !== '') {
+      let consulta = ctx.db
+        .query("tiendas")
+        .withSearchIndex("search_nombre", (q) => 
+          q.search("nombre", args.search.trim())
+        )
+        .filter((q) => q.eq(q.field("publica"), true))
+        .filter((q) =>
+          q.or(
+            q.eq(q.field("estado"), "activo"),
+            q.eq(q.field("estado"), "pendiente")
+          )
+        );
+
+      if (args.departamento) {
+        consulta = consulta.filter((q) => 
+          q.eq(q.field("departamento"), args.departamento)
+        );
+      }
+
+      if (args.categoria) {
+        consulta = consulta.filter((q) => 
+          q.eq(q.field("categoria"), args.categoria)
+        );
+      }
+
+      if (args.puntuacionMinima !== undefined) {
+        consulta = consulta.filter((q) => 
+          q.gte(q.field("puntuacion"), args.puntuacionMinima)
+        );
+      }
+
+      return await consulta.take(limite);
+    }
+
+    // ✅ CASO 2: Sin búsqueda de texto (usa índice + .order())
+    // Usamos el índice por `publica` y luego filtramos por estados
+    // (activo | pendiente) para alinear el comportamiento con `getTiendasPublicas`.
+    let consulta = ctx.db
+      .query("tiendas")
+      .withIndex("by_publica", (q) => q.eq("publica", true))
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("estado"), "activo"),
+          q.eq(q.field("estado"), "pendiente")
+        )
+      );
+
+    if (args.departamento) {
+      consulta = consulta.filter((q) => 
+        q.eq(q.field("departamento"), args.departamento)
+      );
+    }
+
+    if (args.categoria) {
+      consulta = consulta.filter((q) => 
+        q.eq(q.field("categoria"), args.categoria)
+      );
+    }
+
+    if (args.puntuacionMinima !== undefined) {
+      consulta = consulta.filter((q) => 
+        q.gte(q.field("puntuacion"), args.puntuacionMinima)
+      );
+    }
+
+    // Ordenar por `puntuacion` en memoria si el índice no permite orden directo
+    const resultados = await consulta.collect();
+    resultados.sort((a, b) => (b.puntuacion || 0) - (a.puntuacion || 0));
+    return resultados.slice(0, limite);
+  },
+});
+
 export const updateTienda = mutation({
   args: {
     id: v.id('tiendas'),

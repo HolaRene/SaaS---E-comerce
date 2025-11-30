@@ -1,7 +1,8 @@
 import { ResizablePanels } from "@/components/negocios/resizable-panels"
 import ListaNegocios from "@/components/public-negocios/lista-tiendas"
 
-const Page = () => {
+const Page = ({ searchParams: { busqueda } }: { searchParams: { busqueda?: string } }) => {
+
     return (
         <div className="h-screen flex flex-col bg-background">
 
@@ -11,7 +12,7 @@ const Page = () => {
                 <div className="hidden md:block h-full">
                     <ResizablePanels
                         leftPanel={<h1>Mapa</h1>}
-                        rightPanel={<ListaNegocios />}
+                        rightPanel={<ListaNegocios busqueda={busqueda} />}
                         defaultLeftWidth={60}
                         minLeftWidth={45}
                         maxLeftWidth={75}
@@ -22,7 +23,7 @@ const Page = () => {
                 <div className="md:hidden h-full overflow-y-auto">
                     {/* Listas de negocios */}
                     <div className="min-h-[50vh]">
-                        <ListaNegocios />
+                        <ListaNegocios busqueda={busqueda} />
                     </div>
                     {/* Mapa */}
                     <div className="h-[60vh] border-t">Mapa</div>

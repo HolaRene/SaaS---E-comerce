@@ -114,7 +114,14 @@ export default defineSchema({
     .index('by_delivery', ['delivery.habilitado'])
     .index('by_estado_y_categoria', ['estado', 'categoria'])
     .index('by_publica', ['publica'])
-    .index('by_publica_estado', ['publica', 'estado']),
+    .index('by_publica_estado', ['publica', 'estado'])// ✅ CORRECTO: Índice de búsqueda para el nombre
+    .searchIndex('search_nombre', {
+      searchField: 'nombre',
+      // Opcional: campos por los que filtrar (mejora rendimiento)
+      filterFields: ['publica', 'estado', 'departamento', 'categoria', 'puntuacion']
+    })
+    // ✅ NUEVO ÍNDICE para ordenar por puntuación
+    .index('by_publica_estado_puntuacion', ['publica', 'estado', 'puntuacion']),
 
   // EProductos flexis ----------------
   productos: defineTable({
