@@ -1,12 +1,12 @@
 
 import type { Metadata } from "next";
-import { Aladin, Poppins } from "next/font/google";
+import { Poppins } from "next/font/google";
 
 import Navegacion from "@/components/Navegacion";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import AppSideBar from "@/components/AppSideBar";
 import { cookies } from "next/headers";
-import "./mi-tienda.d.css"
+import "./mitienda.d.css"
 
 import { ToastContainer } from 'react-toastify';
 

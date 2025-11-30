@@ -195,6 +195,43 @@ export const getTiendasPublicas = query({
     return tiendas
   },
 })
+// Obtener tienda por busqueda
+// export const getPodcastBySearch = query({
+//   args: {
+//     search: v.string(),
+//   },
+//   handler: async (ctx, args) => {
+//     if (args.search === "") {
+//       return await ctx.db.query("podcasts").order("desc").collect();
+//     }
+
+//     // Intentar búsqueda por autor primero
+//     const authorSearch = await ctx.db
+//       .query("podcasts")
+//       .withSearchIndex("search_author", (q) => q.search("author", args.search))
+//       .take(10);
+
+//     if (authorSearch.length > 0) {
+//       return authorSearch;
+//     }
+
+//     // Intentar búsqueda por título
+//     const titleSearch = await ctx.db
+//       .query("podcasts")
+//       .withSearchIndex("search_title", (q) => q.search("podcastTitle", args.search))
+//       .take(10);
+
+//     if (titleSearch.length > 0) {
+//       return titleSearch;
+//     }
+
+//     // Finalmente, búsqueda por descripción
+//     return await ctx.db
+//       .query("podcasts")
+//       .withSearchIndex("search_body", (q) => q.search("podcastDescription", args.search))
+//       .take(10);
+//   },
+// });
 
 /**
  * Obtiene una tienda pública por ID

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "./globals.d.css";
+import "./globals.css";
 import { ClerkProvider } from '@clerk/nextjs'
 import ConvexClientProvider from "./providers/ConvexProviderWithClerk";
 import { Alice } from 'next/font/google'

@@ -2,9 +2,9 @@
  * UTILIDADES PARA MANEJO DE TIENDAS
  * Funciones helper para estados, horarios y filtrado
  */
+import Fuse from 'fuse.js'
 
-
-import type { Store, StoreFilters, Schedule } from "./types-negocios"
+import type { Store, StoreFilters, Schedule } from './types-negocios'
 
 // ==========================================
 // VERIFICACIÓN DE HORARIOS
@@ -15,18 +15,26 @@ import type { Store, StoreFilters, Schedule } from "./types-negocios"
  */
 export function isStoreOpen(horarios: Schedule[]): boolean {
   const now = new Date()
-  const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
+  const days = [
+    'Domingo',
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
+  ]
   const currentDay = days[now.getDay()]
   const currentTime = now.getHours() * 60 + now.getMinutes() // Minutos desde medianoche
 
-  const todaySchedule = horarios.find((h) => h.dia === currentDay)
+  const todaySchedule = horarios.find(h => h.dia === currentDay)
 
   if (!todaySchedule || todaySchedule.cerrado) {
     return false
   }
 
-  const [openHour, openMin] = todaySchedule.apertura.split(":").map(Number)
-  const [closeHour, closeMin] = todaySchedule.cierre.split(":").map(Number)
+  const [openHour, openMin] = todaySchedule.apertura.split(':').map(Number)
+  const [closeHour, closeMin] = todaySchedule.cierre.split(':').map(Number)
 
   const openTime = openHour * 60 + openMin
   const closeTime = closeHour * 60 + closeMin
@@ -39,36 +47,44 @@ export function isStoreOpen(horarios: Schedule[]): boolean {
  */
 export function getStoreStatusInfo(store: Store): {
   text: string
-  color: "success" | "destructive" | "warning" | "muted"
+  color: 'success' | 'destructive' | 'warning' | 'muted'
   isOpen: boolean
 } {
   // Primero verificar estado general de la tienda
   switch (store.estado) {
-    case "cerrado_temporal":
-      return { text: "Cerrado temporal", color: "warning", isOpen: false }
-    case "suspendido":
-      return { text: "Suspendido", color: "muted", isOpen: false }
-    case "cerrado":
-      return { text: "Cerrado", color: "destructive", isOpen: false }
+    case 'cerrado_temporal':
+      return { text: 'Cerrado temporal', color: 'warning', isOpen: false }
+    case 'suspendido':
+      return { text: 'Suspendido', color: 'muted', isOpen: false }
+    case 'cerrado':
+      return { text: 'Cerrado', color: 'destructive', isOpen: false }
   }
 
   // Si está activo, verificar horarios
   const open = isStoreOpen(store.horarios)
   return open
-    ? { text: "Abierto", color: "success", isOpen: true }
-    : { text: "Cerrado", color: "destructive", isOpen: false }
+    ? { text: 'Abierto', color: 'success', isOpen: true }
+    : { text: 'Cerrado', color: 'destructive', isOpen: false }
 }
 
 /**
  * Formatea el horario de hoy para mostrar
  */
 export function getTodaySchedule(horarios: Schedule[]): string {
-  const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
+  const days = [
+    'Domingo',
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
+  ]
   const today = days[new Date().getDay()]
-  const schedule = horarios.find((h) => h.dia === today)
+  const schedule = horarios.find(h => h.dia === today)
 
   if (!schedule || schedule.cerrado) {
-    return "Cerrado hoy"
+    return 'Cerrado hoy'
   }
 
   return `${schedule.apertura} - ${schedule.cierre}`
@@ -79,12 +95,12 @@ export function getTodaySchedule(horarios: Schedule[]): string {
 // ==========================================
 
 /** Configuración de Fuse.js para búsqueda difusa */
-const fuseOptions: Fuse.IFuseOptions<Store> = {
+const fuseOptions: Fuse.FuseOptions<Store> = {
   keys: [
-    { name: "nombre", weight: 0.4 },
-    { name: "categoria", weight: 0.25 },
-    { name: "departamento", weight: 0.2 },
-    { name: "descripcion", weight: 0.15 },
+    { name: 'nombre', weight: 0.4 },
+    { name: 'categoria', weight: 0.25 },
+    { name: 'departamento', weight: 0.2 },
+    { name: 'descripcion', weight: 0.15 },
   ],
   threshold: 0.4, // Tolerancia a errores tipográficos
   includeScore: true,
@@ -99,7 +115,7 @@ export function searchStores(stores: Store[], query: string): Store[] {
   const fuse = new Fuse(stores, fuseOptions)
   const results = fuse.search(query)
 
-  return results.map((r) => r.item)
+  return results.map(r => r.item)
 }
 
 // ==========================================
@@ -119,22 +135,22 @@ export function filterStores(stores: Store[], filters: StoreFilters): Store[] {
 
   // Filtro por categoría
   if (filters.categoria) {
-    filtered = filtered.filter((s) => s.categoria === filters.categoria)
+    filtered = filtered.filter(s => s.categoria === filters.categoria)
   }
 
   // Filtro por departamento
   if (filters.departamento) {
-    filtered = filtered.filter((s) => s.departamento === filters.departamento)
+    filtered = filtered.filter(s => s.departamento === filters.departamento)
   }
 
   // Filtro por rating mínimo
   if (filters.minRating > 0) {
-    filtered = filtered.filter((s) => s.rating >= filters.minRating)
+    filtered = filtered.filter(s => s.rating >= filters.minRating)
   }
 
   // Filtro por tiendas abiertas
   if (filters.soloAbiertas) {
-    filtered = filtered.filter((s) => {
+    filtered = filtered.filter(s => {
       const status = getStoreStatusInfo(s)
       return status.isOpen
     })
@@ -142,12 +158,12 @@ export function filterStores(stores: Store[], filters: StoreFilters): Store[] {
 
   // Filtro por delivery
   if (filters.conDelivery) {
-    filtered = filtered.filter((s) => s.delivery.habilitado)
+    filtered = filtered.filter(s => s.delivery.habilitado)
   }
 
   // Filtro por verificadas
   if (filters.verificadas) {
-    filtered = filtered.filter((s) => s.verificada)
+    filtered = filtered.filter(s => s.verificada)
   }
 
   return filtered
@@ -161,7 +177,7 @@ export function filterStores(stores: Store[], filters: StoreFilters): Store[] {
  * Formatea precio en córdobas
  */
 export function formatPrice(price: number): string {
-  return `C$ ${price.toLocaleString("es-NI")}`
+  return `C$ ${price.toLocaleString('es-NI')}`
 }
 
 /**
@@ -173,8 +189,8 @@ export function formatRelativeDate(dateStr: string): string {
   const diffTime = Math.abs(now.getTime() - date.getTime())
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
-  if (diffDays === 0) return "Hoy"
-  if (diffDays === 1) return "Ayer"
+  if (diffDays === 0) return 'Hoy'
+  if (diffDays === 1) return 'Ayer'
   if (diffDays < 7) return `Hace ${diffDays} días`
   if (diffDays < 30) return `Hace ${Math.floor(diffDays / 7)} semanas`
   if (diffDays < 365) return `Hace ${Math.floor(diffDays / 30)} meses`
