@@ -10,7 +10,7 @@ import SpinnerLoader from "./SpinnerLoader"
 const ListaNegocios = () => {
     // Obtener tiendas públicas de Convex
     const tiendasConvex = useQuery(api.tiendas.getTiendasPublicas)
-    // console.log(tiendasConvex)
+
     return (
         <div className="h-full flex flex-col">
             <SearchBar />
@@ -19,11 +19,13 @@ const ListaNegocios = () => {
                 <div className="flex flex-col gap-5">
                     {
                         tiendasConvex ? (<>
-                            {tiendasConvex.length > 0 ? (<div className="podcast_grid">
-                                {tiendasConvex?.map(({ _id, imgBanner, nombre, descripcion }) => (
+                            {tiendasConvex.length > 0 ? (<div className="flex flex-col gap-5">
+                                {tiendasConvex?.map(({ _id, imgBanner, nombre, descripcion, departamento, categoria }) => (
                                     <TiendaCard key={_id} imgUrl={imgBanner!}
                                         description={descripcion}
                                         title={nombre}
+                                        departamento={departamento}
+                                        categoria={categoria}
                                         tiendaId={_id} />
                                 ))}
                             </div>) : (<EmptyState title="No hay resultado a la busqueda" />)}

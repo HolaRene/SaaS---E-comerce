@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import "../globals.d.css"
+import "../globals.css"
 import { ThemeProvider } from "next-themes"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import Navegacion from "@/components/Navegacion"

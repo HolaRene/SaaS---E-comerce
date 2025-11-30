@@ -25,7 +25,7 @@ const Page = () => {
                         <ListaNegocios />
                     </div>
                     {/* Mapa */}
-                    <div className="h-[60vh] border-t">Hola don</div>
+                    <div className="h-[60vh] border-t">Mapa</div>
                 </div>
 
             </main>
