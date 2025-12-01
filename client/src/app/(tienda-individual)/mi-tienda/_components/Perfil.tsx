@@ -16,7 +16,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Edit, Eye, ImageIcon, Phone, Star } from "lucide-react";
 import Link from "next/link";
-import { productos } from "@/lib/tiendas-datos";
 import { useQuery } from "convex/react";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { api } from "../../../../../convex/_generated/api";

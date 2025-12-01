@@ -51,7 +51,7 @@ export default function MapPreview({
                         shadowUrl: new URL('leaflet/dist/images/marker-shadow.png', import.meta.url).toString(),
                     })
                 } catch (e) {
-                    console.error('Error setting Leaflet icon URLs', e)
+                    console.error('Error setting Leaflet icon URLs')
                 }
 
                 const RL = await import('react-leaflet')
@@ -60,7 +60,7 @@ export default function MapPreview({
                 setLeafletReady(true)
             } catch (e) {
                 // fail silently; leaflet may not be available during SSR build
-                console.error('Error cargando Leaflet dinámicamente', e)
+                console.error('Error cargando Leaflet dinámicamente')
             }
         }
 
@@ -80,7 +80,7 @@ export default function MapPreview({
         <div style={{ height: typeof height === 'number' ? `${height}px` : height, width: '100%' }}>
             <RLMapContainer center={center as LatLngExpression} zoom={initialZoom} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
                 <RLTileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">Z</a>'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 {tiendasConCoords.map((t: any) => (

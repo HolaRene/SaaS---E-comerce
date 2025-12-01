@@ -26,6 +26,7 @@ export default function RootLayout({
   return (
     <section className={`${onest.variable} relative antialiased`}>
       <LpNavbar1 />
+
       {children}
     </section>
 

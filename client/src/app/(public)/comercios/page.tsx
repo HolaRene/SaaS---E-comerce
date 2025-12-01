@@ -1,6 +1,7 @@
-import { ResizablePanels } from "@/components/negocios/resizable-panels"
+
 import ListaNegocios from "@/components/public-negocios/lista-tiendas"
 import MapPanelClient from '@/components/public-negocios/MapPanelClient'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
 
 const Page = ({ searchParams: { busqueda } }: { searchParams: { busqueda?: string } }) => {
 
@@ -11,13 +12,15 @@ const Page = ({ searchParams: { busqueda } }: { searchParams: { busqueda?: strin
             <main className="flex-1 overflow-hidden">
                 {/* Contenedor para pantallas grandes deslizantes */}
                 <div className="hidden md:block h-full">
-                    <ResizablePanels
-                        leftPanel={<MapPanelClient />}
-                        rightPanel={<ListaNegocios busqueda={busqueda} />}
-                        defaultLeftWidth={60}
-                        minLeftWidth={45}
-                        maxLeftWidth={75}
-                    />
+                    <ResizablePanelGroup direction="horizontal">
+                        <ResizablePanel defaultSize={60} minSize={45} maxSize={75}>
+                            <MapPanelClient embedded />
+                        </ResizablePanel>
+                        <ResizableHandle withHandle />
+                        <ResizablePanel defaultSize={40} minSize={25} maxSize={55}>
+                            <ListaNegocios busqueda={busqueda} />
+                        </ResizablePanel>
+                    </ResizablePanelGroup>
                 </div>
 
                 {/* Contenedor para pantallas pequeñas */}
