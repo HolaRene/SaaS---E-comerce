@@ -1,5 +1,6 @@
 import { ResizablePanels } from "@/components/negocios/resizable-panels"
 import ListaNegocios from "@/components/public-negocios/lista-tiendas"
+import MapPanelClient from '@/components/public-negocios/MapPanelClient'
 
 const Page = ({ searchParams: { busqueda } }: { searchParams: { busqueda?: string } }) => {
 
@@ -11,7 +12,7 @@ const Page = ({ searchParams: { busqueda } }: { searchParams: { busqueda?: strin
                 {/* Contenedor para pantallas grandes deslizantes */}
                 <div className="hidden md:block h-full">
                     <ResizablePanels
-                        leftPanel={<h1>Mapa</h1>}
+                        leftPanel={<MapPanelClient />}
                         rightPanel={<ListaNegocios busqueda={busqueda} />}
                         defaultLeftWidth={60}
                         minLeftWidth={45}
@@ -25,8 +26,10 @@ const Page = ({ searchParams: { busqueda } }: { searchParams: { busqueda?: strin
                     <div className="min-h-[50vh]">
                         <ListaNegocios busqueda={busqueda} />
                     </div>
-                    {/* Mapa */}
-                    <div className="h-[60vh] border-t">Mapa</div>
+                    {/* Mapa (móvil) */}
+                    <div className="h-[60vh] border-t">
+                        <MapPanelClient embedded />
+                    </div>
                 </div>
 
             </main>

@@ -41,14 +41,15 @@ const SearchBar = () => {
 
         if (query) {
             ruta.push(`/comercios?${query}`)
-        } else if (!valorTiempo && pathname === '/descubre') {
+        } else {
+            // Si no quedan parámetros, navegar a la ruta base de comercios (borra query)
             ruta.push('/comercios')
         }
         // Dependencias: actualiza al cambiar busqueda (debounced), departamento o rating
     }, [valorTiempo, departamento, rating, categoria, pathname, ruta])
 
     return (
-        <div className='relative mt-8 block '>
+        <div className='relative mt-5 block px-3'>
             <div className="flex flex-col sm:flex-row lg:flex-col lg:items-start gap-2">
                 <Input className="w-full text-[16px] leading-normal bg-black-1 rounded-[6px] placeholder:text-gray-1 border-none text-gray-1 py-3 pl-12 focus-visible:ring-offset-orange-1" placeholder="Buscar tiendas flexis" value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
                     onLoad={() => setBusqueda('')} />
