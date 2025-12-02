@@ -114,11 +114,17 @@ export default defineSchema({
     .index('by_delivery', ['delivery.habilitado'])
     .index('by_estado_y_categoria', ['estado', 'categoria'])
     .index('by_publica', ['publica'])
-    .index('by_publica_estado', ['publica', 'estado'])// ✅ CORRECTO: Índice de búsqueda para el nombre
+    .index('by_publica_estado', ['publica', 'estado']) // ✅ CORRECTO: Índice de búsqueda para el nombre
     .searchIndex('search_nombre', {
       searchField: 'nombre',
       // Opcional: campos por los que filtrar (mejora rendimiento)
-      filterFields: ['publica', 'estado', 'departamento', 'categoria', 'puntuacion']
+      filterFields: [
+        'publica',
+        'estado',
+        'departamento',
+        'categoria',
+        'puntuacion',
+      ],
     })
     // ✅ NUEVO ÍNDICE para ordenar por puntuación
     .index('by_publica_estado_puntuacion', ['publica', 'estado', 'puntuacion']),
@@ -171,6 +177,7 @@ export default defineSchema({
     .index('by_precio', ['precio'])
     .index('by_ventas', ['ventasTotales'])
     .index('by_publica', ['publica'])
+    .index('by_publica_cantidad', ['publica', 'cantidad'])
     .index('by_tienda_publica', ['tiendaId', 'publica']),
   //  Usuario flexi ===========================
   usuarios: defineTable({

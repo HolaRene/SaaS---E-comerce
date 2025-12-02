@@ -8,7 +8,7 @@ const Page = async ({ searchParams }: { searchParams: Promise<{ busqueda?: strin
     return (
         <div className="h-screen flex flex-col bg-background">
             <main className="flex-1 overflow-hidden">
-                {/* ✅ VERSIÓN ESCRITORIO */}
+                {/* VERSIÓN ESCRITORIO */}
                 <div className="hidden md:block h-full">
                     <ResizablePanelGroup direction="horizontal">
                         <ResizablePanel defaultSize={60} minSize={45} maxSize={75}>
@@ -31,7 +31,7 @@ const Page = async ({ searchParams }: { searchParams: Promise<{ busqueda?: strin
                         <ListaNegocios busqueda={busqueda} />
                     </div>
                     {/* Mapa (móvil) */}
-                    <div className="h-[60vh] border-t">
+                    <div className="h-[45vh] border-t">
                         <MapPanelClient embedded />
                     </div>
                 </div>

@@ -9,116 +9,72 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import Image from "next/image";
+import { useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
+import { Id } from "../../../../convex/_generated/dataModel";
 
 // Mock data
 const categories = ["Electrónica", "Ropas", "Casa y jardín", "Deporte", "Libros", "Juguetes", "Bellesa", "Vehiculos"];
 
-const products = [
-    {
-        id: 1,
-        name: "Wireless Bluetooth Headphones",
-        price: 79.99,
-        originalPrice: 99.99,
-        image: "https://images.pexels.com/photos/3394656/pexels-photo-3394656.jpeg?w=400&h=400&fit=crop",
-        rating: 4.5,
-        reviews: 1247,
-        seller: "TechGear Pro",
-        trustScore: 92,
-        category: "Electronics",
-    },
-    {
-        id: 2,
-        name: "Premium Cotton T-Shirt",
-        price: 24.99,
-        image: "https://images.pexels.com/photos/2983464/pexels-photo-2983464.jpeg?w=400&h=400&fit=crop",
-        rating: 4.3,
-        reviews: 856,
-        seller: "Fashion Forward",
-        trustScore: 85,
-        category: "Clothing",
-    },
-    {
-        id: 3,
-        name: "Smart Home Security Camera",
-        price: 149.99,
-        originalPrice: 199.99,
-        image: "https://images.pexels.com/photos/3992870/pexels-photo-3992870.jpeg?w=400&h=400&fit=crop",
-        rating: 4.7,
-        reviews: 2103,
-        seller: "SecureHome Tech",
-        trustScore: 96,
-        category: "Electronics",
-    },
-    {
-        id: 4,
-        name: "Organic Coffee Beans 2lb",
-        price: 18.99,
-        image: "https://images.pexels.com/photos/585750/pexels-photo-585750.jpeg?w=400&h=400&fit=crop",
-        rating: 4.6,
-        reviews: 743,
-        seller: "Mountain Roasters",
-        trustScore: 89,
-        category: "Food",
-    },
-    {
-        id: 5,
-        name: "Yoga Mat Premium Quality",
-        price: 39.99,
-        image: "https://images.pexels.com/photos/3823039/pexels-photo-3823039.jpeg?w=400&h=400&fit=crop",
-        rating: 4.4,
-        reviews: 512,
-        seller: "FitLife Essentials",
-        trustScore: 83,
-        category: "Sports",
-    },
-    {
-        id: 6,
-        name: "LED Desk Lamp with USB Charging",
-        price: 34.99,
-        originalPrice: 49.99,
-        image: "https://images.pexels.com/photos/8092810/pexels-photo-8092810.jpeg?w=400&h=400&fit=crop",
-        rating: 4.2,
-        reviews: 328,
-        seller: "Office Solutions",
-        trustScore: 78,
-        category: "Home & Garden",
-    },
-];
+// interface de productos
+interface ProductosCard {
+    _id: Id<"productos">;
+    _creationTime: number;
+    publica?: boolean;
+    costo?: number;
+    ventasTotales?: number;
+    creadoEn?: string;
+    puntuacionPromedio?: number;
+    vistasTotales?: number;
+    attributes?: Record<string, string | number | string[]>;
+    codigoBarras?: string;
+    sku?: string;
+    nombre: string;
+    categoria: string;
+    descripcion: string;
+    estado: "activo" | "inactivo" | "agotado";
+    ultimaActualizacion: string;
+    tiendaId: Id<"tiendas">;
+    precio: number;
+    imagenes: string[];
+    cantidad: number;
+    autorId: Id<"usuarios">[];
+}
 
 
-function ProductCard({ product }: { product: (typeof products)[0] }) {
+function ProductCard({ product }: { product: ProductosCard }) {
     return (
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
             <CardContent className="p-4">
                 <div className="relative mb-3">
-                    <Link href={`/product/${product.id}`}>
-                        <Image src={product.image} alt={product.name} className="w-full h-48 object-cover rounded-md" width={192} height={192} />
+                    <Link href={`/product/${product._id}`}>
+                        <Image src={product.imagenes[0]} alt={product.nombre} className="w-full h-48 object-cover rounded-md" width={192} height={192} />
                     </Link>
-                    {product.originalPrice && (
+                    {product.costo && (
                         <Badge className="absolute top-2 left-2 bg-red-500 text-white">
-                            Guardar ${(product.originalPrice - product.price).toFixed(2)}
+                            Guardar ${(product.costo - product.precio).toFixed(2)}
                         </Badge>
                     )}
                 </div>
 
-                <h3 className="font-medium text-sm mb-2 line-clamp-2">{product.name}</h3>
+                <h3 className="font-medium text-sm mb-2 line-clamp-2">{product.nombre}</h3>
 
                 <div className="flex items-center mb-2">
                     <div className="flex items-center">
                         {[...Array(5)].map((_, i) => (
-                            <Star key={i} className={`w-4 h-4 ${i < Math.floor(product.rating) ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
+                            <Star key={i} className={`w-4 h-4 ${i < Math.floor(product.puntuacionPromedio) ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
                         ))}
                     </div>
-                    <span className="text-sm text-gray-600 ml-1">({product.reviews})</span>
+                    <span className="text-sm text-gray-600 ml-1">(5)</span>
                 </div>
 
                 <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg font-bold text-gray-900">${product.price}</span>
-                    {product.originalPrice && <span className="text-sm text-gray-500 line-through">${product.originalPrice}</span>}
+                    <span className="text-lg font-bold text-gray-900">${product.precio}</span>
+                    {product.costo && <span className="text-sm text-gray-500 line-through">${product.costo}</span>}
                 </div>
 
                 <div className="text-xs text-gray-600 mb-3">
-                    by <span className="text-blue-600 hover:underline">{product.seller}</span>
+                    by <span className="text-blue-600 hover:underline">{product.autorId}</span>
                 </div>
 
 
@@ -132,6 +88,17 @@ export default function BuyerHomepage() {
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [priceRange, setPriceRange] = useState([0, 200]);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    // obtner los pridyctos
+    const productosPublicos = useQuery(api.productos.getProductosPublicosConStock)
+
+    if (productosPublicos === undefined) {
+        return <div>Cargando...</div>
+    }
+
+    if (!productosPublicos) {
+        return <div>Producto no encontrado o no disponible</div>
+    }
+
 
     const handleCategoryChange = (category: string, checked: boolean) => {
         setSelectedCategories(checked ? [...selectedCategories, category] : selectedCategories.filter((c) => c !== category));
@@ -195,7 +162,7 @@ export default function BuyerHomepage() {
                                             <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
                                         ))}
                                     </div>
-                                    <span className="ml-1">& mejor</span>
+                                    <span className="ml-1"> & mejor</span>
                                 </label>
                             </div>
                         ))}
@@ -228,8 +195,8 @@ export default function BuyerHomepage() {
 
                 {/* Product Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {products.map((product) => (
-                        <ProductCard key={product.id} product={product} />
+                    {productosPublicos.map((product) => (
+                        <ProductCard key={product._id} product={product} />
                     ))}
                 </div>
 

@@ -28,7 +28,6 @@ const ListaNegocios = ({ busqueda }: { busqueda?: string }) => {
     const isFiltering = (search && search.trim() !== "") || departamento || categoria || puntuacionMinima !== undefined
     const tiendasToShow = isFiltering ? busquedaTiendas : tiendasConvex
 
-    console.log("tiendasToShow", tiendasToShow)
 
     return (
         <div className="h-full flex flex-col overflow-hidden min-h-0">

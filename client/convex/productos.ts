@@ -471,3 +471,34 @@ export const eliminarProducto = mutation({
     return { success: true }
   },
 })
+
+// obtener un cachimbo de productos
+export const getProductosPublicosConStock = query({
+  args: {},
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('productos')
+      .withIndex('by_publica_cantidad', q =>
+        q.eq('publica', true).gt('cantidad', 5)
+      )
+      .collect()
+  },
+})
+
+// Obtener producto específico por ID
+export const getProductoId = query({
+  args: {
+    id: v.id('productos'),
+  },
+  handler: async (ctx, args) => {
+    const resultados = await ctx.db
+      .query('productos')
+      .withIndex('by_publica_cantidad', q =>
+        q.eq('publica', true).gt('cantidad', 5)
+      )
+      .filter(q => q.eq(q.field('_id'), args.id))
+      .take(1)
+
+    return resultados[0] || null
+  },
+})
