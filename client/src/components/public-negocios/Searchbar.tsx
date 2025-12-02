@@ -50,13 +50,20 @@ const SearchBar = () => {
 
     return (
         <div className='relative mt-5 block px-3'>
-            <div className="flex flex-col sm:flex-row lg:flex-col lg:items-start gap-2">
-                <Input className="w-full text-[16px] leading-normal bg-black-1 rounded-[6px] placeholder:text-gray-1 border-none text-gray-1 py-3 pl-12 focus-visible:ring-offset-orange-1" placeholder="Buscar tiendas flexis" value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
-                    onLoad={() => setBusqueda('')} />
+            <div className="flex flex-col gap-2">
+                {/* Input de búsqueda - Ancho completo en todas las pantallas */}
+                <Input
+                    className="w-full text-[16px] leading-normal bg-black-1 rounded-[6px] placeholder:text-gray-1 border-none text-gray-1 py-3 pl-12 focus-visible:ring-offset-orange-1"
+                    placeholder="Buscar tiendas flexis"
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                />
 
-                <div className="flex w-full sm:w-auto gap-2 flex-col sm:flex-row lg:flex-col">
+                {/* Filtros - Layout responsive */}
+                <div className="flex flex-col md:flex-row gap-2">
+                    {/* Departamento - Ancho completo en móvil, auto en desktop */}
                     <Select value={departamento} onValueChange={(val) => setDepartamento(val)}>
-                        <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectTrigger className="w-full md:w-[200px]">
                             <SelectValue placeholder="Departamento" />
                         </SelectTrigger>
                         <SelectContent>
@@ -67,34 +74,37 @@ const SearchBar = () => {
                         </SelectContent>
                     </Select>
 
-                    <Select value={rating} onValueChange={(val) => setRating(val)}>
-                        <SelectTrigger className="w-full sm:w-[100px]">
-                            <SelectValue placeholder="Rating" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Todos</SelectItem>
-                            <SelectItem value="1">1+</SelectItem>
-                            <SelectItem value="2">2+</SelectItem>
-                            <SelectItem value="3">3+</SelectItem>
-                            <SelectItem value="4">4+</SelectItem>
-                            <SelectItem value="5">5</SelectItem>
-                        </SelectContent>
-                    </Select>
+                    {/* Rating y Categoría juntos en móvil */}
+                    <div className="flex gap-2 w-full md:w-auto">
+                        <Select value={rating} onValueChange={(val) => setRating(val)}>
+                            <SelectTrigger className="w-full md:w-[120px]">
+                                <SelectValue placeholder="Rating" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Todos</SelectItem>
+                                <SelectItem value="1">1+</SelectItem>
+                                <SelectItem value="2">2+</SelectItem>
+                                <SelectItem value="3">3+</SelectItem>
+                                <SelectItem value="4">4+</SelectItem>
+                                <SelectItem value="5">5</SelectItem>
+                            </SelectContent>
+                        </Select>
 
-                    <Select value={categoria} onValueChange={(val) => setCategoria(val)}>
-                        <SelectTrigger className="w-full sm:w-[180px]">
-                            <SelectValue placeholder="Categoría" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Todas las categorías</SelectItem>
-                            {CATEGORIAS.map((c) => (
-                                <SelectItem key={c} value={c}>{c}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                        <Select value={categoria} onValueChange={(val) => setCategoria(val)}>
+                            <SelectTrigger className="w-full md:w-[200px]">
+                                <SelectValue placeholder="Categoría" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Todas las categorías</SelectItem>
+                                {CATEGORIAS.map((c) => (
+                                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
             </div>
-            <Search className="absolute left-4 top-3.5 " />
+            <Search className="absolute left-4 top-3.5" />
         </div>
     )
 }

@@ -16,13 +16,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Edit, Eye, Heart, ImageIcon, MapPin, Phone, Share2, Star } from "lucide-react";
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import { CATEGORY_ICONS } from "@/lib/types-negocios";
+import { useState } from "react";
+import EmptyState from "@/components/public-negocios/EmptyState";
+
 
 interface PerfilProps {
     id: Id<"tiendas">;
@@ -61,10 +63,13 @@ const ErrorState = ({ message }: { message: string }) => (
 );
 
 export default function PerfilPublico({ id }: PerfilProps) {
+    const [isFollowing, setIsFollowing] = useState(false)
     const tiendaPublica = useQuery(api.tiendas.getTiendaById, {
         id
     })
-
+    const productos = useQuery(api.productos.getProductosByTienda, {
+        tiendaId: id
+    })
 
 
 
@@ -78,9 +83,9 @@ export default function PerfilPublico({ id }: PerfilProps) {
 
     // ✅ Handler seguro para WhatsApp
     const handleWhatsAppChat = () => {
-        // if (!tienda.telefono) return;
-        // const phone = tienda.telefono.replace(/\D/g, '');
-        window.open(`https://wa.me/5212222222222`, "_blank", "noopener,noreferrer");
+        if (!tiendaPublica.telefono) return;
+        const phone = tiendaPublica.telefono.replace(/\D/g, '');
+        window.open(`https://wa.me/${phone}`, "_blank", "noopener,noreferrer");
     };
 
 
@@ -114,8 +119,11 @@ export default function PerfilPublico({ id }: PerfilProps) {
                             </CardDescription>
                         </div>
                         <div className="flex flex-col gap-2">
-                            <Button variant="outline">
-                                <Heart className="mr-2 h-4 w-4" /> Seguir
+                            <Button
+                                onClick={() => setIsFollowing(!isFollowing)}
+                                className={`gap-2 ${isFollowing ? "bg-blue-500" : "bg-green-500"}`}
+                            >
+                                {isFollowing ? "Siguiendo" : "Seguir"}
                             </Button>
                             <Button variant="outline">
                                 <Share2 className="mr-2 h-4 w-4" />
@@ -155,17 +163,14 @@ export default function PerfilPublico({ id }: PerfilProps) {
                         </div>
                         <div className="hidden lg:flex items-center gap-6 text-center pr-4">
                             <div>
-                                <p className="text-2xl font-bold">{tiendaPublica.estadisticas.productosActivos}</p>
-                                <p className="text-xs text-muted-foreground">Productos</p>
+                                <p className="text-2xl font-bold">{tiendaPublica.visitas}</p>
+                                <p className="text-xs text-muted-foreground">Visitas</p>
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{tiendaPublica.estadisticas.ventasTotales.toLocaleString()}</p>
-                                <p className="text-xs text-muted-foreground">Ventas</p>
+                                <p className="text-2xl font-bold">{tiendaPublica.favoritos}</p>
+                                <p className="text-xs text-muted-foreground">Favoritos</p>
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold">{tiendaPublica.estadisticas.clientesTotales.toLocaleString()}</p>
-                                <p className="text-xs text-muted-foreground">Clientes</p>
-                            </div>
+
                         </div>
                     </div>
                 </CardContent>
@@ -179,18 +184,68 @@ export default function PerfilPublico({ id }: PerfilProps) {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        Produvyos                                   </div>
+                    {
+                        productos ? (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {
+                                    productos.length === 0 ? (
+                                        <EmptyState title="No hay productos"
+                                            buttonLink="/comercios"
+                                            buttonText="ver más tiendas" />
+                                    ) : (
+                                        productos.map((producto) => (
+                                            <div key={producto._id} className="cursor-pointer relative">
+
+                                                <Link href={`/product/${producto._id}`}>
+                                                    <Image src={producto.imagenes[0]} alt={producto.nombre} className="w-full h-48 object-cover rounded-md" width={192} height={192} />
+                                                </Link>
+                                                {producto.costo && (
+                                                    <Badge className="absolute top-2 left-2 bg-yellow-500 text-white">
+                                                        Guardar
+                                                    </Badge>
+                                                )}
+                                                <h3 className="font-medium text-sm mb-2 line-clamp-2">{producto.nombre}</h3>
+
+                                                <div className="flex items-center mb-2">
+                                                    <div className="flex items-center">
+                                                        {[...Array(5)].map((_, i) => (
+                                                            <Star key={i} className={`w-4 h-4 ${i < Math.floor(producto.puntuacionPromedio) ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
+                                                        ))}
+                                                    </div>
+                                                    <span className="text-sm text-gray-600 ml-1">(3)</span>
+                                                </div>
+
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="text-lg font-bold text-gray-900">${producto.precio}</span>
+                                                    {/* {producto.costo && <span className="text-sm text-gray-500 line-through">${producto.costo}</span>} */}
+                                                </div>
+
+                                                <div className="text-xs text-gray-600 mb-3">
+                                                    por <span className="text-blue-600 hover:underline">{tiendaPublica.nombre}</span>
+                                                </div>
+
+
+                                                <Link href={`/user/carrito/`}>
+                                                    <Button className="w-full bg-yellow-400 hover:bg-yellow-500 text-black">Agregar al carrito</Button></Link>
+                                            </div>
+                                        ))
+                                    )
+                                }
+                            </div>
+                        ) : (
+                            <EmptyState title="No hay productos" />
+                        )
+                    }
                 </CardContent>
             </Card>
             {/* Tabs de productos y ubicación */}
             <Tabs>
                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="productos">Productos</TabsTrigger>
+                    <TabsTrigger value="productos">Promociones</TabsTrigger>
                     <TabsTrigger value="ubicacion">Ubicación</TabsTrigger>
                 </TabsList>
                 <TabsContent value="productos" className="space-y-6">
-                    <p>Productos</p>
+                    <p>Promcion flexis</p>
                 </TabsContent>
                 <TabsContent value="ubicacion" className="space-y-6">
                     {/* Mapa: si hay lat/lng mostramos react-leaflet */}

@@ -5,6 +5,9 @@ import PerfilPublico from "./_components/perfilPublico"
 import { ErrorBoundary } from "@/components/error/ErrorBoundery"
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { ArrowBigLeft, ArrowLeftIcon } from "lucide-react";
+import HorarioPublico from "./_components/HorariosPublicTienda";
 
 
 const Page = async ({ params }: { params: Promise<{ idComercio: Id<"tiendas"> }> }) => {
@@ -16,6 +19,18 @@ const Page = async ({ params }: { params: Promise<{ idComercio: Id<"tiendas"> }>
     return (
         <ErrorBoundary>
             <Tabs defaultValue="perfil" className="w-full mt-3 md:px-3 px-1">
+                <Breadcrumb>
+                    <BreadcrumbList>
+                        <BreadcrumbItem>
+                            <BreadcrumbLink href="/comercios" className="flex gap-2 items-center">
+                                <ArrowLeftIcon className="w-4 h-4" /> Comercios</BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                            <BreadcrumbPage>Tienda</BreadcrumbPage>
+                        </BreadcrumbItem>
+                    </BreadcrumbList>
+                </Breadcrumb>
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="perfil">Perfil Público</TabsTrigger>
 
@@ -30,7 +45,7 @@ const Page = async ({ params }: { params: Promise<{ idComercio: Id<"tiendas"> }>
                 {/* 3. Horarios de Atención */}
                 <TabsContent value="horarios" className="space-y-6">
                     {/* <Horario id={idComercio} /> */}
-                    Horario
+                    <HorarioPublico id={idComercio} />
                 </TabsContent>
             </Tabs>
         </ErrorBoundary>

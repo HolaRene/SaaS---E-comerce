@@ -1,16 +1,14 @@
-
 import ListaNegocios from "@/components/public-negocios/lista-tiendas"
 import MapPanelClient from '@/components/public-negocios/MapPanelClient'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
 
-const Page = ({ searchParams: { busqueda } }: { searchParams: { busqueda?: string } }) => {
+const Page = async ({ searchParams }: { searchParams: Promise<{ busqueda?: string }> }) => {
+    const { busqueda } = await searchParams
 
     return (
         <div className="h-screen flex flex-col bg-background">
-
-            {/* Contenido principal */}
             <main className="flex-1 overflow-hidden">
-                {/* Contenedor para pantallas grandes deslizantes */}
+                {/* ✅ VERSIÓN ESCRITORIO */}
                 <div className="hidden md:block h-full">
                     <ResizablePanelGroup direction="horizontal">
                         <ResizablePanel defaultSize={60} minSize={45} maxSize={75}>
@@ -18,15 +16,18 @@ const Page = ({ searchParams: { busqueda } }: { searchParams: { busqueda?: strin
                         </ResizablePanel>
                         <ResizableHandle withHandle />
                         <ResizablePanel defaultSize={40} minSize={25} maxSize={55}>
-                            <ListaNegocios busqueda={busqueda} />
+                            {/*  CRÍTICO: Envolver con min-h-0 + flex */}
+                            <div className="h-full flex flex-col min-h-0">
+                                <ListaNegocios busqueda={busqueda} />
+                            </div>
                         </ResizablePanel>
                     </ResizablePanelGroup>
                 </div>
 
-                {/* Contenedor para pantallas pequeñas */}
-                <div className="md:hidden h-full overflow-y-auto">
+                {/*  VERSIÓN MÓVIL */}
+                <div className="md:hidden h-full overflow-hidden flex flex-col">
                     {/* Listas de negocios */}
-                    <div className="min-h-[50vh]">
+                    <div className="flex-1 h-full min-h-0 overflow-y-auto">
                         <ListaNegocios busqueda={busqueda} />
                     </div>
                     {/* Mapa (móvil) */}
@@ -34,7 +35,6 @@ const Page = ({ searchParams: { busqueda } }: { searchParams: { busqueda?: strin
                         <MapPanelClient embedded />
                     </div>
                 </div>
-
             </main>
         </div>
     )

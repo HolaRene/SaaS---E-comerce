@@ -23,7 +23,8 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, Check, Loader } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Loader, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import {
     CATEGORIAS,
@@ -52,6 +53,8 @@ const storeSchema = z.object({
     direccion: z.string().min(5, "La dirección debe tener al menos 5 caracteres"),
     telefono: z.string().regex(/^\+?[\d\s-()]+$/, "Formato de teléfono inválido"),
     departamento: z.string().min(1, "Selecciona un departamento"),
+    lat: z.number().min(-90, "Latitud debe estar entre -90 y 90").max(90, "Latitud debe estar entre -90 y 90"),
+    lng: z.number().min(-180, "Longitud debe estar entre -180 y 180").max(180, "Longitud debe estar entre -180 y 180"),
 
     configuracion: z.object({
         NIT: z.string().optional(),
@@ -103,14 +106,14 @@ export default function CreateStoreForm() {
         resolver: zodResolver(storeSchema),
         mode: "onChange",
         defaultValues: {
-
-            // Campos del formulario
             nombre: "La esperanza",
             categoria: "",
             descripcion: "Tienda flexi",
             direccion: "LLegando a Allá",
             telefono: "",
             departamento: "",
+            lat: 12.8654,
+            lng: -85.2072,
 
             configuracion: {
                 NIT: "",
@@ -129,27 +132,26 @@ export default function CreateStoreForm() {
                 dia,
                 apertura: "08:00",
                 cierre: "17:00",
+                cerrado: false,
             })),
         },
     });
 
-
     const validateStep = async () => {
         const fields =
             currentStep === 1
-                ? ["nombre", "categoria", "descripcion", "direccion", "telefono", "departamento"]
+                ? ["nombre", "categoria", "descripcion", "direccion", "telefono", "departamento", "lat", "lng"]
                 : currentStep === 2
                     ? ["horarios"]
                     : ["configuracion"];
 
-        const result = await trigger(fields as ("nombre" | "categoria" | "descripcion" | "direccion" | "telefono" | "departamento" | "horarios" | "configuracion")[]);
+        const result = await trigger(fields as ("nombre" | "categoria" | "descripcion" | "direccion" | "telefono" | "departamento" | "lat" | "lng" | "horarios" | "configuracion")[]);
         return result;
     };
 
-    // 🔒 SOLUCIÓN: Asegurar que el botón Siguiente NUNCA haga submit
     const handleNext = async (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault(); // 🛡️ Bloquear cualquier comportamiento de submit
-        e.stopPropagation(); // 🛡️ Detener propagación del evento
+        e.preventDefault();
+        e.stopPropagation();
         const isValid = await validateStep();
         if (isValid && currentStep < 3) {
             setCurrentStep((s) => s + 1);
@@ -160,9 +162,7 @@ export default function CreateStoreForm() {
         if (currentStep > 1) setCurrentStep((s) => s - 1);
     };
 
-    // 🔒 SOLUCIÓN: Guarda adicional - prevenir submit si no estamos en el paso 3
     const onFormSubmit = async (data: StoreFormData) => {
-
         if (currentStep !== 3) {
             toast.error("Completa todos los pasos antes de enviar");
             return;
@@ -170,15 +170,15 @@ export default function CreateStoreForm() {
 
         try {
             setCargando(true);
-            const response = await crearTienda({
+            await crearTienda({
                 nombre: data.nombre,
                 categoria: data.categoria,
                 descripcion: data.descripcion,
                 direccion: data.direccion,
                 departamento: data.departamento,
                 telefono: data.telefono,
-                lat: 12.415834,
-                lng: -85.746055,
+                lat: data.lat,
+                lng: data.lng,
                 configuracion: {
                     NIT: data.configuracion.NIT || "",
                     RUC: data.configuracion.RUC || "",
@@ -199,7 +199,6 @@ export default function CreateStoreForm() {
                     aperturaEspecial: h.aperturaEspecial,
                     cierreEspecial: h.cierreEspecial,
                 })),
-
             });
             toast.success("Tienda creada con éxito");
             router.push("/user/dashboard");
@@ -330,22 +329,72 @@ export default function CreateStoreForm() {
                                         <ErrorMessage message={errors.departamento?.message} />
                                     </div>
                                 </div>
+
+                                <TooltipProvider>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Label>Latitud *</Label>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="max-w-xs">
+                                                        <p className="text-sm">
+                                                            Coordenada geográfica que indica la posición norte-sur de tu tienda.
+                                                            Puedes obtenerla desde Google Maps haciendo clic derecho en tu ubicación.
+                                                            Rango: -90 a 90
+                                                        </p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
+                                            <Input
+                                                type="number"
+                                                step="any"
+                                                placeholder="Ej: 12.8654"
+                                                {...register("lat", { valueAsNumber: true })}
+                                            />
+                                            <ErrorMessage message={errors.lat?.message} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Label>Longitud *</Label>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="max-w-xs">
+                                                        <p className="text-sm">
+                                                            Coordenada geográfica que indica la posición este-oeste de tu tienda.
+                                                            Puedes obtenerla desde Google Maps haciendo clic derecho en tu ubicación.
+                                                            Rango: -180 a 180
+                                                        </p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
+                                            <Input
+                                                type="number"
+                                                step="any"
+                                                placeholder="Ej: -85.2072"
+                                                {...register("lng", { valueAsNumber: true })}
+                                            />
+                                            <ErrorMessage message={errors.lng?.message} />
+                                        </div>
+                                    </div>
+                                </TooltipProvider>
                             </>
                         )}
 
                         {/* STEP 2 - HORARIOS */}
                         {currentStep === 2 && (
                             <div className="space-y-4">
-
                                 {DIAS_SEMANA.map((dia, index) => (
                                     <div
                                         key={dia}
                                         className="grid grid-cols-1 md:grid-cols-5 gap-4 border p-3 rounded"
                                     >
-                                        {/* Día */}
                                         <p className="font-medium col-span-1">{dia}</p>
 
-                                        {/* Apertura */}
                                         <div className="space-y-1">
                                             <Label className="text-xs">Apertura</Label>
                                             <Input
@@ -354,7 +403,6 @@ export default function CreateStoreForm() {
                                             />
                                         </div>
 
-                                        {/* Cierre */}
                                         <div className="space-y-1">
                                             <Label className="text-xs">Cierre</Label>
                                             <Input
@@ -363,8 +411,6 @@ export default function CreateStoreForm() {
                                             />
                                         </div>
 
-                                        {/* CERRADO */}
-                                        {/* CERRADO */}
                                         <Controller
                                             name={`horarios.${index}.cerrado`}
                                             control={control}
@@ -380,8 +426,6 @@ export default function CreateStoreForm() {
                                             )}
                                         />
 
-
-                                        {/* HORARIO ESPECIAL */}
                                         <div className="col-span-1 md:col-span-2 space-y-1">
                                             <Label className="text-xs">Apertura especial (opcional)</Label>
                                             <Input
@@ -397,14 +441,12 @@ export default function CreateStoreForm() {
                                                 {...register(`horarios.${index}.cierreEspecial` as const)}
                                             />
                                         </div>
-
                                     </div>
                                 ))}
 
                                 <ErrorMessage message={errors.horarios?.message} />
                             </div>
                         )}
-
 
                         {/* STEP 3 */}
                         {currentStep === 3 && (
@@ -443,10 +485,8 @@ export default function CreateStoreForm() {
                                         <Label>WhatsApp</Label>
                                         <Input {...register("configuracion.whatsapp")} placeholder="+505 88888888" />
                                     </div>
-
                                 </div>
 
-                                {/* PERMISOS */}
                                 <div className="p-4 border rounded space-y-3">
                                     <Label className="font-semibold">Permisos de vendedores</Label>
 
@@ -490,7 +530,6 @@ export default function CreateStoreForm() {
                     </Button>
 
                     {currentStep < 3 ? (
-                        // 🔒 BOTÓN SIGUIENTE CON PREVENT DEFAULT EXPLÍCITO
                         <Button
                             type="button"
                             onClick={(e) => handleNext(e)}

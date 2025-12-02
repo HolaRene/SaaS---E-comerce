@@ -39,14 +39,14 @@ export const columns: ColumnDef<Horario>[] = [
         accessorKey: "apertura",
         header: "Apertura",
         cell: ({ row }) => (
-            <Input type="time" defaultValue={row.original.apertura} className="w-24" />
+            <Input type="time" defaultValue={row.original.apertura} className="w-24" disabled />
         ),
     },
     {
         accessorKey: "cierre",
         header: "Cierre",
         cell: ({ row }) => (
-            <Input type="time" defaultValue={row.original.cierre} className="w-24" />
+            <Input type="time" defaultValue={row.original.cierre} className="w-24" disabled />
         ),
     },
 

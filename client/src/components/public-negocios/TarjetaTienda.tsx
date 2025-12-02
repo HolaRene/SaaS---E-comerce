@@ -21,7 +21,7 @@ const TiendaCard = ({ description, imgUrl, departamento, categoria, title, tiend
         ruta.push(`/comercio/${tiendaId}`, { scroll: true })
     }
     return (
-        <div className='cursor-pointer' onClick={manejoVistas}>
+        <div className='w-full border rounded-lg p-4 cursor-pointer' onClick={manejoVistas}>
             <figure className="flex gap-4">
                 <div className="relative flex-shrink-0">
                     <div className="w-14 h-14 rounded-full overflow-hidden bg-muted">

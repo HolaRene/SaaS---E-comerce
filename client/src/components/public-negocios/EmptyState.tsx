@@ -10,7 +10,7 @@ interface EmptyStateProps {
 }
 
 const EmptyState = ({ title,
-    buttonLink = 'comercios',
+    buttonLink = '',
     buttonText, search }: EmptyStateProps) => {
     return (
         <div className='flex justify-center items-center size-full flex-col gap-3'>
@@ -26,7 +26,7 @@ const EmptyState = ({ title,
                         <Button className="bg-green-500">
                             <Link href={buttonLink} className="flex gap-2">
                                 <Image src={"/icons/buscar-96.png"} width={20} height={20} alt="descubre" />
-                                <h1 className="text-[16px] font-extrabold">{buttonText || 'Descubre mas tiendas'} </h1>
+                                <h1 className="text-[16px] font-extrabold">{buttonText || 'Descubre más'} </h1>
                             </Link>
                         </Button>
                     )
