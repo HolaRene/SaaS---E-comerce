@@ -11,47 +11,6 @@ import { useQuery } from "convex/react"
 import { api } from "../../../../../../convex/_generated/api"
 import { Id } from "../../../../../../convex/_generated/dataModel"
 
-// Mock product data
-const product = {
-    id: 1,
-    name: "Wireless Bluetooth Headphones - Premium Sound Quality",
-    price: 79.99,
-    originalPrice: 99.99,
-    images: [
-        "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=600&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1487215078519-e21cc028cb29?w=600&h=600&fit=crop",
-        "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=600&h=600&fit=crop",
-    ],
-    rating: 4.5,
-    totalReviews: 1247,
-    seller: {
-        name: "TechGear Pro",
-        rating: 4.7,
-        totalSales: 15420,
-    },
-    trustScore: 92,
-    inStock: true,
-    features: [
-        "Active Noise Cancellation",
-        "30-hour battery life",
-        "Quick charge: 5 min = 3 hours",
-        "Premium leather comfort",
-        "Bluetooth 5.0 connectivity",
-    ],
-    description:
-        "Experience premium audio quality with our wireless Bluetooth headphones. Featuring advanced noise cancellation technology and exceptional battery life, these headphones are perfect for music lovers and professionals alike.",
-    specifications: {
-        Brand: "TechGear Pro",
-        Model: "TG-WH500",
-        Connectivity: "Bluetooth 5.0",
-        "Battery Life": "30 hours",
-        "Charging Time": "2 hours",
-        Weight: "250g",
-        Warranty: "2 years",
-    },
-}
-
 const reviews = [
     {
         id: 1,
@@ -151,14 +110,12 @@ function TrustBadge({ score }: { score: number }) {
 
 
 const ProductCard = ({ id }: { id: Id<"productos"> }) => {
-    const [selectedImage, setSelectedImage] = useState(0)
     const [quantity, setQuantity] = useState(1)
 
     const producto = useQuery(api.productos.getProductoId, { id })
-    console.log(id, producto)
+    const tienda = useQuery(api.tiendas.getTiendaPublicaById, producto ? { id: producto.tiendaId } : "skip")
 
-
-    if (producto === undefined) {
+    if (producto === undefined || tienda === undefined) {
         return <div>Cargando...</div>
     }
 
@@ -166,6 +123,10 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
         return <div>Producto no encontrado o no disponible</div>
     }
 
+    // Calculate discount if applicable
+    const discount = producto.costo && producto.precio < producto.costo
+        ? producto.costo - producto.precio
+        : 0
 
     return (
         <div className="container mx-auto px-4 py-6">
@@ -179,97 +140,80 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                             className="w-full h-full object-cover rounded-md"
                         />
                     </div>
-                    <div className="grid grid-cols-4 gap-2">
-                        {product.images.map((image, index) => (
-                            <button
-                                key={index}
-                                onClick={() => setSelectedImage(index)}
-                                className={`aspect-square bg-white rounded-md p-2 border-2 ${selectedImage === index ? "border-blue-500" : "border-gray-200"
-                                    }`}
-                            >
-                                <img src={image || "/placeholder.svg"} alt="" className="w-full h-full object-cover rounded" />
-                            </button>
-                        ))}
-                    </div>
                 </div>
 
                 {/* Product Info */}
                 <div className="space-y-6">
                     <div>
-                        <h1 className="text-2xl font-bold mb-2">{product.name}</h1>
+                        <h1 className="text-2xl font-bold mb-2">{producto.nombre}</h1>
                         <div className="flex items-center gap-4 mb-4">
                             <div className="flex items-center">
                                 {[...Array(5)].map((_, i) => (
                                     <Star
                                         key={i}
-                                        className={`w-5 h-5 ${i < Math.floor(product.rating) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+                                        className={`w-5 h-5 ${i < Math.floor(producto.puntuacionPromedio || 0) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
                                     />
                                 ))}
                                 <span className="ml-2 text-sm text-gray-600">
-                                    {product.rating} ({product.totalReviews} reviews)
+                                    {producto.puntuacionPromedio || 0} ({producto.ventasTotales || 0} ventas)
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Trust Score - make it more prominent */}
+                    {/* Trust Score - Placeholder or calculated */}
                     <div className="mb-6">
-                        <TrustBadge score={product.trustScore} />
+                        <TrustBadge score={95} />
                     </div>
 
                     {/* Price */}
                     <div className="flex items-center gap-4">
-                        <span className="text-3xl font-bold text-red-600">${product.price}</span>
-                        {product.originalPrice && (
-                            <span className="text-lg text-gray-500 line-through">${product.originalPrice}</span>
+                        <span className="text-3xl font-bold text-red-600">${producto.precio}</span>
+                        {producto.costo && (
+                            <span className="text-lg text-gray-500 line-through">${producto.costo}</span>
                         )}
-                        {product.originalPrice && (
+                        {discount > 0 && (
                             <Badge className="bg-red-500 text-white">
-                                Save ${(product.originalPrice - product.price).toFixed(2)}
+                                Save ${discount.toFixed(2)}
                             </Badge>
                         )}
                     </div>
 
                     {/* Seller Info */}
-                    <Card>
-                        <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <div className="font-medium">Sold by {product.seller.name}</div>
-                                    <div className="text-sm text-gray-600">
-                                        {product.seller.totalSales.toLocaleString()} sales • {product.seller.rating}★ rating
+                    {tienda && (
+                        <Card>
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <div className="font-medium">Vendido por {tienda.nombre}</div>
+                                        <div className="text-sm text-gray-600">
+                                            {tienda.puntuacion || 0}★ rating
+                                        </div>
                                     </div>
+                                    <Button variant="outline" size="sm">
+                                        Ver Tienda
+                                    </Button>
                                 </div>
-                                <Button variant="outline" size="sm">
-                                    View Store
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
+                    )}
 
-                    {/* Key Features */}
+                    {/* Key Features / Description Preview */}
                     <div>
-                        <h3 className="font-semibold mb-3">Key Features</h3>
-                        <ul className="space-y-2">
-                            {product.features.map((feature, index) => (
-                                <li key={index} className="flex items-center text-sm">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                                    {feature}
-                                </li>
-                            ))}
-                        </ul>
+                        <h3 className="font-semibold mb-3">Descripción</h3>
+                        <p className="text-sm text-gray-600 line-clamp-4">{producto.descripcion}</p>
                     </div>
 
                     {/* Purchase Options */}
                     <div className="space-y-4 p-4 bg-white rounded-lg border">
                         <div className="flex items-center gap-4">
-                            <label className="text-sm font-medium">Quantity:</label>
+                            <label className="text-sm font-medium">Cantidad:</label>
                             <select
                                 value={quantity}
                                 onChange={(e) => setQuantity(Number(e.target.value))}
                                 className="border rounded px-3 py-1"
                             >
-                                {[...Array(10)].map((_, i) => (
+                                {[...Array(Math.min(10, producto.cantidad || 1))].map((_, i) => (
                                     <option key={i} value={i + 1}>
                                         {i + 1}
                                     </option>
@@ -280,19 +224,19 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                         <div className="space-y-3">
                             <Button className="w-full bg-yellow-400 hover:bg-yellow-500 text-black text-lg py-3">
                                 <ShoppingCart className="w-5 h-5 mr-2" />
-                                Add to Cart
+                                Agregar al Carrito
                             </Button>
-                            <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white text-lg py-3">Buy Now</Button>
+                            <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white text-lg py-3">Comprar Ahora</Button>
                         </div>
 
                         <div className="flex gap-2">
                             <Button variant="outline" size="sm" className="flex-1">
                                 <Heart className="w-4 h-4 mr-2" />
-                                Save
+                                Guardar
                             </Button>
                             <Button variant="outline" size="sm" className="flex-1">
                                 <Share2 className="w-4 h-4 mr-2" />
-                                Share
+                                Compartir
                             </Button>
                         </div>
                     </div>
@@ -301,15 +245,15 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                     <div className="space-y-3 text-sm">
                         <div className="flex items-center gap-2">
                             <Truck className="w-4 h-4 text-green-600" />
-                            <span>Free delivery by Thursday, Jan 25</span>
+                            <span>Envío gratis disponible</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <RotateCcw className="w-4 h-4 text-blue-600" />
-                            <span>Free returns within 30 days</span>
+                            <span>Devoluciones gratis dentro de 30 días</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Award className="w-4 h-4 text-purple-600" />
-                            <span>2-year manufacturer warranty</span>
+                            <span>Garantía de satisfacción</span>
                         </div>
                     </div>
                 </div>
@@ -318,15 +262,15 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
             {/* Product Details Tabs */}
             <Tabs defaultValue="description" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="description">Description</TabsTrigger>
-                    <TabsTrigger value="specifications">Specifications</TabsTrigger>
-                    <TabsTrigger value="reviews">Reviews ({product.totalReviews})</TabsTrigger>
+                    <TabsTrigger value="description">Descripción</TabsTrigger>
+                    <TabsTrigger value="specifications">Especificaciones</TabsTrigger>
+                    <TabsTrigger value="reviews">Reseñas ({reviews.length})</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="description" className="mt-6">
                     <Card>
                         <CardContent className="p-6">
-                            <p className="text-gray-700 leading-relaxed">{product.description}</p>
+                            <p className="text-gray-700 leading-relaxed">{producto.descripcion}</p>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -334,14 +278,18 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                 <TabsContent value="specifications" className="mt-6">
                     <Card>
                         <CardContent className="p-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {Object.entries(product.specifications).map(([key, value]) => (
-                                    <div key={key} className="flex justify-between py-2 border-b border-gray-100">
-                                        <span className="font-medium">{key}</span>
-                                        <span className="text-gray-600">{value}</span>
-                                    </div>
-                                ))}
-                            </div>
+                            {producto.attributes ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {Object.entries(producto.attributes).map(([key, value]) => (
+                                        <div key={key} className="flex justify-between py-2 border-b border-gray-100">
+                                            <span className="font-medium capitalize">{key}</span>
+                                            <span className="text-gray-600">{Array.isArray(value) ? value.join(", ") : value}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-gray-500">No hay especificaciones disponibles.</p>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -356,16 +304,16 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                             <CardContent>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="text-center">
-                                        <div className="text-4xl font-bold mb-2">{product.rating}</div>
+                                        <div className="text-4xl font-bold mb-2">{producto.puntuacionPromedio || 0}</div>
                                         <div className="flex justify-center mb-2">
                                             {[...Array(5)].map((_, i) => (
                                                 <Star
                                                     key={i}
-                                                    className={`w-5 h-5 ${i < Math.floor(product.rating) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+                                                    className={`w-5 h-5 ${i < Math.floor(producto.puntuacionPromedio || 0) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
                                                 />
                                             ))}
                                         </div>
-                                        <div className="text-sm text-gray-600">{product.totalReviews} total reviews</div>
+                                        <div className="text-sm text-gray-600">{reviews.length} total reviews</div>
                                     </div>
                                     <div className="space-y-2">
                                         {[5, 4, 3, 2, 1].map((rating) => (

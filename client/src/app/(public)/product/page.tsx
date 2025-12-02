@@ -12,6 +12,15 @@ import Image from "next/image";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
+import { Spinner } from "@/components/ui/spinner";
+import {
+    Breadcrumb,
+    BreadcrumbList,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 // Mock data
 const categories = ["Electrónica", "Ropas", "Casa y jardín", "Deporte", "Libros", "Juguetes", "Bellesa", "Vehiculos"];
@@ -92,7 +101,11 @@ export default function BuyerHomepage() {
     const productosPublicos = useQuery(api.productos.getProductosPublicosConStock)
 
     if (productosPublicos === undefined) {
-        return <div>Cargando...</div>
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <Spinner className="h-8 w-8 text-primary" />
+            </div>
+        )
     }
 
     if (!productosPublicos) {
@@ -105,107 +118,122 @@ export default function BuyerHomepage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
-            {/* Sidebar Filters */}
-            <aside
-                className={`fixed md:static inset-y-0 left-0 z-40 w-72 bg-white border-r p-6 overflow-y-auto transform transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-                    }`}
-            >
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-lg">Filtros</h3>
-                    <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSidebarOpen(false)}>
-                        ✕
-                    </Button>
-                </div>
-
-                {/* Categories */}
-                <div className="mb-6">
-                    <h4 className="font-medium mb-3">Categorías</h4>
-                    <div className="space-y-2">
-                        {categories.map((category) => (
-                            <div key={category} className="flex items-center space-x-2">
-                                <Checkbox
-                                    id={category}
-                                    checked={selectedCategories.includes(category)}
-                                    onCheckedChange={(checked) => handleCategoryChange(category, checked as boolean)}
-                                />
-                                <label htmlFor={category} className="text-sm">
-                                    {category}
-                                </label>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Price Range */}
-                <div className="mb-6">
-                    <h4 className="font-medium mb-3">Rango del precio</h4>
-                    <Slider value={priceRange} onValueChange={setPriceRange} max={500} step={10} className="mb-2" />
-                    <div className="flex justify-between text-sm text-gray-600">
-                        <span>${priceRange[0]}</span>
-                        <span>${priceRange[1]}</span>
-                    </div>
-                </div>
-
-
-
-                {/* Seller Rating */}
-                <div>
-                    <h4 className="font-medium mb-3">Puntuación del vendedor</h4>
-                    <div className="space-y-2">
-                        {[4, 3, 2, 1].map((rating) => (
-                            <div key={rating} className="flex items-center space-x-2">
-                                <Checkbox id={`rating-${rating}`} />
-                                <label htmlFor={`rating-${rating}`} className="flex items-center text-sm">
-                                    <div className="flex">
-                                        {[...Array(rating)].map((_, i) => (
-                                            <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                                        ))}
-                                    </div>
-                                    <span className="ml-1"> & mejor</span>
-                                </label>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </aside>
-
-            {/* Overlay (for mobile) */}
-            {sidebarOpen && (
-                <div className="fixed inset-0 bg-black/40 z-30 md:hidden" onClick={() => setSidebarOpen(false)}></div>
-            )}
-
-            {/* Main Content */}
-            <main className="flex-1 p-6 md:p-8 overflow-y-auto">
-                {/* Header Controls */}
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-semibold">Detalles de los Productos</h2>
-                    <div className="flex items-center gap-4 flex-col md:flex-row">
-                        <Button variant="outline" size="sm" className="md:hidden" onClick={() => setSidebarOpen(true)}>
-                            <Filter className="w-4 h-4 mr-1" /> Filters
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+            <div className="p-6 md:p-8 pb-0">
+                <Breadcrumb>
+                    <BreadcrumbList>
+                        <BreadcrumbItem>
+                            <BreadcrumbLink href="/">Inicio</BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                            <BreadcrumbPage>Productos</BreadcrumbPage>
+                        </BreadcrumbItem>
+                    </BreadcrumbList>
+                </Breadcrumb>
+            </div>
+            <div className="flex flex-1">
+                {/* Sidebar Filters */}
+                <aside
+                    className={`fixed md:static inset-y-0 left-0 z-40 w-72 bg-white border-r p-6 overflow-y-auto transform transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+                        }`}
+                >
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold text-lg">Filtros</h3>
+                        <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSidebarOpen(false)}>
+                            ✕
                         </Button>
-                        <select className="border rounded-md px-3 py-1 text-sm">
-                            <option>Precio: Menor a mayor</option>
-                            <option>Precio: Mayor a menor</option>
-                            <option>Puntuación de las tiendas</option>
-
-                        </select>
                     </div>
-                </div>
 
-                {/* Product Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {productosPublicos.map((product) => (
-                        <ProductCard key={product._id} product={product} />
-                    ))}
-                </div>
+                    {/* Categories */}
+                    <div className="mb-6">
+                        <h4 className="font-medium mb-3">Categorías</h4>
+                        <div className="space-y-2">
+                            {categories.map((category) => (
+                                <div key={category} className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id={category}
+                                        checked={selectedCategories.includes(category)}
+                                        onCheckedChange={(checked) => handleCategoryChange(category, checked as boolean)}
+                                    />
+                                    <label htmlFor={category} className="text-sm">
+                                        {category}
+                                    </label>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
 
-                <div className="text-center mt-8">
-                    <Button variant="outline" className="px-8">
-                        Cargar más productos
-                    </Button>
-                </div>
-            </main>
+                    {/* Price Range */}
+                    <div className="mb-6">
+                        <h4 className="font-medium mb-3">Rango del precio</h4>
+                        <Slider value={priceRange} onValueChange={setPriceRange} max={500} step={10} className="mb-2" />
+                        <div className="flex justify-between text-sm text-gray-600">
+                            <span>${priceRange[0]}</span>
+                            <span>${priceRange[1]}</span>
+                        </div>
+                    </div>
+
+
+
+                    {/* Seller Rating */}
+                    <div>
+                        <h4 className="font-medium mb-3">Puntuación del vendedor</h4>
+                        <div className="space-y-2">
+                            {[4, 3, 2, 1].map((rating) => (
+                                <div key={rating} className="flex items-center space-x-2">
+                                    <Checkbox id={`rating-${rating}`} />
+                                    <label htmlFor={`rating-${rating}`} className="flex items-center text-sm">
+                                        <div className="flex">
+                                            {[...Array(rating)].map((_, i) => (
+                                                <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
+                                            ))}
+                                        </div>
+                                        <span className="ml-1"> & mejor</span>
+                                    </label>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </aside>
+
+                {/* Overlay (for mobile) */}
+                {sidebarOpen && (
+                    <div className="fixed inset-0 bg-black/40 z-30 md:hidden" onClick={() => setSidebarOpen(false)}></div>
+                )}
+
+                {/* Main Content */}
+                <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+                    {/* Header Controls */}
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-semibold">Detalles de los Productos</h2>
+                        <div className="flex items-center gap-4 flex-col md:flex-row">
+                            <Button variant="outline" size="sm" className="md:hidden" onClick={() => setSidebarOpen(true)}>
+                                <Filter className="w-4 h-4 mr-1" /> Filters
+                            </Button>
+                            <select className="border rounded-md px-3 py-1 text-sm">
+                                <option>Precio: Menor a mayor</option>
+                                <option>Precio: Mayor a menor</option>
+                                <option>Puntuación de las tiendas</option>
+
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Product Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {productosPublicos.map((product) => (
+                            <ProductCard key={product._id} product={product} />
+                        ))}
+                    </div>
+
+                    <div className="text-center mt-8">
+                        <Button variant="outline" className="px-8">
+                            Cargar más productos
+                        </Button>
+                    </div>
+                </main>
+            </div>
         </div>
     );
 }
