@@ -10,6 +10,9 @@ import { Progress } from "@/components/ui/progress"
 import { useQuery } from "convex/react"
 import { api } from "../../../../../../convex/_generated/api"
 import { Id } from "../../../../../../convex/_generated/dataModel"
+import { Spinner } from "@/components/ui/spinner"
+import EmptyState from "@/components/public-negocios/EmptyState"
+import Link from "next/link"
 
 const reviews = [
     {
@@ -53,61 +56,6 @@ const reviews = [
     },
 ]
 
-function TrustBadge({ score }: { score: number }) {
-    const getScoreData = (score: number) => {
-        if (score >= 90)
-            return {
-                color: "bg-emerald-50 border-emerald-200 text-emerald-800",
-                icon: "🛡️",
-                label: "Excellent",
-                barColor: "bg-emerald-500",
-            }
-        if (score >= 80)
-            return {
-                color: "bg-blue-50 border-blue-200 text-blue-800",
-                icon: "✅",
-                label: "Very Good",
-                barColor: "bg-blue-500",
-            }
-        if (score >= 70)
-            return {
-                color: "bg-amber-50 border-amber-200 text-amber-800",
-                icon: "⚠️",
-                label: "Good",
-                barColor: "bg-amber-500",
-            }
-        return {
-            color: "bg-red-50 border-red-200 text-red-800",
-            icon: "❌",
-            label: "Poor",
-            barColor: "bg-red-500",
-        }
-    }
-
-    const scoreData = getScoreData(score)
-
-    return (
-        <div className={`inline-flex items-center gap-3 px-4 py-2 rounded-xl border ${scoreData.color}`}>
-            <span className="text-lg">{scoreData.icon}</span>
-            <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Trust Score</span>
-                    <span className="text-lg font-bold">{score}%</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                            className={`h-full ${scoreData.barColor} transition-all duration-300`}
-                            style={{ width: `${score}%` }}
-                        />
-                    </div>
-                    <span className="text-xs opacity-75">{scoreData.label}</span>
-                </div>
-            </div>
-        </div>
-    )
-}
-
 
 const ProductCard = ({ id }: { id: Id<"productos"> }) => {
     const [quantity, setQuantity] = useState(1)
@@ -116,11 +64,13 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
     const tienda = useQuery(api.tiendas.getTiendaPublicaById, producto ? { id: producto.tiendaId } : "skip")
 
     if (producto === undefined || tienda === undefined) {
-        return <div>Cargando...</div>
+        return <div className="flex items-center justify-center min-h-screen">
+            <Spinner className="h-8 w-8 text-primary" />
+        </div>
     }
 
     if (!producto) {
-        return <div>Producto no encontrado o no disponible</div>
+        return <EmptyState title="Producto no encontrado" buttonLink="/product" buttonText="Ver Productos" />
     }
 
     // Calculate discount if applicable
@@ -161,11 +111,6 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                         </div>
                     </div>
 
-                    {/* Trust Score - Placeholder or calculated */}
-                    <div className="mb-6">
-                        <TrustBadge score={95} />
-                    </div>
-
                     {/* Price */}
                     <div className="flex items-center gap-4">
                         <span className="text-3xl font-bold text-red-600">${producto.precio}</span>
@@ -174,7 +119,7 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                         )}
                         {discount > 0 && (
                             <Badge className="bg-red-500 text-white">
-                                Save ${discount.toFixed(2)}
+                                Guardar ${discount.toFixed(2)}
                             </Badge>
                         )}
                     </div>
@@ -182,17 +127,19 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                     {/* Seller Info */}
                     {tienda && (
                         <Card>
-                            <CardContent className="p-4">
+                            <CardContent className="p-1">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <div className="font-medium">Vendido por {tienda.nombre}</div>
-                                        <div className="text-sm text-gray-600">
-                                            {tienda.puntuacion || 0}★ rating
+                                        <div className="text-sm text-orange-600">
+                                            {tienda.puntuacion || 0}★ puntuación
                                         </div>
                                     </div>
-                                    <Button variant="outline" size="sm">
-                                        Ver Tienda
-                                    </Button>
+                                    <Link href={`/comercio/${tienda._id}`}>
+                                        <Button variant="outline" size="sm">
+                                            Ver Tienda
+                                        </Button>
+                                    </Link>
                                 </div>
                             </CardContent>
                         </Card>
@@ -222,11 +169,11 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                         </div>
 
                         <div className="space-y-3">
-                            <Button className="w-full bg-yellow-400 hover:bg-yellow-500 text-black text-lg py-3">
+                            <Button className="w-full bg-green-400 hover:bg-green-500 text-black text-lg py-3">
                                 <ShoppingCart className="w-5 h-5 mr-2" />
                                 Agregar al Carrito
                             </Button>
-                            <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white text-lg py-3">Comprar Ahora</Button>
+                            <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white text-lg py-3">Comprar Ahora</Button>
                         </div>
 
                         <div className="flex gap-2">

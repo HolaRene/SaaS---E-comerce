@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Star, Filter } from "lucide-react";
+import { Star, Filter, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,6 +21,7 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import EmptyState from "@/components/public-negocios/EmptyState";
 
 // Mock data
 const categories = ["Electrónica", "Ropas", "Casa y jardín", "Deporte", "Libros", "Juguetes", "Bellesa", "Vehiculos"];
@@ -60,8 +61,8 @@ function ProductCard({ product }: { product: ProductosCard }) {
                         <Image src={product.imagenes[0]} alt={product.nombre} className="w-full h-48 object-cover rounded-md" width={192} height={192} />
                     </Link>
                     {product.costo && (
-                        <Badge className="absolute top-2 left-2 bg-red-500 text-white">
-                            Guardar ${(product.costo - product.precio).toFixed(2)}
+                        <Badge className="absolute top-2 left-2 bg-blue-500 text-white">
+                            Guardar
                         </Badge>
                     )}
                 </div>
@@ -87,7 +88,7 @@ function ProductCard({ product }: { product: ProductosCard }) {
                 </div>
 
 
-                <Button className="w-full bg-yellow-400 hover:bg-yellow-500 text-black">Agregar al carrito</Button>
+                <Button className="w-full bg-orange-400 hover:bg-orange-500 text-black">Agregar al carrito</Button>
             </CardContent>
         </Card>
     );
@@ -109,7 +110,7 @@ export default function BuyerHomepage() {
     }
 
     if (!productosPublicos) {
-        return <div>Producto no encontrado o no disponible</div>
+        return <EmptyState title="No se encontraron productos" buttonLink="/product/" buttonText="Ver todos los productos" />
     }
 
 
@@ -174,8 +175,6 @@ export default function BuyerHomepage() {
                         </div>
                     </div>
 
-
-
                     {/* Seller Rating */}
                     <div>
                         <h4 className="font-medium mb-3">Puntuación del vendedor</h4>
@@ -229,7 +228,7 @@ export default function BuyerHomepage() {
 
                     <div className="text-center mt-8">
                         <Button variant="outline" className="px-8">
-                            Cargar más productos
+                            <Plus className="mr-2 h-4 w-4" /> Cargar más productos
                         </Button>
                     </div>
                 </main>
