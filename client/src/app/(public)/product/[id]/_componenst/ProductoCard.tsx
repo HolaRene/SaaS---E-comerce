@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import { ArrowLeft, Star, Heart, Share2, ShoppingCart, Truck, RotateCcw, Award } from "lucide-react"
+import { Star, Heart, Share2, ShoppingCart, Truck, RotateCcw, Award } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
