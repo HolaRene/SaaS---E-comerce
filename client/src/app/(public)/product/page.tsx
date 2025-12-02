@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Star, Filter, Plus } from "lucide-react";
+import { Star, Filter, Plus, Heart, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -88,7 +88,10 @@ function ProductCard({ product }: { product: ProductosCard }) {
                 </div>
 
 
-                <Button className="w-full bg-orange-400 hover:bg-orange-500 text-black">Agregar al carrito</Button>
+                <div className="flex gap-1">
+                    <Button className=" bg-green-400 hover:bg-green-500 text-black"><Store className="w-4 h-4 mr-2" />Agregar</Button>
+                    <Button className=" bg-orange-400 hover:bg-orange-500 text-black"><Heart className="w-4 h-4" /></Button>
+                </div>
             </CardContent>
         </Card>
     );

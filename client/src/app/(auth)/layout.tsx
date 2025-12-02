@@ -17,11 +17,11 @@ export default function RootLayout({
 }>) {
     return (
 
-        <main className="relative h-screen w-full">
+        <main className="h-screen w-full bg-gray-400">
             {/* Imagen de fondo en el inicio de sesión y crear cuenta. */}
-            <div className="absolute size-full">
+            {/* <div className="absolute size-full">
                 <Image alt="fondo" src={'/images/bg-img.png'} fill className="size-full" />
-            </div>
+            </div> */}
             {children}
         </main>
 
