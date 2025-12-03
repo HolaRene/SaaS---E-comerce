@@ -20,7 +20,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Id } from "../../../convex/_generated/dataModel";
 
-export function Sidebar({ idUser }: { idUser: Id<"usuarios"> }) {
+// { idUser }: { idUser: Id<"usuarios"> }
+
+export function Sidebar() {
     const pathname = usePathname();
     const { isOpen, toggle } = useSidebar();
 

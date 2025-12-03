@@ -4,18 +4,33 @@ import StatsCards from "./_components/StatsCards"
 import OrdenesActivas from "./_components/OrdenesActivas"
 import ActividadesNovedades from "./_components/ActividadesNovedades"
 import Recomendaciones from "./_components/Recomendaciones"
-import { useUserId } from "@/app/providers/UserIdProvider"
 import { useQuery } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
+import { useClerk, useUser } from "@clerk/nextjs"
 
 
 
 const DashBoardUser = () => {
     // Obtener el ID del usuario desde el contexto (viene de la URL)
-    const idUser = useUserId();
+    const { user: clerkUser, isLoaded } = useUser();
+    // const { signOut } = useClerk()
 
-    // Obtener datos del usuario usando el ID de Convex directamente
-    const usuario = useQuery(api.users.getUser, { userId: idUser });
+    // Obtener usuario de Convex usando el clerkId real
+    const usuario = useQuery(
+        api.users.getUserById,
+        clerkUser ? { clerkId: clerkUser.id } : "skip"
+    );
+    const idUser = usuario?._id
+    // Obtener tiendas del usuario
+    const tiendaUser = useQuery(
+        api.tienda.getTiendasByPropietario,
+        idUser ? { propietarioId: idUser } : "skip"
+    );
+
+    // Mientras carga o no hay usuario
+    if (!isLoaded || !clerkUser) {
+        return null; // o un skeleton
+    }
 
     // Mientras carga
     if (!usuario) {

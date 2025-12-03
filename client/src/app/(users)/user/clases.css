@@ -1,0 +1,17 @@
+.clase{
+    background-color: red;
+    color: #000;
+}
+.flex{
+    color: #fff;
+    font-size: large;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.min-h-screen {
+    min-height: 100vh;
+}
+.bg-background {
+    background-color: white;
+}

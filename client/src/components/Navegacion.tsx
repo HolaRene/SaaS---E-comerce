@@ -68,7 +68,7 @@ const Navegacion = () => {
             {/* lado derecho */}
             <div className="flex items-center gap-4">
                 <Link href={'/'}>Inicio</Link>
-                <Link href={'#'}>Comercio</Link>
+                <Link href={'/comercios'}>Comercio</Link>
 
 
 
@@ -126,8 +126,9 @@ const Navegacion = () => {
                         ))}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>
-                            <User2 className="mr-2 h-4 w-4" />
-                            Mi perfil
+                            <Link href="/user/dashboard" className="flex gap-2">
+                                <User2 className="mr-2 h-4 w-4" />
+                                Mi Tablero</Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                             <BadgePlus className="mr-2 h-4 w-4" />
