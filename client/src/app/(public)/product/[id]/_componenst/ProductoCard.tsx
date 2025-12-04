@@ -261,13 +261,13 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                                 variant="outline"
                                 size="sm"
                                 className={cn(
-                                    "flex-1 transition-all",
+                                    "transition-all",
                                     isFavorite && "bg-red-50 border-red-300"
                                 )}
                                 onClick={handleToggleFavorite}
                                 disabled={!usuario}
                             >
-                                <Heart className={cn("w-4 h-4 mr-2", isFavorite && "fill-red-500 text-red-500")} />
+                                <Heart className={cn("w-4 h-4 text-gray-400", isFavorite && "fill-red-500 text-red-500")} />
                                 {isFavorite ? "Guardado" : "Guardar"}
                             </Button>
                             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>

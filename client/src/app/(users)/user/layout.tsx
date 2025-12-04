@@ -4,7 +4,15 @@ import { SidebarProvider } from "@/components/user/sidebar-provider";
 import { Sidebar } from "@/components/user/sidebarUser";
 import { Header } from "@/components/user/header";
 
+import type { Metadata } from "next";
 
+export const metadata: Metadata = {
+    title: "Usuario",
+    description: "Sección de usuario",
+    icons: {
+        icon: "/icons/usuario.png",
+    },
+};
 
 export default function UserLayout({ children }: { children: React.ReactNode }) {
 

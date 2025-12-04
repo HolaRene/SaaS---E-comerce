@@ -18,18 +18,30 @@ import {
     ShoppingBag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useUser } from "@clerk/nextjs";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
 
 export function Sidebar() {
     const pathname = usePathname();
     const { isOpen, toggle } = useSidebar();
 
+    // Obtener usuario y favoritos
+    const { user } = useUser();
+    const usuario = useQuery(api.users.getUserById, user ? { clerkId: user.id } : "skip");
+
+    const favTiendas = useQuery(api.favoritos.getFavoritosTiendasByUsuario, usuario ? { usuarioId: usuario._id } : "skip");
+    const favProductos = useQuery(api.favoritos.getFavoritosProductosByUsuario, usuario ? { usuarioId: usuario._id } : "skip");
+
+    const favoritesCount = (favTiendas?.length || 0) + (favProductos?.length || 0);
+
     const navItems = [
         { name: "Dashboard", href: `/user/dashboard`, icon: LayoutDashboard, badge: 0 },
         { name: "Ver Productos", href: `/user/productos`, icon: Package2, badge: 0 },
         { name: "Ver Negocios", href: `/user/negocios`, icon: Store, badge: 0 },
         { name: "Compras", href: `/user/compras`, icon: ShoppingBag, badge: 52 },
-        { name: "Favoritos", href: `/user/favoritos`, icon: Heart, badge: 6 },
+        { name: "Favoritos", href: `/user/favoritos`, icon: Heart, badge: favoritesCount },
         { name: "Carrito", href: `/user/carrito`, icon: ShoppingCart, badge: 5 },
         { name: "Notificaciones", href: `/user/notificacion`, icon: Bell, badge: 3 },
     ];

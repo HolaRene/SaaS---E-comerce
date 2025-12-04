@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Star, Filter, Plus, Heart, Store, ShoppingCartIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +57,7 @@ interface ProductosCard {
 
 function ProductCard({ product }: { product: ProductosCard }) {
     const [isFavorite, setIsFavorite] = useState(false);
+    console.log('es favorito', isFavorite)
 
     const tiendas = useQuery(api.tiendas.getTiendaById, { id: product.tiendaId })
     // Obtener usuario actual de Clerk
@@ -77,13 +78,14 @@ function ProductCard({ product }: { product: ProductosCard }) {
     // Mutations para favoritos
     const agregarFavorito = useMutation(api.favoritos.agregarProductoFavorito);
     const eliminarFavorito = useMutation(api.favoritos.eliminarProductoFavorito);
-    if (!tiendas) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <Spinner className="h-8 w-8 text-blue-500" />
-            </div>
-        )
-    }
+
+    // Sincronizar estado local con el estado de Convex
+    useEffect(() => {
+        if (esFavorito !== undefined) {
+            setIsFavorite(esFavorito);
+        }
+    }, [esFavorito]);
+
 
     // Handler para guardar/quitar de favoritos
     const handleToggleFavorite = async () => {
@@ -107,10 +109,17 @@ function ProductCard({ product }: { product: ProductosCard }) {
                 toast.success("Producto guardado en favoritos");
             }
         } catch (error: any) {
-            toast.error(error.message || "Error al actualizar favoritos");
+            toast.error(error.message || "Error al actualizar favoritos aqui error");
             console.error(error);
         }
     };
+    if (!tiendas) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <Spinner className="h-8 w-8 text-blue-500" />
+            </div>
+        )
+    }
 
     return (
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
@@ -147,7 +156,7 @@ function ProductCard({ product }: { product: ProductosCard }) {
                 </div>
 
 
-                <div className="flex justify-between gap-1">
+                <div className="flex justify-between">
 
                     <Button disabled={!usuario} className=" bg-orange-400 hover:bg-orange-500 text-black"><ShoppingCartIcon className="w-4 h-4" />
                         Agregar al carrito
@@ -156,14 +165,13 @@ function ProductCard({ product }: { product: ProductosCard }) {
                         variant="outline"
                         size="sm"
                         className={cn(
-                            " transition-all",
+                            "transition-all",
                             isFavorite && "bg-red-50 border-red-300"
                         )}
                         onClick={handleToggleFavorite}
                         disabled={!usuario}
                     >
-                        <Heart className={cn("w-4 h-4 mr-2", isFavorite && "fill-red-500 text-red-500")} />
-
+                        <Heart className={cn("w-4 h-4", isFavorite && "fill-red-500 text-red-500")} />
                     </Button>
                 </div>
             </CardContent>
