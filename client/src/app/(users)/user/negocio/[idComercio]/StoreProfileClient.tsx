@@ -2,11 +2,12 @@
 
 import * as React from "react"
 import { useQuery } from "convex/react"
-import { api } from "../../../../../convex/_generated/api"
-import { Id } from "../../../../../convex/_generated/dataModel"
+
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
 import "leaflet/dist/leaflet.css"
 import { StoreProfilePage } from "@/components/negocios/negocio-perfil-page"
+import { api } from "../../../../../../convex/_generated/api"
+import { Id } from "../../../../../../convex/_generated/dataModel"
 
 type Props = {
     idComercio: string | Promise<string>

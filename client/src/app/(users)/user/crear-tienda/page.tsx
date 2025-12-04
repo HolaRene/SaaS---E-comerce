@@ -36,8 +36,8 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { ConvexError } from "convex/values";
-import { api } from "../../../../convex/_generated/api";
 import { Checkbox } from "@/components/ui/checkbox";
+import { api } from "../../../../../convex/_generated/api";
 
 // Componente para mostrar errores
 const ErrorMessage = ({ message }: { message?: string }) => {
