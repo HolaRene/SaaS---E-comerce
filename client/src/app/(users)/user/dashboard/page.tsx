@@ -7,6 +7,7 @@ import Recomendaciones from "./_components/Recomendaciones"
 import { useQuery } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
 import { useClerk, useUser } from "@clerk/nextjs"
+import { Spinner } from "@/components/ui/spinner"
 
 
 
@@ -29,12 +30,16 @@ const DashBoardUser = () => {
 
     // Mientras carga o no hay usuario
     if (!isLoaded || !clerkUser) {
-        return null; // o un skeleton
+        return <div className="flex items-center justify-center h-screen">
+            <Spinner className="h-16 w-16" />
+        </div>;
     }
 
     // Mientras carga
     if (!usuario) {
-        return null; // o un skeleton
+        return <div className="flex items-center justify-center h-screen">
+            No hay usuario
+        </div>;
     }
 
     // Datos finales para mostrar
