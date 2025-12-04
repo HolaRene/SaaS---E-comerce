@@ -14,16 +14,27 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Eye, Heart, ImageIcon, MapPin, Phone, Share2, Star } from "lucide-react";
+import { Edit, Eye, Heart, ImageIcon, MapPin, Phone, Share2, Star, ClipboardCopy, Check } from "lucide-react";
 import Link from "next/link";
 import { Id } from "../../../../../../convex/_generated/dataModel";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import { CATEGORY_ICONS } from "@/lib/types-negocios";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import EmptyState from "@/components/public-negocios/EmptyState";
+import { useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 
 interface PerfilProps {
@@ -63,15 +74,44 @@ const ErrorState = ({ message }: { message: string }) => (
 );
 
 export default function PerfilPublico({ id }: PerfilProps) {
-    const [isFollowing, setIsFollowing] = useState(false)
+    // Obtener usuario actual de Clerk
+    const { user: clerkUser } = useUser();
+
+    // Obtener usuario de Convex usando el clerkId
+    const usuario = useQuery(
+        api.users.getUserById,
+        clerkUser ? { clerkId: clerkUser.id } : "skip"
+    );
+
+    // Estado local
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [sheetOpen, setSheetOpen] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    // Queries
     const tiendaPublica = useQuery(api.tiendas.getTiendaById, {
         id
-    })
+    });
     const productos = useQuery(api.productos.getProductosByTienda, {
         tiendaId: id
-    })
+    });
 
+    // Verificar si la tienda es favorita
+    const esFavorita = useQuery(
+        api.favoritos.isTiendaFavorita,
+        usuario?._id ? { usuarioId: usuario._id, tiendaId: id } : "skip"
+    );
 
+    // Mutations para favoritos
+    const agregarFavorito = useMutation(api.favoritos.agregarTiendaFavorita);
+    const eliminarFavorito = useMutation(api.favoritos.eliminarTiendaFavorita);
+
+    // Sincronizar estado local con Convex
+    useEffect(() => {
+        if (esFavorita !== undefined) {
+            setIsFollowing(esFavorita);
+        }
+    }, [esFavorita]);
 
     if (tiendaPublica === undefined) {
         return <LoadingState />;
@@ -88,6 +128,45 @@ export default function PerfilPublico({ id }: PerfilProps) {
         window.open(`https://wa.me/${phone}`, "_blank", "noopener,noreferrer");
     };
 
+    // Handler para seguir/dejar de seguir
+    const handleToggleFollow = async () => {
+        if (!usuario?._id) {
+            toast.error("Debes iniciar sesión para seguir tiendas");
+            return;
+        }
+
+        try {
+            if (isFollowing) {
+                await eliminarFavorito({
+                    usuarioId: usuario._id,
+                    tiendaId: id,
+                });
+                toast.success("Dejaste de seguir esta tienda");
+            } else {
+                await agregarFavorito({
+                    usuarioId: usuario._id,
+                    tiendaId: id,
+                });
+                toast.success("Ahora sigues esta tienda");
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Error al actualizar favoritos");
+            console.error(error);
+        }
+    };
+
+    // Handler para copiar enlace
+    const handleCopyLink = async () => {
+        const link = `${window.location.origin}/comercio/${id}`;
+        try {
+            await navigator.clipboard.writeText(link);
+            setCopied(true);
+            toast.success("Enlace copiado al portapapeles");
+            setTimeout(() => setCopied(false), 2000);
+        } catch (error) {
+            toast.error("Error al copiar enlace");
+        }
+    };
 
     return (
         <div className="space-y-3">
@@ -120,15 +199,56 @@ export default function PerfilPublico({ id }: PerfilProps) {
                         </div>
                         <div className="flex flex-col gap-2">
                             <Button
-                                onClick={() => setIsFollowing(!isFollowing)}
-                                className={`gap-2 ${isFollowing ? "bg-blue-500" : "bg-green-500"}`}
+                                onClick={handleToggleFollow}
+                                variant={isFollowing ? "default" : "outline"}
+                                className={cn(
+                                    "gap-2 transition-all",
+                                    isFollowing
+                                        ? "bg-blue-500 hover:bg-blue-600 text-white"
+                                        : "bg-green-500 hover:bg-green-600 text-white"
+                                )}
+                                disabled={!usuario}
                             >
+                                <Heart className={cn("h-4 w-4", isFollowing && "fill-current")} />
                                 {isFollowing ? "Siguiendo" : "Seguir"}
                             </Button>
-                            <Button variant="outline">
-                                <Share2 className="mr-2 h-4 w-4" />
-                                Compartir
-                            </Button>
+                            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+                                <SheetTrigger asChild>
+                                    <Button variant="outline" className="gap-2">
+                                        <Share2 className="h-4 w-4" />
+                                        Compartir
+                                    </Button>
+                                </SheetTrigger>
+                                <SheetContent side="bottom" className="h-auto">
+                                    <SheetHeader>
+                                        <SheetTitle>Compartir tienda</SheetTitle>
+                                    </SheetHeader>
+                                    <div className="space-y-4 mt-4">
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                readOnly
+                                                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/comercio/${id}`}
+                                                className="flex-1"
+                                            />
+                                            <Button
+                                                onClick={handleCopyLink}
+                                                variant="secondary"
+                                                size="icon"
+                                                className="shrink-0"
+                                            >
+                                                {copied ? (
+                                                    <Check className="h-4 w-4 text-green-600" />
+                                                ) : (
+                                                    <ClipboardCopy className="h-4 w-4" />
+                                                )}
+                                            </Button>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">
+                                            Comparte este enlace para que otros puedan ver esta tienda
+                                        </p>
+                                    </div>
+                                </SheetContent>
+                            </Sheet>
 
                         </div>
                     </div>
