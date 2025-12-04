@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Star, Filter, Plus, Heart, Store } from "lucide-react";
+import { Star, Filter, Plus, Heart, Store, ShoppingCartIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import Image from "next/image";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { Spinner } from "@/components/ui/spinner";
@@ -22,6 +22,9 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import EmptyState from "@/components/public-negocios/EmptyState";
+import { useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 // Mock data
 const categories = ["Electrónica", "Ropas", "Casa y jardín", "Deporte", "Libros", "Juguetes", "Bellesa", "Vehiculos"];
@@ -53,6 +56,62 @@ interface ProductosCard {
 
 
 function ProductCard({ product }: { product: ProductosCard }) {
+    const [isFavorite, setIsFavorite] = useState(false);
+
+    const tiendas = useQuery(api.tiendas.getTiendaById, { id: product.tiendaId })
+    // Obtener usuario actual de Clerk
+    const { user: clerkUser } = useUser();
+
+    // Obtener usuario de Convex usando el clerkId
+    const usuario = useQuery(
+        api.users.getUserById,
+        clerkUser ? { clerkId: clerkUser.id } : "skip"
+    );
+
+    // Verificar si el producto es favorito
+    const esFavorito = useQuery(
+        api.favoritos.isProductoFavorito,
+        usuario?._id ? { usuarioId: usuario._id, productoId: product._id } : "skip"
+    );
+
+    // Mutations para favoritos
+    const agregarFavorito = useMutation(api.favoritos.agregarProductoFavorito);
+    const eliminarFavorito = useMutation(api.favoritos.eliminarProductoFavorito);
+    if (!tiendas) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <Spinner className="h-8 w-8 text-blue-500" />
+            </div>
+        )
+    }
+
+    // Handler para guardar/quitar de favoritos
+    const handleToggleFavorite = async () => {
+        if (!usuario?._id) {
+            toast.error("Debes iniciar sesión para guardar productos");
+            return;
+        }
+
+        try {
+            if (isFavorite) {
+                await eliminarFavorito({
+                    usuarioId: usuario._id,
+                    productoId: product._id,
+                });
+                toast.success("Producto eliminado de favoritos");
+            } else {
+                await agregarFavorito({
+                    usuarioId: usuario._id,
+                    productoId: product._id,
+                });
+                toast.success("Producto guardado en favoritos");
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Error al actualizar favoritos");
+            console.error(error);
+        }
+    };
+
     return (
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
             <CardContent className="p-4">
@@ -84,13 +143,28 @@ function ProductCard({ product }: { product: ProductosCard }) {
                 </div>
 
                 <div className="text-xs text-gray-600 mb-3">
-                    by <span className="text-blue-600 hover:underline">{product.autorId}</span>
+                    Por <span className="text-blue-600 hover:underline">{tiendas?.nombre}</span>
                 </div>
 
 
-                <div className="flex gap-1">
-                    <Button className=" bg-green-400 hover:bg-green-500 text-black"><Store className="w-4 h-4 mr-2" />Agregar</Button>
-                    <Button className=" bg-orange-400 hover:bg-orange-500 text-black"><Heart className="w-4 h-4" /></Button>
+                <div className="flex justify-between gap-1">
+
+                    <Button disabled={!usuario} className=" bg-orange-400 hover:bg-orange-500 text-black"><ShoppingCartIcon className="w-4 h-4" />
+                        Agregar al carrito
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                            " transition-all",
+                            isFavorite && "bg-red-50 border-red-300"
+                        )}
+                        onClick={handleToggleFavorite}
+                        disabled={!usuario}
+                    >
+                        <Heart className={cn("w-4 h-4 mr-2", isFavorite && "fill-red-500 text-red-500")} />
+
+                    </Button>
                 </div>
             </CardContent>
         </Card>
