@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Star, Filter, Plus, Heart, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,10 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import Image from "next/image";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
+import { useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import {
     Breadcrumb,
@@ -53,7 +56,61 @@ interface ProductosCard {
 
 
 function ProductCard({ product }: { product: ProductosCard }) {
+    const [isFavorite, setIsFavorite] = useState(false);
+
     const tienda = useQuery(api.tiendas.getTiendaById, { id: product.tiendaId });
+
+    // Obtener usuario actual
+    const { user: clerkUser } = useUser();
+    const usuario = useQuery(
+        api.users.getUserById,
+        clerkUser ? { clerkId: clerkUser.id } : "skip"
+    );
+
+    // Verificar si el producto es favorito
+    const esFavorito = useQuery(
+        api.favoritos.isProductoFavorito,
+        usuario?._id ? { usuarioId: usuario._id, productoId: product._id } : "skip"
+    );
+
+    // Mutations
+    const agregarFavorito = useMutation(api.favoritos.agregarProductoFavorito);
+    const eliminarFavorito = useMutation(api.favoritos.eliminarProductoFavorito);
+
+    // Sincronizar estado local con el estado de Convex
+    useEffect(() => {
+        if (esFavorito !== undefined) {
+            setIsFavorite(esFavorito);
+        }
+    }, [esFavorito]);
+
+    // Handler para agregar/eliminar de favoritos
+    const handleToggleFavorite = async () => {
+        if (!usuario?._id) {
+            toast.error("Debes iniciar sesión para guardar productos");
+            return;
+        }
+
+        try {
+            if (isFavorite) {
+                await eliminarFavorito({
+                    usuarioId: usuario._id,
+                    productoId: product._id,
+                });
+                toast.success("Producto eliminado de favoritos");
+            } else {
+                await agregarFavorito({
+                    usuarioId: usuario._id,
+                    productoId: product._id,
+                });
+                toast.success("Producto agregado a favoritos");
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Error al actualizar favoritos");
+            console.error(error);
+        }
+    };
+
     if (!tienda) {
         return <div>
             <Spinner className="h-8 w-8 text-blue-500" />
@@ -98,7 +155,16 @@ function ProductCard({ product }: { product: ProductosCard }) {
 
                 <div className="flex gap-1 justify-between">
                     <Button className=" bg-green-400 hover:bg-green-500 text-black"><Store className="w-4 h-4 mr-2" />Agregar</Button>
-                    <Button className=" bg-orange-400 hover:bg-orange-500 text-black"><Heart className="w-4 h-4" /></Button>
+                    <Button
+                        variant="outline"
+                        onClick={handleToggleFavorite}
+                        disabled={!usuario}
+                    >
+                        <Heart className={cn(
+                            "w-4 h-4",
+                            isFavorite ? "fill-orange-500 text-orange-500" : "text-gray-400"
+                        )} />
+                    </Button>
                 </div>
             </CardContent>
         </Card>
@@ -130,8 +196,8 @@ export default function BuyerHomepage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            <div className="p-6 md:p-8 pb-0">
+        <div className="min-h-screen flex flex-col">
+            <div className="p-2 md:p-5 pb-0">
                 <Breadcrumb>
                     <BreadcrumbList>
                         <BreadcrumbItem>

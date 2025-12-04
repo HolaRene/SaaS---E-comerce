@@ -53,7 +53,7 @@ const DashBoardUser = () => {
                 <p className="text-muted-foreground">Bienvenido/a de vuelta a tu mercado local</p>
             </div>
             {/* Stats */}
-            <StatsCards />
+            <StatsCards idUser={idUser} />
             {/* Ordenes activas */}
             <OrdenesActivas />
             {/* Actividades y novedades */}
