@@ -1,3 +1,4 @@
+"use client"
 
 import NotificacionFavoritos from "./_components/notificacionFavoritos"
 import TiendasSeguidas from "./_components/tiendas-seguidas"

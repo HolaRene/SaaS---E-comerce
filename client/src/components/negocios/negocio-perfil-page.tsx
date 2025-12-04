@@ -5,11 +5,13 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useQuery } from "convex/react"
+import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
+import { useUser } from "@clerk/nextjs"
+import { toast } from "sonner"
 import {
     ArrowLeft,
     Star,
@@ -114,13 +116,15 @@ function ProductCard({ product }: { product: Product }) {
     return (
         <div className="group cursor-pointer">
             <div className="aspect-square rounded-lg overflow-hidden bg-muted relative">
-                <Image
-                    src={imgSrc}
-                    alt={product.nombre}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-200"
-                    onError={() => setImgSrc("/placeholder.svg")}
-                />
+                <Link href={`/user/productos/${product.id}`}>
+                    <Image
+                        src={imgSrc}
+                        alt={product.nombre}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-200"
+                        onError={() => setImgSrc("/placeholder.svg")}
+                    />v
+                </Link>
                 {product.estado === "agotado" && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                         <span className="text-white font-medium text-sm">Agotado</span>
@@ -141,6 +145,57 @@ export function StoreProfilePage(tienda: tienda) {
     const [isFollowing, setIsFollowing] = useState(false)
     const [productFilter, setProductFilter] = useState<"todos" | "stock" | "populares">("todos")
     const [avatarSrc, setAvatarSrc] = useState(tienda.avatar || "/placeholder.svg")
+
+    // Obtener usuario actual
+    const { user: clerkUser } = useUser();
+    const usuario = useQuery(
+        api.users.getUserById,
+        clerkUser ? { clerkId: clerkUser.id } : "skip"
+    );
+
+    // Verificar si la tienda es favorita
+    const esFavorita = useQuery(
+        api.favoritos.isTiendaFavorita,
+        usuario?._id ? { usuarioId: usuario._id, tiendaId: tienda._id } : "skip"
+    );
+
+    // Mutations
+    const agregarFavorito = useMutation(api.favoritos.agregarTiendaFavorita);
+    const eliminarFavorito = useMutation(api.favoritos.eliminarTiendaFavorita);
+
+    // Sincronizar estado local con el estado de Convex
+    useEffect(() => {
+        if (esFavorita !== undefined) {
+            setIsFollowing(esFavorita);
+        }
+    }, [esFavorita]);
+
+    // Handler para seguir/dejar de seguir
+    const handleToggleFollow = async () => {
+        if (!usuario?._id) {
+            toast.error("Debes iniciar sesión para seguir tiendas");
+            return;
+        }
+
+        try {
+            if (isFollowing) {
+                await eliminarFavorito({
+                    usuarioId: usuario._id,
+                    tiendaId: tienda._id,
+                });
+                toast.success("Dejaste de seguir esta tienda");
+            } else {
+                await agregarFavorito({
+                    usuarioId: usuario._id,
+                    tiendaId: tienda._id,
+                });
+                toast.success("Ahora sigues esta tienda");
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Error al actualizar favoritos");
+            console.error(error);
+        }
+    };
 
     // Obtener productos públicos de la tienda
     const productosConvex = useQuery(api.tiendas.getProductosPublicosByTienda, {
@@ -270,9 +325,10 @@ export function StoreProfilePage(tienda: tienda) {
                             {/* Botones de acción - visible en desktop */}
                             <div className="hidden md:flex gap-2 mt-4">
                                 <Button
-                                    onClick={() => setIsFollowing(!isFollowing)}
+                                    onClick={handleToggleFollow}
                                     variant={isFollowing ? "outline" : "default"}
                                     className="gap-2"
+                                    disabled={!usuario}
                                 >
                                     {isFollowing ? "Siguiendo" : "Seguir"}
                                 </Button>
@@ -303,9 +359,10 @@ export function StoreProfilePage(tienda: tienda) {
                     {/* Botones de acción - visible en móvil */}
                     <div className="flex md:hidden gap-2 mt-4">
                         <Button
-                            onClick={() => setIsFollowing(!isFollowing)}
+                            onClick={handleToggleFollow}
                             variant={isFollowing ? "outline" : "default"}
                             className="flex-1 gap-2"
+                            disabled={!usuario}
                         >
                             {isFollowing ? "Siguiendo" : "Seguir"}
                         </Button>

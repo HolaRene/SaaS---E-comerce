@@ -9,8 +9,10 @@
  */
 
 import type * as clientes from "../clientes.js";
+import type * as compras from "../compras.js";
 import type * as creditos from "../creditos.js";
 import type * as etiquetas from "../etiquetas.js";
+import type * as favoritos from "../favoritos.js";
 import type * as finanzas from "../finanzas.js";
 import type * as herramientas from "../herramientas.js";
 import type * as historial from "../historial.js";
@@ -33,8 +35,10 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   clientes: typeof clientes;
+  compras: typeof compras;
   creditos: typeof creditos;
   etiquetas: typeof etiquetas;
+  favoritos: typeof favoritos;
   finanzas: typeof finanzas;
   herramientas: typeof herramientas;
   historial: typeof historial;

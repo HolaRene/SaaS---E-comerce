@@ -497,4 +497,69 @@ export default defineSchema({
     creadoPor: v.id('usuarios'),
     ultimaModificacion: v.string(),
   }).index('by_tienda', ['tiendaId']),
+
+  // ==================== COMPRAS (Pedidos de usuarios) ====================
+  compras: defineTable({
+    usuarioId: v.id('usuarios'),
+    tiendaId: v.id('tiendas'),
+    numeroOrden: v.string(), // Número de orden único (ej: "ORD-2024-00001")
+    fecha: v.string(), // ISO timestamp
+    subtotal: v.number(),
+    costoEnvio: v.number(),
+    total: v.number(),
+    estado: v.union(
+      v.literal('pendiente'),
+      v.literal('en_preparacion'),
+      v.literal('enviado'),
+      v.literal('entregado'),
+      v.literal('cancelado')
+    ),
+    metodoPago: v.union(
+      v.literal('efectivo'),
+      v.literal('tarjeta'),
+      v.literal('transferencia')
+    ),
+    direccionEntrega: v.string(),
+    notas: v.optional(v.string()),
+    fechaEntrega: v.optional(v.string()), // Fecha estimada o real de entrega
+  })
+    .index('by_usuario', ['usuarioId'])
+    .index('by_tienda', ['tiendaId'])
+    .index('by_estado', ['estado'])
+    .index('by_fecha', ['fecha'])
+    .index('by_usuario_fecha', ['usuarioId', 'fecha']),
+
+  // Detalles de Compra (items de cada compra)
+  detallesCompra: defineTable({
+    compraId: v.id('compras'),
+    productoId: v.id('productos'),
+    nombreProducto: v.string(), // Snapshot del nombre al momento de la compra
+    cantidad: v.number(),
+    precioUnitario: v.number(),
+    subtotal: v.number(), // cantidad * precioUnitario
+  })
+    .index('by_compra', ['compraId'])
+    .index('by_producto', ['productoId']),
+
+  // ==================== FAVORITOS ====================
+  // Tiendas seguidas por usuarios
+  favoritosTiendas: defineTable({
+    usuarioId: v.id('usuarios'),
+    tiendaId: v.id('tiendas'),
+    fechaAgregado: v.string(), // ISO timestamp
+  })
+    .index('by_usuario', ['usuarioId'])
+    .index('by_tienda', ['tiendaId'])
+    .index('by_usuario_tienda', ['usuarioId', 'tiendaId']), // Evitar duplicados
+
+  // Productos guardados por usuarios
+  favoritosProductos: defineTable({
+    usuarioId: v.id('usuarios'),
+    productoId: v.id('productos'),
+    tiendaId: v.id('tiendas'), // Para facilitar consultas
+    fechaAgregado: v.string(), // ISO timestamp
+  })
+    .index('by_usuario', ['usuarioId'])
+    .index('by_producto', ['productoId'])
+    .index('by_usuario_producto', ['usuarioId', 'productoId']), // Evitar duplicados
 })

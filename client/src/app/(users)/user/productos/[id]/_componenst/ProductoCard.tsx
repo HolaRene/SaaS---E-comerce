@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Star, Heart, Share2, ShoppingCart, Truck, RotateCcw, Award } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -7,13 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
-import { useQuery } from "convex/react"
+import { useQuery, useMutation } from "convex/react"
 import { Spinner } from "@/components/ui/spinner"
 import EmptyState from "@/components/public-negocios/EmptyState"
 import Link from "next/link"
 import { api } from "../../../../../../../convex/_generated/api"
 import { Id } from "../../../../../../../convex/_generated/dataModel"
 import Image from "next/image"
+import { useUser } from "@clerk/nextjs"
+import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 const reviews = [
     {
@@ -60,9 +63,64 @@ const reviews = [
 
 const ProductCard = ({ id }: { id: Id<"productos"> }) => {
     const [quantity, setQuantity] = useState(1)
+    // Estado para favoritos
+    const [isFavorite, setIsFavorite] = useState(false)
 
     const producto = useQuery(api.productos.getProductoId, { id })
     const tienda = useQuery(api.tiendas.getTiendaPublicaById, producto ? { id: producto.tiendaId } : "skip")
+
+    // Obtener usuario actual
+    const { user: clerkUser } = useUser()
+    const usuario = useQuery(
+        api.users.getUserById,
+        clerkUser ? { clerkId: clerkUser.id } : 'skip'
+    )
+
+    const esFavorito = useQuery(
+        api.favoritos.isProductoFavorito,
+        usuario?._id && producto
+            ? { usuarioId: usuario._id, productoId: producto._id }
+            : 'skip'
+    )
+
+    // Mutations
+    const agregarFavorito = useMutation(api.favoritos.agregarProductoFavorito)
+    const eliminarFavorito = useMutation(api.favoritos.eliminarProductoFavorito)
+
+    // Sincronizar estado local con el estado de Convex
+    useEffect(() => {
+        if (esFavorito !== undefined) {
+            setIsFavorite(esFavorito)
+        }
+    }, [esFavorito])
+
+    const handleToggleFavorite = async () => {
+        if (!usuario?._id) {
+            toast.error('Debes iniciar sesión para guardar productos')
+            return
+        }
+
+        if (!producto) return
+
+        try {
+            if (isFavorite) {
+                await eliminarFavorito({
+                    usuarioId: usuario._id,
+                    productoId: producto._id,
+                })
+                toast.success('Producto eliminado de favoritos')
+            } else {
+                await agregarFavorito({
+                    usuarioId: usuario._id,
+                    productoId: producto._id,
+                })
+                toast.success('Producto agregado a favoritos')
+            }
+        } catch (error: any) {
+            toast.error(error.message || 'Error al actualizar favoritos')
+            console.error(error)
+        }
+    }
 
     if (producto === undefined || tienda === undefined) {
         return <div className="flex items-center justify-center min-h-screen">
@@ -189,9 +247,17 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                         </div>
 
                         <div className="flex gap-2">
-                            <Button variant="outline" size="sm" className="flex-1">
-                                <Heart className="w-4 h-4 mr-2" />
-                                Guardar
+                            <Button
+                                variant='outline'
+                                size='sm'
+                                className='flex-1'
+                                onClick={handleToggleFavorite}
+                                disabled={!usuario}
+                            >
+                                <Heart
+                                    className={cn('w-4 h-4 mr-2', isFavorite && 'fill-red-500 text-red-500')}
+                                />
+                                {isFavorite ? 'Guardado' : 'Guardar'}
                             </Button>
                             <Button variant="outline" size="sm" className="flex-1">
                                 <Share2 className="w-4 h-4 mr-2" />
