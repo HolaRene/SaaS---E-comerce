@@ -112,7 +112,8 @@ export const crearCompra = mutation({
     metodoPago: v.union(
       v.literal('efectivo'),
       v.literal('tarjeta'),
-      v.literal('transferencia')
+      v.literal('transferencia'),
+      v.literal('fiado')
     ),
     direccionEntrega: v.string(),
     notas: v.optional(v.string()),

@@ -82,7 +82,10 @@ const OrdernesSuma = ({ items, selectedStore }: OrdernesSumaProps) => {
                     <Button
                         className="w-full bg-green-600 hover:bg-green-700"
                         size="lg"
-                        onClick={() => ruta.push('/user/carrito/checar')}
+                        onClick={() => {
+                            if (!canCheckout) return;
+                            ruta.push(`/user/carrito/checar?tienda=${encodeURIComponent(selectedStore)}`);
+                        }}
                         disabled={!canCheckout}
                     >
                         Proceder al pago

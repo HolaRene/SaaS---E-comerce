@@ -27,6 +27,7 @@ export default function PurchasesTab() {
         usuario?._id ? { usuarioId: usuario._id } : "skip"
     );
 
+
     // Estado de carga
     if (!isLoaded || !clerkUser) {
         return (
@@ -88,6 +89,7 @@ export default function PurchasesTab() {
             shipping: `C$${compra.costoEnvio.toFixed(2)}`,
         };
     }) || [];
+    console.log(ordersData.length)
 
     // Estado vacío
     if (compras && compras.length === 0) {
@@ -110,6 +112,7 @@ export default function PurchasesTab() {
             </div>
         );
     }
+
 
     return (
         <div className="space-y-6">

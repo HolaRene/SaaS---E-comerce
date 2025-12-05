@@ -16,6 +16,9 @@ import {
     Package2,
     Store,
     ShoppingBag,
+    Clock,
+    CheckCircle,
+    Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
@@ -40,12 +43,62 @@ export function Sidebar() {
         api.carrito.countCarritoItems,
         usuario?._id ? { usuarioId: usuario._id } : 'skip'
     ) ?? 0
+    // Obtener compras del usuario
+    const compras = useQuery(
+        api.compras.getComprasByUsuario,
+        usuario?._id ? { usuarioId: usuario._id } : "skip"
+    );
+
+
+    const ordersData = compras?.map((compra) => {
+        // Determinar el ícono según el estado
+        let icon = Clock;
+        let statusColor = "warning";
+
+        if (compra.estado === "entregado") {
+            icon = CheckCircle;
+            statusColor = "default";
+        } else if (compra.estado === "enviado") {
+            icon = Truck;
+            statusColor = "secondary";
+        }
+
+        // Formatear la fecha
+        const fecha = new Date(compra.fecha);
+        const fechaFormateada = fecha.toLocaleDateString("es-NI", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+        });
+
+        // Mapear estado a texto en español
+        const estadoTexto: Record<string, string> = {
+            pendiente: "Pendiente",
+            en_preparacion: "En preparación",
+            enviado: "Enviado",
+            entregado: "Entregado",
+            cancelado: "Cancelado",
+        };
+
+        return {
+            id: compra.numeroOrden,
+            store: compra.nombreTienda,
+            date: fechaFormateada,
+            total: `C$${compra.total.toFixed(2)}`,
+            status: estadoTexto[compra.estado] || compra.estado,
+            statusColor,
+            icon,
+            items: [], // Los items se cargarían en un detalle expandido
+            subtotal: `C$${compra.subtotal.toFixed(2)}`,
+            shipping: `C$${compra.costoEnvio.toFixed(2)}`,
+        };
+    }) || [];
 
     const navItems = [
         { name: "Dashboard", href: `/user/dashboard`, icon: LayoutDashboard, badge: 0 },
         { name: "Ver Productos", href: `/user/productos`, icon: Package2, badge: 0 },
         { name: "Ver Negocios", href: `/user/negocios`, icon: Store, badge: 0 },
-        { name: "Compras", href: `/user/compras`, icon: ShoppingBag, badge: 52 },
+        { name: "Compras", href: `/user/compras`, icon: ShoppingBag, badge: ordersData.length || 0 },
         { name: "Favoritos", href: `/user/favoritos`, icon: Heart, badge: favoritesCount },
         { name: "Carrito", href: `/user/carrito`, icon: ShoppingCart, badge: cartCount },
         { name: "Notificaciones", href: `/user/notificacion`, icon: Bell, badge: 3 },

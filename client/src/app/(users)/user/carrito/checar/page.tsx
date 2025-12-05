@@ -1,160 +1,341 @@
 "use client"
 
-import { useState } from "react"
-import { ArrowLeft, CreditCard, Shield, Check } from "lucide-react"
+import { useState, useEffect } from "react"
+import { ArrowLeft, Check, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
+import { Textarea } from "@/components/ui/textarea"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useQuery, useMutation } from "convex/react"
+import { useUser } from "@clerk/nextjs"
+import { api } from "../../../../../../convex/_generated/api"
+import { toast } from "sonner"
+import { z } from "zod"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 
-const cartItems = [
-    {
-        id: 1,
-        name: "Wireless Bluetooth Headphones",
-        price: 79.99,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100&h=100&fit=crop",
-        seller: "TechGear Pro",
-    },
-    {
-        id: 2,
-        name: "USB-C Fast Charger",
-        price: 24.99,
-        quantity: 2,
-        image: "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=100&h=100&fit=crop",
-        seller: "TechGear Pro",
-    },
-]
+// Zod schemas
+const shippingSchema = z.object({
+    nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
+    telefono: z.string().min(8, "El teléfono debe tener al menos 8 dígitos"),
+    direccion: z.string().min(10, "La dirección debe tener al menos 10 caracteres"),
+    ciudad: z.string().min(3, "La ciudad debe tener al menos 3 caracteres"),
+    notas: z.string().optional(),
+})
+
+const paymentSchema = z.object({
+    metodoPago: z.enum(["efectivo", "transferencia", "fiado"]),
+})
+
+type ShippingFormData = z.infer<typeof shippingSchema>
+type PaymentFormData = z.infer<typeof paymentSchema>
 
 const CheckoutPage = () => {
-    const [step, setStep] = useState(1)
-    const [shippingMethod, setShippingMethod] = useState("standard")
-    const [paymentMethod, setPaymentMethod] = useState("card")
+    const router = useRouter()
+    const searchParams = useSearchParams()
+    const selectedStore = searchParams.get("tienda") || "all"
 
-    const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-    const shipping = shippingMethod === "express" ? 9.99 : 0
-    const tax = subtotal * 0.08
-    const total = subtotal + shipping + tax
+    const [step, setStep] = useState(1)
+    const { user: clerkUser } = useUser()
+
+    // ✅ 1. DECLARAR USUARIO PRIMERO (antes de useEffect)
+    const usuario = useQuery(
+        api.users.getUserById,
+        clerkUser ? { clerkId: clerkUser.id } : 'skip'
+    )
+
+    // Forms
+    const shippingForm = useForm<ShippingFormData>({
+        resolver: zodResolver(shippingSchema),
+        defaultValues: {
+            nombre: "",
+            telefono: "",
+            direccion: "",
+            ciudad: "",
+            notas: "",
+        },
+    })
+
+    const paymentForm = useForm<PaymentFormData>({
+        resolver: zodResolver(paymentSchema),
+        defaultValues: {
+            metodoPago: "transferencia",
+        },
+    })
+
+    // Pre-llenar formulario con datos del usuario
+    useEffect(() => {
+        if (usuario) {
+            shippingForm.setValue("nombre", `${usuario.nombre} ${usuario.apellido}`);
+            shippingForm.setValue("telefono", usuario.numTelefono || "");
+        }
+    }, [usuario, shippingForm])
+
+    const carritoItems = useQuery(
+        api.carrito.getCarritoByUsuario,
+        usuario?._id ? { usuarioId: usuario._id } : 'skip'
+    )
+
+    // Mutations
+    const crearVentaOnline = useMutation(api.ventas.crearVentaOnline)
+    const vaciarCarritoPorTienda = useMutation(api.carrito.vaciarCarritoPorTienda)
+
+    // Filter items by selected store
+    const filteredItems = selectedStore === "all"
+        ? carritoItems || []
+        : (carritoItems || []).filter((item) => item.tienda?.nombre === selectedStore)
+
+    const subtotal = filteredItems.reduce((sum, item) => sum + (item.precioUnitario * item.cantidad), 0)
+    const shipping = 20.0
+    const total = subtotal + shipping
+
+    // Get store ID from first item
+    const tiendaId = filteredItems[0]?.tiendaId
+
+    const [ordenId, setOrdenId] = useState<string>("")
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
+    useEffect(() => {
+        // Redirect if no items or no store selected
+        if (carritoItems !== undefined && filteredItems.length === 0) {
+            router.push('/user/carrito')
+        }
+    }, [carritoItems, filteredItems, router])
+
+    const handleShippingSubmit = (data: ShippingFormData) => {
+        setStep(2)
+    }
+
+    const handlePaymentSubmit = async (data: PaymentFormData) => {
+        if (!usuario || !tiendaId) {
+            toast.error("Error: datos de usuario o tienda no disponibles")
+            return
+        }
+
+        setIsSubmitting(true)
+
+        try {
+            const shippingData = shippingForm.getValues()
+
+            const result = await crearVentaOnline({
+                tiendaId,
+                productos: filteredItems.map(item => ({
+                    productoId: item.productoId,
+                    cantidad: item.cantidad,
+                    precioUnitario: item.precioUnitario,
+                    nombreProducto: item.producto?.nombre || "Producto",
+                })),
+                metodoPago: data.metodoPago,
+                subtotal,
+                costoEnvio: shipping,
+                total,
+                nombreComprador: shippingData.nombre,
+                telefonoComprador: shippingData.telefono,
+                direccionEntrega: shippingData.direccion,
+                ciudadEntrega: shippingData.ciudad,
+                notasEntrega: shippingData.notas,
+            })
+
+            // Vaciar solo los items de esta tienda del carrito
+            await vaciarCarritoPorTienda({
+                usuarioId: usuario._id,
+                tiendaId
+            })
+
+            setOrdenId(result.numeroOrden)
+            setStep(3)
+            toast.success("¡Pedido realizado exitosamente!")
+        } catch (error: any) {
+            toast.error(error.message || "Error al procesar el pedido")
+            console.error(error)
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    if (carritoItems === undefined) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        )
+    }
 
     const renderStep1 = () => (
-        <div className="space-y-6">
+        <form onSubmit={shippingForm.handleSubmit(handleShippingSubmit)} className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Shipping Address</CardTitle>
+                    <CardTitle>Información de Entrega</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <Label htmlFor="firstName">First Name</Label>
-                            <Input id="firstName" placeholder="John" />
-                        </div>
-                        <div>
-                            <Label htmlFor="lastName">Last Name</Label>
-                            <Input id="lastName" placeholder="Doe" />
-                        </div>
-                    </div>
                     <div>
-                        <Label htmlFor="address">Address</Label>
-                        <Input id="address" placeholder="123 Main Street" />
+                        <Label htmlFor="nombre">Nombre Completo *</Label>
+                        <Input
+                            id="nombre"
+                            {...shippingForm.register("nombre")}
+                            placeholder="Juan Pérez"
+                        />
+                        {shippingForm.formState.errors.nombre && (
+                            <p className="text-sm text-red-600 mt-1">
+                                {shippingForm.formState.errors.nombre.message}
+                            </p>
+                        )}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <Label htmlFor="city">City</Label>
-                            <Input id="city" placeholder="New York" />
-                        </div>
-                        <div>
-                            <Label htmlFor="state">State</Label>
-                            <Input id="state" placeholder="NY" />
-                        </div>
-                        <div>
-                            <Label htmlFor="zip">ZIP Code</Label>
-                            <Input id="zip" placeholder="10001" />
-                        </div>
+
+                    <div>
+                        <Label htmlFor="telefono">Teléfono *</Label>
+                        <Input
+                            id="telefono"
+                            {...shippingForm.register("telefono")}
+                            placeholder="88888888"
+                        />
+                        {shippingForm.formState.errors.telefono && (
+                            <p className="text-sm text-red-600 mt-1">
+                                {shippingForm.formState.errors.telefono.message}
+                            </p>
+                        )}
+                    </div>
+
+                    <div>
+                        <Label htmlFor="direccion">Dirección de Entrega *</Label>
+                        <Input
+                            id="direccion"
+                            {...shippingForm.register("direccion")}
+                            placeholder="Barrio San Luis, casa #123"
+                        />
+                        {shippingForm.formState.errors.direccion && (
+                            <p className="text-sm text-red-600 mt-1">
+                                {shippingForm.formState.errors.direccion.message}
+                            </p>
+                        )}
+                    </div>
+
+                    <div>
+                        <Label htmlFor="ciudad">Ciudad *</Label>
+                        <Input
+                            id="ciudad"
+                            {...shippingForm.register("ciudad")}
+                            placeholder="Managua"
+                        />
+                        {shippingForm.formState.errors.ciudad && (
+                            <p className="text-sm text-red-600 mt-1">
+                                {shippingForm.formState.errors.ciudad.message}
+                            </p>
+                        )}
+                    </div>
+
+                    <div>
+                        <Label htmlFor="notas">Notas (Opcional)</Label>
+                        <Textarea
+                            id="notas"
+                            {...shippingForm.register("notas")}
+                            placeholder="Referencias adicionales para la entrega..."
+                            rows={3}
+                        />
                     </div>
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Delivery Options</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <RadioGroup value={shippingMethod} onValueChange={setShippingMethod}>
-                        <div className="flex items-center space-x-2 p-3 border rounded-lg">
-                            <RadioGroupItem value="standard" id="standard" />
-                            <div className="flex-1">
-                                <Label htmlFor="standard" className="font-medium">
-                                    Standard Delivery
-                                </Label>
-                                <p className="text-sm text-gray-600">5-7 business days • FREE</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-2 p-3 border rounded-lg">
-                            <RadioGroupItem value="express" id="express" />
-                            <div className="flex-1">
-                                <Label htmlFor="express" className="font-medium">
-                                    Express Delivery
-                                </Label>
-                                <p className="text-sm text-gray-600">2-3 business days • $9.99</p>
-                            </div>
-                        </div>
-                    </RadioGroup>
-                </CardContent>
-            </Card>
-        </div>
+            <div className="flex justify-between">
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.push('/user/carrito')}
+                >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Volver al Carrito
+                </Button>
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                    Continuar
+                </Button>
+            </div>
+        </form>
     )
 
     const renderStep2 = () => (
-        <Card>
-            <CardHeader>
-                <CardTitle>Payment Method</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                    <div className="flex items-center space-x-2 p-3 border rounded-lg">
-                        <RadioGroupItem value="card" id="card" />
-                        <CreditCard className="w-5 h-5" />
-                        <Label htmlFor="card" className="font-medium">
-                            Credit/Debit Card
-                        </Label>
-                    </div>
-                </RadioGroup>
+        <form onSubmit={paymentForm.handleSubmit(handlePaymentSubmit)} className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Método de Pago</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <RadioGroup
+                        value={paymentForm.watch("metodoPago")}
+                        onValueChange={(value) => paymentForm.setValue("metodoPago", value as any)}
+                    >
+                        <div className="flex items-center space-x-2 p-3 border rounded-lg">
+                            <RadioGroupItem value="transferencia" id="transferencia" />
+                            <Label htmlFor="transferencia" className="flex-1 cursor-pointer">
+                                <div className="font-medium">Transferencia Bancaria</div>
+                                <p className="text-sm text-gray-600">Pago mediante transferencia</p>
+                            </Label>
+                        </div>
 
-                {paymentMethod === "card" && (
-                    <div className="space-y-4 mt-4">
-                        <div>
-                            <Label htmlFor="cardNumber">Card Number</Label>
-                            <Input id="cardNumber" placeholder="1234 5678 9012 3456" />
+                        <div className="flex items-center space-x-2 p-3 border rounded-lg">
+                            <RadioGroupItem value="efectivo" id="efectivo" />
+                            <Label htmlFor="efectivo" className="flex-1 cursor-pointer">
+                                <div className="font-medium">Efectivo</div>
+                                <p className="text-sm text-gray-600">Pago contra entrega</p>
+                            </Label>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="expiry">Expiry Date</Label>
-                                <Input id="expiry" placeholder="MM/YY" />
-                            </div>
-                            <div>
-                                <Label htmlFor="cvv">CVV</Label>
-                                <Input id="cvv" placeholder="123" />
-                            </div>
+
+                        <div className="flex items-center space-x-2 p-3 border rounded-lg">
+                            <RadioGroupItem value="fiado" id="fiado" />
+                            <Label htmlFor="fiado" className="flex-1 cursor-pointer">
+                                <div className="font-medium">Fiado</div>
+                                <p className="text-sm text-gray-600">Pago a crédito</p>
+                            </Label>
                         </div>
-                        <div>
-                            <Label htmlFor="cardName">Name on Card</Label>
-                            <Input id="cardName" placeholder="John Doe" />
+                    </RadioGroup>
+
+                    {paymentForm.watch("metodoPago") === "transferencia" && (
+                        <div className="p-3 bg-blue-50 rounded-lg">
+                            <p className="text-sm text-blue-800">
+                                Recibirás los detalles de transferencia por correo después de confirmar el pedido.
+                            </p>
                         </div>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
+                    )}
+                </CardContent>
+            </Card>
+
+            <div className="flex justify-between">
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setStep(1)}
+                    disabled={isSubmitting}
+                >
+                    Anterior
+                </Button>
+                <Button
+                    type="submit"
+                    className="bg-green-600 hover:bg-green-700"
+                    disabled={isSubmitting}
+                >
+                    {isSubmitting ? (
+                        <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Procesando...
+                        </>
+                    ) : (
+                        'Confirmar Pedido'
+                    )}
+                </Button>
+            </div>
+        </form>
     )
 
     const renderStep3 = () => (
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Check className="w-5 h-5 text-green-600" />
-                        Order Confirmed!
+                    <CardTitle className="flex items-center gap-2 text-green-600">
+                        <Check className="w-5 h-5" />
+                        ¡Pedido Confirmado!
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -162,11 +343,25 @@ const CheckoutPage = () => {
                         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Check className="w-8 h-8 text-green-600" />
                         </div>
-                        <h3 className="text-lg font-semibold mb-2">Thank you for your order!</h3>
-                        <p className="text-gray-600 mb-4">Order #TM-2024-001234</p>
+                        <h3 className="text-lg font-semibold mb-2">¡Gracias por tu compra!</h3>
+                        <p className="text-gray-600 mb-4">Orden #{ordenId}</p>
                         <p className="text-sm text-gray-600">
-                            You&apos;ll receive an email confirmation shortly with tracking information.
+                            Recibirás un correo de confirmación con los detalles de tu pedido.
                         </p>
+                        <div className="flex gap-3 justify-center mt-6">
+                            <Button
+                                variant="outline"
+                                onClick={() => router.push('/user/productos')}
+                            >
+                                Seguir Comprando
+                            </Button>
+                            <Button
+                                onClick={() => router.push('/user/dashboard')}
+                                className="bg-blue-600 hover:bg-blue-700"
+                            >
+                                Ir a Mis Compras
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
@@ -178,13 +373,10 @@ const CheckoutPage = () => {
             {/* Header */}
             <header className="bg-white border-b">
                 <div className="container mx-auto px-4 py-4">
-                    <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="sm">
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Back to Cart
-                        </Button>
-                        <h1 className="text-2xl font-bold">Checkout</h1>
-                    </div>
+                    <h1 className="text-2xl font-bold">Finalizar Compra</h1>
+                    <p className="text-sm text-gray-600 mt-1">
+                        Tienda: {selectedStore !== "all" ? selectedStore : "Todas"}
+                    </p>
                 </div>
             </header>
 
@@ -202,8 +394,8 @@ const CheckoutPage = () => {
                                     >
                                         {step > stepNumber ? <Check className="w-4 h-4" /> : stepNumber}
                                     </div>
-                                    <div className={`ml-2 text-sm ${step >= stepNumber ? "text-blue-600" : "text-gray-600"}`}>
-                                        {stepNumber === 1 ? "Shipping" : stepNumber === 2 ? "Payment" : "Confirmation"}
+                                    <div className={`ml-2 text-sm ${step >= stepNumber ? "text-blue-600 font-medium" : "text-gray-600"}`}>
+                                        {stepNumber === 1 ? "Entrega" : stepNumber === 2 ? "Pago" : "Confirmación"}
                                     </div>
                                     {stepNumber < 3 && (
                                         <div className={`w-16 h-0.5 mx-4 ${step > stepNumber ? "bg-blue-600" : "bg-gray-200"}`} />
@@ -216,42 +408,24 @@ const CheckoutPage = () => {
                         {step === 1 && renderStep1()}
                         {step === 2 && renderStep2()}
                         {step === 3 && renderStep3()}
-
-                        {/* Navigation Buttons */}
-                        {step < 3 && (
-                            <div className="flex justify-between mt-8">
-                                <Button variant="outline" onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1}>
-                                    Previous
-                                </Button>
-                                <Button onClick={() => setStep(Math.min(3, step + 1))} className="bg-blue-600 hover:bg-blue-700">
-                                    {step === 2 ? "Place Order" : "Continue"}
-                                </Button>
-                            </div>
-                        )}
                     </div>
 
                     {/* Order Summary */}
                     <div className="lg:col-span-1">
                         <Card className="sticky top-6">
                             <CardHeader>
-                                <CardTitle>Order Summary</CardTitle>
+                                <CardTitle>Resumen del Pedido</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 {/* Cart Items */}
                                 <div className="space-y-3">
-                                    {cartItems.map((item) => (
-                                        <div key={item.id} className="flex gap-3">
-                                            <img
-                                                src={item.image || "/placeholder.svg"}
-                                                alt={item.name}
-                                                className="w-12 h-12 object-cover rounded"
-                                            />
+                                    {filteredItems.map((item) => (
+                                        <div key={item._id} className="flex gap-3">
                                             <div className="flex-1">
-                                                <h4 className="text-sm font-medium line-clamp-2">{item.name}</h4>
-                                                <p className="text-xs text-gray-600">by {item.seller}</p>
+                                                <h4 className="text-sm font-medium line-clamp-1">{item.producto?.nombre}</h4>
                                                 <div className="flex justify-between items-center mt-1">
-                                                    <span className="text-xs text-gray-600">Qty: {item.quantity}</span>
-                                                    <span className="text-sm font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                                                    <span className="text-xs text-gray-600">x{item.cantidad}</span>
+                                                    <span className="text-sm font-medium">C$ {(item.precioUnitario * item.cantidad).toFixed(2)}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -264,30 +438,17 @@ const CheckoutPage = () => {
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between">
                                         <span>Subtotal</span>
-                                        <span>${subtotal.toFixed(2)}</span>
+                                        <span>C$ {subtotal.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span>Shipping</span>
-                                        <span>{shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span>Tax</span>
-                                        <span>${tax.toFixed(2)}</span>
+                                        <span>Envío</span>
+                                        <span>C$ {shipping.toFixed(2)}</span>
                                     </div>
                                     <Separator />
                                     <div className="flex justify-between font-semibold text-lg">
                                         <span>Total</span>
-                                        <span>${total.toFixed(2)}</span>
+                                        <span className="text-primary">C$ {total.toFixed(2)}</span>
                                     </div>
-                                </div>
-
-                                {/* Trust & Security */}
-                                <div className="bg-green-50 p-3 rounded-lg">
-                                    <div className="flex items-center gap-2 text-sm text-green-800">
-                                        <Shield className="w-4 h-4" />
-                                        <span className="font-medium">Secure Checkout</span>
-                                    </div>
-                                    <p className="text-xs text-green-700 mt-1">Your payment information is encrypted and secure</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -297,4 +458,5 @@ const CheckoutPage = () => {
         </div>
     )
 }
+
 export default CheckoutPage
