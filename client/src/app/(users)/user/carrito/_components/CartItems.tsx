@@ -4,27 +4,22 @@ import { Button } from "@/components/ui/button"
 import { Minus, Plus, Trash2, ShoppingBag, Store } from "lucide-react"
 import Image from "next/image"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useQuery, useMutation } from "convex/react"
-import { useUser } from "@clerk/nextjs"
+import { useMutation } from "convex/react"
 import { toast } from "sonner"
-import { useState } from "react"
-import { Spinner } from "@/components/ui/spinner"
 import { api } from "../../../../../../convex/_generated/api"
 import { Id } from "../../../../../../convex/_generated/dataModel"
 import Link from "next/link"
-const CartItems = () => {
-    const [selectedStore, setSelectedStore] = useState<string>("all")
-    const { user: clerkUser } = useUser()
-    const usuario = useQuery(
-        api.users.getUserById,
-        clerkUser ? { clerkId: clerkUser.id } : 'skip'
-    )
-    const carritoItems = useQuery(
-        api.carrito.getCarritoByUsuario,
-        usuario?._id ? { usuarioId: usuario._id } : 'skip'
-    )
+
+interface CartItemsProps {
+    items: any[]
+    selectedStore: string
+    onSelectStore: (store: string) => void
+}
+
+const CartItems = ({ items, selectedStore, onSelectStore }: CartItemsProps) => {
     const actualizarCantidad = useMutation(api.carrito.actualizarCantidad)
     const eliminarDelCarrito = useMutation(api.carrito.eliminarDelCarrito)
+
     const handleUpdateQuantity = async (itemId: Id<"carrito">, newQuantity: number) => {
         try {
             await actualizarCantidad({ itemId, cantidad: newQuantity })
@@ -32,6 +27,7 @@ const CartItems = () => {
             toast.error(error.message || 'Error al actualizar cantidad')
         }
     }
+
     const handleRemoveItem = async (itemId: Id<"carrito">) => {
         try {
             await eliminarDelCarrito({ itemId })
@@ -40,18 +36,14 @@ const CartItems = () => {
             toast.error(error.message || 'Error al eliminar producto')
         }
     }
-    if (carritoItems === undefined) {
-        return (
-            <div className="lg:col-span-2 col-span-1 flex justify-center py-8">
-                <Spinner className="h-8 w-8 text-primary" />
-            </div>
-        )
-    }
-    const stores = Array.from(new Set(carritoItems.map((item) => item.tienda?.nombre || 'Tienda')))
+
+    const stores = Array.from(new Set(items.map((item) => item.tienda?.nombre || 'Tienda')))
     const hasMultipleStores = stores.length > 1
+
     const filteredItems = selectedStore === "all"
-        ? carritoItems
-        : carritoItems.filter((item) => item.tienda?.nombre === selectedStore)
+        ? items
+        : items.filter((item) => item.tienda?.nombre === selectedStore)
+
     return (
         <div className="lg:col-span-2 col-span-1 space-y-4">
             <Card>
@@ -61,7 +53,7 @@ const CartItems = () => {
                         Mi Carrito
                     </CardTitle>
                     <CardDescription>
-                        {carritoItems.length} {carritoItems.length === 1 ? "producto" : "productos"} en tu carrito
+                        {items.length} {items.length === 1 ? "producto" : "productos"} en tu carrito
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -76,7 +68,7 @@ const CartItems = () => {
                                     Selecciona un comercio para proceder al pago
                                 </p>
                             </div>
-                            <Select value={selectedStore} onValueChange={setSelectedStore}>
+                            <Select value={selectedStore} onValueChange={onSelectStore}>
                                 <SelectTrigger className="w-[200px]">
                                     <SelectValue placeholder="Seleccionar comercio" />
                                 </SelectTrigger>

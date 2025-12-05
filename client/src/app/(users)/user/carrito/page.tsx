@@ -1,100 +1,40 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
 import CartItems from "./_components/CartItems"
 import OrdernesSuma from "./_components/OrdernesSuma"
-import { ShoppingBag } from "lucide-react"
-
-interface CartItem {
-    id: string
-    name: string
-    image: string
-    price: number
-    quantity: number
-    store: string
-    storeId: string
-}
+import { ShoppingBag, Loader2 } from "lucide-react"
+import { useQuery } from "convex/react"
+import { useUser } from "@clerk/nextjs"
+import { api } from "../../../../../convex/_generated/api"
+import { useRouter } from "next/navigation"
 
 export default function CartTab() {
-    const [isLoading, setIsLoading] = useState(false)
-    const [cartItems, setCartItems] = useState<CartItem[]>([
-        {
-            id: "1",
-            name: "Café Presto Tradicional 500g",
-            image: "/nicaraguan-coffee.jpg",
-            price: 185.0,
-            quantity: 2,
-            store: "Pulpería San José",
-            storeId: "store-1",
-        },
-        {
-            id: "2",
-            name: "Pan Dulce Artesanal (6 unidades)",
-            image: "/fresh-bread-bakery.jpg",
-            price: 45.0,
-            quantity: 1,
-            store: "Panadería La Esperanza",
-            storeId: "store-2",
-        },
-        {
-            id: "3",
-            name: "Refresco Coca-Cola 1L",
-            image: "/classic-coca-cola.png",
-            price: 35.0,
-            quantity: 3,
-            store: "Pulpería San José",
-            storeId: "store-1",
-        },
-        {
-            id: "4",
-            name: "Arroz Premium 1 libra",
-            image: "/white-rice-bag.jpg",
-            price: 28.0,
-            quantity: 2,
-            store: "Pulpería San José",
-            storeId: "store-1",
-        },
-        {
-            id: "5",
-            name: "Detergente Ace 500g",
-            image: "/assorted-cleaning-products.png",
-            price: 65.0,
-            quantity: 1,
-            store: "Tienda El Ahorro",
-            storeId: "store-3",
-        },
-    ])
+    const [selectedStore, setSelectedStore] = useState<string>("all")
+    const { user: clerkUser } = useUser()
+    const router = useRouter()
 
+    const usuario = useQuery(
+        api.users.getUserById,
+        clerkUser ? { clerkId: clerkUser.id } : 'skip'
+    )
 
-    if (isLoading) {
+    const carritoItems = useQuery(
+        api.carrito.getCarritoByUsuario,
+        usuario?._id ? { usuarioId: usuario._id } : 'skip'
+    )
+
+    if (carritoItems === undefined) {
         return (
-            <div className="space-y-6">
-                <Card>
-                    <CardHeader>
-                        <Skeleton className="h-8 w-48" />
-                        <Skeleton className="h-4 w-64" />
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {[1, 2, 3].map((i) => (
-                            <div key={i} className="flex gap-4">
-                                <Skeleton className="h-24 w-24 rounded-lg" />
-                                <div className="flex-1 space-y-2">
-                                    <Skeleton className="h-5 w-3/4" />
-                                    <Skeleton className="h-4 w-1/2" />
-                                    <Skeleton className="h-8 w-32" />
-                                </div>
-                            </div>
-                        ))}
-                    </CardContent>
-                </Card>
+            <div className="flex justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         )
     }
 
-    if (cartItems.length === 0) {
+    if (carritoItems.length === 0) {
         return (
             <Card>
                 <CardContent className="flex flex-col items-center justify-center py-16">
@@ -103,7 +43,7 @@ export default function CartTab() {
                     <p className="text-muted-foreground text-center mb-6">
                         Agrega productos de tus comercios favoritos para comenzar tu compra
                     </p>
-                    <Button>Explorar productos</Button>
+                    <Button onClick={() => router.push('/product')}>Explorar productos</Button>
                 </CardContent>
             </Card>
         )
@@ -112,9 +52,16 @@ export default function CartTab() {
     return (
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
             {/* Cart Items */}
-            <CartItems />
+            <CartItems
+                items={carritoItems}
+                selectedStore={selectedStore}
+                onSelectStore={setSelectedStore}
+            />
             {/* Order Summary */}
-            <OrdernesSuma />
+            <OrdernesSuma
+                items={carritoItems}
+                selectedStore={selectedStore}
+            />
         </div>
     )
 }

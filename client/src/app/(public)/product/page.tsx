@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Star, Filter, Plus, Heart, Store, ShoppingCartIcon, Loader2, ShoppingCart } from "lucide-react";
+import { Star, Filter, Plus, Heart, Store, ShoppingCartIcon, Loader2, ShoppingCart, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import Image from "next/image";
 import { useMutation, useQuery } from "convex/react";
@@ -21,13 +22,12 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import EmptyState from "@/components/public-negocios/EmptyState";
 import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { CATEGORIAS } from "@/lib/crear-tienda-datos";
+import { useDebounce } from "@/lib/useDebounce";
 
-// Mock data
-const categories = ["Electrónica", "Ropas", "Casa y jardín", "Deporte", "Libros", "Juguetes", "Bellesa", "Vehiculos"];
 
 // interface de productos
 interface ProductosCard {
@@ -220,11 +220,37 @@ function ProductCard({ product }: { product: ProductosCard }) {
 }
 
 export default function BuyerHomepage() {
+    // Obtener precio máximo para el slider
+    const maxPrecio = useQuery(api.productos.getPrecioMaximoProductos) ?? 5000;
+
+    // Estados de filtros
+    const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-    const [priceRange, setPriceRange] = useState([0, 200]);
+    const [priceRange, setPriceRange] = useState<[number, number]>([0, maxPrecio]);
+    const [selectedRating, setSelectedRating] = useState<number | null>(null);
+    const [sortBy, setSortBy] = useState<"precio_asc" | "precio_desc" | "puntuacion_desc" | "reciente">("reciente");
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    // obtner los pridyctos
-    const productosPublicos = useQuery(api.productos.getProductosPublicosConStock)
+
+    // Actualizar priceRange cuando cambie maxPrecio
+    useEffect(() => {
+        if (maxPrecio && priceRange[1] !== maxPrecio) {
+            setPriceRange([priceRange[0], maxPrecio]);
+        }
+    }, [maxPrecio]);
+
+    // Debounce para búsqueda y precio (evita actualizaciones excesivas)
+    const debouncedSearch = useDebounce(searchQuery, 500);
+    const debouncedPriceRange = useDebounce(priceRange, 300);
+
+    // Usar la nueva query con filtros (con valores debounced)
+    const productosPublicos = useQuery(api.productos.filtrarProductosPublicos, {
+        busqueda: debouncedSearch.trim() !== "" ? debouncedSearch : undefined,
+        categorias: selectedCategories.length > 0 ? selectedCategories : undefined,
+        precioMin: debouncedPriceRange[0] > 0 ? debouncedPriceRange[0] : undefined,
+        precioMax: debouncedPriceRange[1] < maxPrecio ? debouncedPriceRange[1] : undefined,
+        puntuacionMinima: selectedRating ?? undefined,
+        ordenarPor: sortBy,
+    });
 
     if (productosPublicos === undefined) {
         return (
@@ -234,14 +260,23 @@ export default function BuyerHomepage() {
         )
     }
 
-    if (!productosPublicos) {
-        return <EmptyState title="No se encontraron productos" buttonLink="/product/" buttonText="Ver todos los productos" />
-    }
-
-
     const handleCategoryChange = (category: string, checked: boolean) => {
         setSelectedCategories(checked ? [...selectedCategories, category] : selectedCategories.filter((c) => c !== category));
     };
+
+    const handleRatingChange = (rating: number, checked: boolean) => {
+        setSelectedRating(checked ? rating : null);
+    };
+
+    const handleClearFilters = () => {
+        setSearchQuery("");
+        setSelectedCategories([]);
+        setPriceRange([0, maxPrecio]);
+        setSelectedRating(null);
+        setSortBy("reciente");
+    };
+
+
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -271,18 +306,44 @@ export default function BuyerHomepage() {
                         </Button>
                     </div>
 
+                    {/* Search Input */}
+                    <div className="mb-6">
+                        <h4 className="font-medium mb-3">Buscar</h4>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Input
+                                placeholder="Producto o tienda..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-10"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Clear Filters Button */}
+                    {(searchQuery.trim() !== "" || selectedCategories.length > 0 || priceRange[0] > 0 || priceRange[1] < maxPrecio || selectedRating !== null) && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full mb-4 text-red-600 border-red-200 hover:bg-red-50"
+                            onClick={handleClearFilters}
+                        >
+                            Limpiar filtros
+                        </Button>
+                    )}
+
                     {/* Categories */}
                     <div className="mb-6">
                         <h4 className="font-medium mb-3">Categorías</h4>
-                        <div className="space-y-2">
-                            {categories.map((category) => (
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                            {CATEGORIAS.map((category) => (
                                 <div key={category} className="flex items-center space-x-2">
                                     <Checkbox
                                         id={category}
                                         checked={selectedCategories.includes(category)}
                                         onCheckedChange={(checked) => handleCategoryChange(category, checked as boolean)}
                                     />
-                                    <label htmlFor={category} className="text-sm">
+                                    <label htmlFor={category} className="text-sm cursor-pointer">
                                         {category}
                                     </label>
                                 </div>
@@ -293,27 +354,40 @@ export default function BuyerHomepage() {
                     {/* Price Range */}
                     <div className="mb-6">
                         <h4 className="font-medium mb-3">Rango del precio</h4>
-                        <Slider value={priceRange} onValueChange={setPriceRange} max={500} step={10} className="mb-2" />
+                        <Slider
+                            value={priceRange}
+                            onValueChange={(value) => setPriceRange(value as [number, number])}
+                            max={maxPrecio}
+                            step={Math.max(10, Math.round(maxPrecio / 50))}
+                            className="mb-2"
+                        />
                         <div className="flex justify-between text-sm text-gray-600">
-                            <span>${priceRange[0]}</span>
-                            <span>${priceRange[1]}</span>
+                            <span>C${priceRange[0].toLocaleString()}</span>
+                            <span>C${priceRange[1].toLocaleString()}</span>
                         </div>
                     </div>
 
                     {/* Seller Rating */}
                     <div>
-                        <h4 className="font-medium mb-3">Puntuación del vendedor</h4>
+                        <h4 className="font-medium mb-3">Puntuación mínima</h4>
                         <div className="space-y-2">
                             {[4, 3, 2, 1].map((rating) => (
                                 <div key={rating} className="flex items-center space-x-2">
-                                    <Checkbox id={`rating-${rating}`} />
-                                    <label htmlFor={`rating-${rating}`} className="flex items-center text-sm">
+                                    <Checkbox
+                                        id={`rating-${rating}`}
+                                        checked={selectedRating === rating}
+                                        onCheckedChange={(checked) => handleRatingChange(rating, checked as boolean)}
+                                    />
+                                    <label htmlFor={`rating-${rating}`} className="flex items-center text-sm cursor-pointer">
                                         <div className="flex">
                                             {[...Array(rating)].map((_, i) => (
                                                 <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
                                             ))}
+                                            {[...Array(5 - rating)].map((_, i) => (
+                                                <Star key={i} className="w-4 h-4 text-gray-300" />
+                                            ))}
                                         </div>
-                                        <span className="ml-1"> & mejor</span>
+                                        <span className="ml-1">& mejor</span>
                                     </label>
                                 </div>
                             ))}
@@ -330,32 +404,48 @@ export default function BuyerHomepage() {
                 <main className="flex-1 p-6 md:p-8 overflow-y-auto">
                     {/* Header Controls */}
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-semibold">Detalles de los Productos</h2>
+                        <div>
+                            <h2 className="text-2xl font-semibold">Productos</h2>
+                            <p className="text-sm text-gray-500 mt-1">
+                                {productosPublicos.length} producto{productosPublicos.length !== 1 ? 's' : ''} encontrado{productosPublicos.length !== 1 ? 's' : ''}
+                            </p>
+                        </div>
                         <div className="flex items-center gap-4 flex-col md:flex-row">
                             <Button variant="outline" size="sm" className="md:hidden" onClick={() => setSidebarOpen(true)}>
-                                <Filter className="w-4 h-4 mr-1" /> Filters
+                                <Filter className="w-4 h-4 mr-1" /> Filtros
                             </Button>
-                            <select className="border rounded-md px-3 py-1 text-sm">
-                                <option>Precio: Menor a mayor</option>
-                                <option>Precio: Mayor a menor</option>
-                                <option>Puntuación de las tiendas</option>
-
+                            <select
+                                className="border rounded-md px-3 py-2 text-sm bg-white"
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                            >
+                                <option value="reciente">Más recientes</option>
+                                <option value="precio_asc">Precio: Menor a mayor</option>
+                                <option value="precio_desc">Precio: Mayor a menor</option>
+                                <option value="puntuacion_desc">Mejor puntuación</option>
                             </select>
                         </div>
                     </div>
 
                     {/* Product Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {productosPublicos.map((product) => (
-                            <ProductCard key={product._id} product={product} />
-                        ))}
-                    </div>
-
-                    <div className="text-center mt-8">
-                        <Button variant="outline" className="px-8">
-                            <Plus className="mr-2 h-4 w-4" /> Cargar más productos
-                        </Button>
-                    </div>
+                    {productosPublicos.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {productosPublicos.map((product) => (
+                                <ProductCard key={product._id} product={product} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-16">
+                            <div className="text-6xl mb-4">🔍</div>
+                            <h3 className="text-xl font-semibold mb-2">No se encontraron productos</h3>
+                            <p className="text-gray-500 text-center mb-4">
+                                Intenta ajustar los filtros para ver más resultados
+                            </p>
+                            <Button onClick={handleClearFilters} variant="outline">
+                                Limpiar filtros
+                            </Button>
+                        </div>
+                    )}
                 </main>
             </div>
         </div>

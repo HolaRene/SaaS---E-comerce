@@ -3,15 +3,17 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Heart, ShoppingCart } from "lucide-react"
+import { Heart, Loader2, ShoppingCart } from "lucide-react"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../../../../convex/_generated/api"
 import { useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
+import { useState } from "react"
 
 
 
 const ProductosGuardados = () => {
+    const [addingId, setAddingId] = useState<string | null>(null);
     const { user: clerkUser } = useUser();
 
     // Obtener usuario de Convex
@@ -28,6 +30,7 @@ const ProductosGuardados = () => {
 
     // Mutation para eliminar producto de favoritos
     const eliminarFavorito = useMutation(api.favoritos.eliminarProductoFavorito);
+    const agregarAlCarrito = useMutation(api.carrito.agregarAlCarrito)
 
     const handleEliminarFavorito = async (productoId: string) => {
         if (!usuario?._id) return;
@@ -43,6 +46,32 @@ const ProductosGuardados = () => {
             console.error(error);
         }
     };
+
+    const handleAddToCart = async (producto: any) => {
+        if (!usuario?._id) {
+            toast.error('Debes iniciar sesión para agregar al carrito')
+            return
+        }
+
+        setAddingId(producto._id);
+        try {
+            const result = await agregarAlCarrito({
+                usuarioId: usuario._id,
+                productoId: producto._id,
+                cantidad: 1,
+            })
+            if (result.action === 'updated') {
+                toast.success(`Se actualizó la cantidad en tu carrito`)
+            } else {
+                toast.success(`${producto.nombre} agregado al carrito`)
+            }
+        } catch (error: any) {
+            toast.error(error.message || 'Error al agregar al carrito')
+            console.error(error)
+        } finally {
+            setAddingId(null);
+        }
+    }
 
     // Estado vacío
     if (productosFavoritos && productosFavoritos.length === 0) {
@@ -73,15 +102,24 @@ const ProductosGuardados = () => {
                             className="h-48 w-full object-cover"
                         />
                         <CardContent className="p-4">
-                            <h4 className="font-semibold text-balance">{producto.nombre}</h4>
+                            <h4 className="font-semibold text-balance line-clamp-1">{producto.nombre}</h4>
                             <p className="text-xs text-muted-foreground">{producto.nombreTienda}</p>
                             <p className="mt-2 text-lg font-bold text-primary">
                                 C${producto.precio.toFixed(2)}
                             </p>
                             <div className="mt-3 flex gap-2">
-                                <Button size="sm" className="flex-1">
-                                    <ShoppingCart className="mr-1 h-3 w-3" />
-                                    Agregar
+                                <Button
+                                    className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                                    size="sm"
+                                    onClick={() => handleAddToCart(producto)}
+                                    disabled={addingId === producto._id || !usuario}
+                                >
+                                    {addingId === producto._id ? (
+                                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                    ) : (
+                                        <ShoppingCart className="w-4 h-4 mr-1" />
+                                    )}
+                                    {addingId === producto._id ? 'Agregando...' : 'Agregar'}
                                 </Button>
                                 <Button
                                     size="sm"

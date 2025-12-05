@@ -502,3 +502,122 @@ export const getProductoId = query({
     return resultados[0] || null
   },
 })
+
+// ==================== FILTRAR PRODUCTOS PÚBLICOS ====================
+/**
+ * Filtra productos públicos por búsqueda, categorías, rango de precio, y puntuación mínima
+ */
+export const filtrarProductosPublicos = query({
+  args: {
+    busqueda: v.optional(v.string()),
+    categorias: v.optional(v.array(v.string())),
+    precioMin: v.optional(v.number()),
+    precioMax: v.optional(v.number()),
+    puntuacionMinima: v.optional(v.number()),
+    ordenarPor: v.optional(
+      v.union(
+        v.literal('precio_asc'),
+        v.literal('precio_desc'),
+        v.literal('puntuacion_desc'),
+        v.literal('reciente')
+      )
+    ),
+  },
+  handler: async (ctx, args) => {
+    // Obtener todos los productos públicos con stock
+    let productos = await ctx.db
+      .query('productos')
+      .withIndex('by_publica_cantidad', q =>
+        q.eq('publica', true).gt('cantidad', 0)
+      )
+      .collect()
+
+    // Filtrar por búsqueda (nombre del producto o tienda)
+    if (args.busqueda && args.busqueda.trim() !== '') {
+      const searchLower = args.busqueda.toLowerCase().trim()
+
+      // Obtener nombres de tiendas para búsqueda
+      const tiendaIds = [...new Set(productos.map(p => p.tiendaId))]
+      const tiendasMap = new Map<string, string>()
+
+      for (const tiendaId of tiendaIds) {
+        const tienda = await ctx.db.get(tiendaId)
+        if (tienda) {
+          tiendasMap.set(tiendaId, tienda.nombre.toLowerCase())
+        }
+      }
+
+      productos = productos.filter(p => {
+        const nombreMatch = p.nombre.toLowerCase().includes(searchLower)
+        const tiendaNombre = tiendasMap.get(p.tiendaId) || ''
+        const tiendaMatch = tiendaNombre.includes(searchLower)
+        return nombreMatch || tiendaMatch
+      })
+    }
+
+    // Filtrar por categorías (del producto)
+    if (args.categorias && args.categorias.length > 0) {
+      productos = productos.filter(p => args.categorias!.includes(p.categoria))
+    }
+
+    // Filtrar por rango de precio
+    if (args.precioMin !== undefined) {
+      productos = productos.filter(p => p.precio >= args.precioMin!)
+    }
+    if (args.precioMax !== undefined) {
+      productos = productos.filter(p => p.precio <= args.precioMax!)
+    }
+
+    // Filtrar por puntuación mínima
+    if (args.puntuacionMinima !== undefined) {
+      productos = productos.filter(
+        p => (p.puntuacionPromedio || 0) >= args.puntuacionMinima!
+      )
+    }
+
+    // Ordenar
+    switch (args.ordenarPor) {
+      case 'precio_asc':
+        productos.sort((a, b) => a.precio - b.precio)
+        break
+      case 'precio_desc':
+        productos.sort((a, b) => b.precio - a.precio)
+        break
+      case 'puntuacion_desc':
+        productos.sort(
+          (a, b) => (b.puntuacionPromedio || 0) - (a.puntuacionPromedio || 0)
+        )
+        break
+      case 'reciente':
+        productos.sort((a, b) => b._creationTime - a._creationTime)
+        break
+      default:
+        // Por defecto ordenar por más recientes
+        productos.sort((a, b) => b._creationTime - a._creationTime)
+    }
+
+    return productos
+  },
+})
+
+// ==================== OBTENER PRECIO MÁXIMO ====================
+/**
+ * Obtiene el precio máximo de todos los productos públicos (para el slider de filtro)
+ */
+export const getPrecioMaximoProductos = query({
+  args: {},
+  handler: async ctx => {
+    const productos = await ctx.db
+      .query('productos')
+      .withIndex('by_publica_cantidad', q =>
+        q.eq('publica', true).gt('cantidad', 0)
+      )
+      .collect()
+
+    if (productos.length === 0) return 1000 // Valor por defecto
+
+    const maxPrecio = Math.max(...productos.map(p => p.precio))
+    // Redondear al siguiente múltiplo de 100 para mejor UX
+    return Math.ceil(maxPrecio / 100) * 100
+  },
+})
