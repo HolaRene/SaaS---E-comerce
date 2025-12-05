@@ -1,95 +1,57 @@
 "use client"
-
-import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Minus, Plus, Trash2, ShoppingBag, Store } from "lucide-react"
 import Image from "next/image"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
-
-interface CartItem {
-    id: string
-    name: string
-    image: string
-    price: number
-    quantity: number
-    store: string
-    storeId: string
-}
-
+import { useQuery, useMutation } from "convex/react"
+import { useUser } from "@clerk/nextjs"
+import { toast } from "sonner"
+import { useState } from "react"
+import { Spinner } from "@/components/ui/spinner"
+import { api } from "../../../../../../convex/_generated/api"
+import { Id } from "../../../../../../convex/_generated/dataModel"
+import Link from "next/link"
 const CartItems = () => {
-
     const [selectedStore, setSelectedStore] = useState<string>("all")
-    const [cartItems, setCartItems] = useState<CartItem[]>([
-        {
-            id: "1",
-            name: "Café Presto Tradicional 500g",
-            image: "https://images.pexels.com/photos/2638026/pexels-photo-2638026.jpeg",
-            price: 185.0,
-            quantity: 2,
-            store: "Pulpería San José",
-            storeId: "store-1",
-        },
-        {
-            id: "2",
-            name: "Pan Dulce Artesanal (6 unidades)",
-            image: "https://images.pexels.com/photos/2638026/pexels-photo-2638026.jpeg",
-            price: 45.0,
-            quantity: 1,
-            store: "Panadería La Esperanza",
-            storeId: "store-2",
-        },
-        {
-            id: "3",
-            name: "Refresco Coca-Cola 1L",
-            image: "https://images.pexels.com/photos/2783873/pexels-photo-2783873.jpeg",
-            price: 35.0,
-            quantity: 3,
-            store: "Pulpería San José",
-            storeId: "store-1",
-        },
-        {
-            id: "4",
-            name: "Arroz Premium 1 libra",
-            image: "https://images.pexels.com/photos/2638026/pexels-photo-2638026.jpeg",
-            price: 28.0,
-            quantity: 2,
-            store: "Pulpería San José",
-            storeId: "store-1",
-        },
-        {
-            id: "5",
-            name: "Detergente Ace 500g",
-            image: "https://images.pexels.com/photos/2783873/pexels-photo-2783873.jpeg",
-            price: 65.0,
-            quantity: 1,
-            store: "Tienda El Ahorro",
-            storeId: "store-3",
-        },
-    ])
-
-    const updateQuantity = (id: string, delta: number) => {
-        setCartItems((items) =>
-            items.map((item) => {
-                if (item.id === id) {
-                    const newQuantity = Math.max(1, item.quantity + delta)
-                    return { ...item, quantity: newQuantity }
-                }
-                return item
-            }),
+    const { user: clerkUser } = useUser()
+    const usuario = useQuery(
+        api.users.getUserById,
+        clerkUser ? { clerkId: clerkUser.id } : 'skip'
+    )
+    const carritoItems = useQuery(
+        api.carrito.getCarritoByUsuario,
+        usuario?._id ? { usuarioId: usuario._id } : 'skip'
+    )
+    const actualizarCantidad = useMutation(api.carrito.actualizarCantidad)
+    const eliminarDelCarrito = useMutation(api.carrito.eliminarDelCarrito)
+    const handleUpdateQuantity = async (itemId: Id<"carrito">, newQuantity: number) => {
+        try {
+            await actualizarCantidad({ itemId, cantidad: newQuantity })
+        } catch (error: any) {
+            toast.error(error.message || 'Error al actualizar cantidad')
+        }
+    }
+    const handleRemoveItem = async (itemId: Id<"carrito">) => {
+        try {
+            await eliminarDelCarrito({ itemId })
+            toast.success('Producto eliminado del carrito')
+        } catch (error: any) {
+            toast.error(error.message || 'Error al eliminar producto')
+        }
+    }
+    if (carritoItems === undefined) {
+        return (
+            <div className="lg:col-span-2 col-span-1 flex justify-center py-8">
+                <Spinner className="h-8 w-8 text-primary" />
+            </div>
         )
     }
-
-    const removeItem = (id: string) => {
-        setCartItems((items) => items.filter((item) => item.id !== id))
-    }
-
-    const stores = Array.from(new Set(cartItems.map((item) => item.store)))
+    const stores = Array.from(new Set(carritoItems.map((item) => item.tienda?.nombre || 'Tienda')))
     const hasMultipleStores = stores.length > 1
-
-    const filteredItems = selectedStore === "all" ? cartItems : cartItems.filter((item) => item.store === selectedStore)
-
+    const filteredItems = selectedStore === "all"
+        ? carritoItems
+        : carritoItems.filter((item) => item.tienda?.nombre === selectedStore)
     return (
         <div className="lg:col-span-2 col-span-1 space-y-4">
             <Card>
@@ -99,11 +61,10 @@ const CartItems = () => {
                         Mi Carrito
                     </CardTitle>
                     <CardDescription>
-                        {cartItems.length} {cartItems.length === 1 ? "producto" : "productos"} en tu carrito
+                        {carritoItems.length} {carritoItems.length === 1 ? "producto" : "productos"} en tu carrito
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {/* Store Selector - Only show if multiple stores */}
                     {hasMultipleStores && (
                         <div className="flex flex-col md:flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900">
                             <Store className="h-5 w-5 text-amber-600" />
@@ -130,23 +91,28 @@ const CartItems = () => {
                             </Select>
                         </div>
                     )}
-
-                    {/* Cart Items List */}
                     <div className="space-y-4">
                         {filteredItems.map((item) => (
                             <div
-                                key={item.id}
+                                key={item._id}
                                 className="flex flex-col md:flex gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                             >
                                 <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
-                                    <Image src={item.image || "/placeholder.svg"} alt={item.name} fill className="object-cover" />
+                                    <Link href={`/user/productos/${item.producto?._id}`}>
+                                        <Image
+                                            src={item.producto?.imagen || "/icons/producto-64.png"}
+                                            alt={item.producto?.nombre || "Producto"}
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    </Link>
                                 </div>
                                 <div className="flex-1 space-y-2">
                                     <div>
-                                        <h4 className="font-semibold text-foreground">{item.name}</h4>
+                                        <h4 className="font-semibold text-foreground">{item.producto?.nombre}</h4>
                                         <p className="text-sm text-muted-foreground flex items-center gap-1">
                                             <Store className="h-3 w-3" />
-                                            {item.store}
+                                            {item.tienda?.nombre}
                                         </p>
                                     </div>
                                     <div className="flex items-center justify-between">
@@ -155,30 +121,31 @@ const CartItems = () => {
                                                 variant="outline"
                                                 size="icon"
                                                 className="h-8 w-8 bg-transparent"
-                                                onClick={() => updateQuantity(item.id, -1)}
+                                                onClick={() => handleUpdateQuantity(item._id, Math.max(1, item.cantidad - 1))}
+                                                disabled={item.cantidad <= 1}
                                             >
                                                 <Minus className="h-3 w-3" />
                                             </Button>
-                                            <span className="w-8 text-center font-medium">{item.quantity}</span>
+                                            <span className="w-8 text-center font-medium">{item.cantidad}</span>
                                             <Button
                                                 variant="outline"
                                                 size="icon"
                                                 className="h-8 w-8 bg-transparent"
-                                                onClick={() => updateQuantity(item.id, 1)}
+                                                onClick={() => handleUpdateQuantity(item._id, item.cantidad + 1)}
                                             >
                                                 <Plus className="h-3 w-3" />
                                             </Button>
                                         </div>
                                         <div className="flex items-center gap-4 md:flex-row flex-col">
                                             <div className="text-right flex flex-col">
-                                                <p className="text-sm text-muted-foreground">C$ {item.price.toFixed(2)} c/u</p>
-                                                <p className="font-semibold text-primary">C$ {(item.price * item.quantity).toFixed(2)}</p>
+                                                <p className="text-sm text-muted-foreground">C$ {item.precioUnitario.toFixed(2)} c/u</p>
+                                                <p className="font-semibold text-primary">C$ {(item.precioUnitario * item.cantidad).toFixed(2)}</p>
                                             </div>
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
                                                 className="h-8 w-8 text-destructive hover:text-destructive"
-                                                onClick={() => removeItem(item.id)}
+                                                onClick={() => handleRemoveItem(item._id)}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -193,5 +160,4 @@ const CartItems = () => {
         </div>
     )
 }
-
 export default CartItems

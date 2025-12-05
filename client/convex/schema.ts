@@ -562,4 +562,18 @@ export default defineSchema({
     .index('by_usuario', ['usuarioId'])
     .index('by_producto', ['productoId'])
     .index('by_usuario_producto', ['usuarioId', 'productoId']), // Evitar duplicados
+
+  // ==================== CARRITO DE COMPRAS ====================
+  carrito: defineTable({
+    usuarioId: v.id('usuarios'),
+    productoId: v.id('productos'),
+    tiendaId: v.id('tiendas'),
+    cantidad: v.number(),
+    precioUnitario: v.number(), // Snapshot del precio al momento de agregar
+    fechaAgregado: v.string(), // ISO timestamp
+  })
+    .index('by_usuario', ['usuarioId'])
+    .index('by_usuario_producto', ['usuarioId', 'productoId'])
+    .index('by_tienda', ['tiendaId'])
+    .index('by_usuario_tienda', ['usuarioId', 'tiendaId']),
 })

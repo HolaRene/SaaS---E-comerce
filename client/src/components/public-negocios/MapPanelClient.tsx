@@ -52,22 +52,49 @@ export default function MapPanelClient({ initialCenter = { lat: 0, lng: 0 }, ini
         </div>
     )
 
-    // If embedded (mobile) just fill parent's height
-    if (embedded) {
+    React.useEffect(() => {
+        if (embedded) return; // ✅ NO calcular offset en mobile (el navbar es estático)
+
+        const calculateOffset = () => {
+            const navbar = document.querySelector('[data-navbar]') ||
+                document.querySelector('header') ||
+                document.querySelector('nav');
+
+            if (navbar instanceof HTMLElement) {
+                setTopOffset(Math.max(0, Math.round(navbar.getBoundingClientRect().height + 8)));
+            }
+        };
+
+        calculateOffset();
+        window.addEventListener('resize', calculateOffset);
+        return () => window.removeEventListener('resize', calculateOffset);
+    }, [embedded]);
+
+    // ✅ DESKTOP: sticky con offset
+    if (!embedded) {
         return (
-            <div className="h-full p-3">
-                <div style={{ height: '100%', width: '100%' }}>
+            <div className="h-full min-h-0 flex flex-col">
+                <div
+                    className="relative flex-1 min-h-0"
+                    style={{
+                        position: 'sticky',
+                        top: `${topOffset}px`,
+                        zIndex: 1,
+                        height: `calc(100vh - ${topOffset}px)`,
+                    }}
+                >
                     <MapPreview tiendas={tiendas} height="100%" initialCenter={initialCenter} initialZoom={initialZoom} />
                 </div>
             </div>
-        )
+        );
     }
 
+    // ✅ MOBILE: fill simple sin offset
     return (
-        <div className="h-full p-3">
-            <div style={{ position: 'sticky', top: `${topOffset}px`, zIndex: 0, height: `calc(100vh - ${topOffset}px)`, overflow: 'hidden' }}>
+        <div className="h-full p-2">
+            <div style={{ height: '100%', width: '100%' }}>
                 <MapPreview tiendas={tiendas} height="100%" initialCenter={initialCenter} initialZoom={initialZoom} />
             </div>
         </div>
-    )
+    );
 }

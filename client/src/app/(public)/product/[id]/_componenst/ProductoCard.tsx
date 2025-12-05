@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { Star, Heart, Share2, ShoppingCart, Truck, RotateCcw, Award, ClipboardCopy, Check } from "lucide-react"
+import { Star, Heart, Share2, ShoppingCart, Truck, RotateCcw, Award, ClipboardCopy, Check, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -69,6 +69,8 @@ const reviews = [
 
 
 const ProductCard = ({ id }: { id: Id<"productos"> }) => {
+    // Estado para el carrito
+    const [isAddingToCart, setIsAddingToCart] = useState(false)
     // Obtener usuario actual de Clerk
     const { user: clerkUser } = useUser();
 
@@ -87,6 +89,8 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
     // Queries
     const producto = useQuery(api.productos.getProductoId, { id });
     const tienda = useQuery(api.tiendas.getTiendaPublicaById, producto ? { id: producto.tiendaId } : "skip");
+    // Mutation para agregar al carrito
+    const agregarAlCarrito = useMutation(api.carrito.agregarAlCarrito)
 
     // Verificar si el producto es favorito
     const esFavorito = useQuery(
@@ -159,6 +163,34 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
             toast.error("Error al copiar enlace");
         }
     };
+    // Handler para agregar al carrito
+    const handleAddToCart = async () => {
+        if (!usuario?._id) {
+            toast.error('Debes iniciar sesión para agregar al carrito')
+            return
+        }
+        if (!producto) return
+        setIsAddingToCart(true)
+        try {
+            const result = await agregarAlCarrito({
+                usuarioId: usuario._id,
+                productoId: producto._id,
+                cantidad: quantity,
+            })
+            if (result.action === 'updated') {
+                toast.success(`Se actualizó la cantidad en tu carrito`)
+            } else {
+                toast.success(`${producto.nombre} agregado al carrito`)
+            }
+            // Resetear cantidad después de agregar
+            setQuantity(1)
+        } catch (error: any) {
+            toast.error(error.message || 'Error al agregar al carrito')
+            console.error(error)
+        } finally {
+            setIsAddingToCart(false)
+        }
+    }
 
     return (
         <div className="container mx-auto px-4 py-6">
@@ -249,9 +281,17 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                         </div>
 
                         <div className="space-y-3">
-                            <Button className="w-full bg-green-400 hover:bg-green-500 text-black text-lg py-3">
-                                <ShoppingCart className="w-5 h-5 mr-2" />
-                                Agregar al Carrito
+                            <Button
+                                className="w-full bg-green-400 hover:bg-green-500 text-black text-lg py-3"
+                                onClick={handleAddToCart}
+                                disabled={isAddingToCart || !usuario}
+                            >
+                                {isAddingToCart ? (
+                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                ) : (
+                                    <ShoppingCart className="w-5 h-5 mr-2" />
+                                )}
+                                {isAddingToCart ? 'Agregando...' : 'Agregar al Carrito'}
                             </Button>
                             <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white text-lg py-3">Comprar Ahora</Button>
                         </div>

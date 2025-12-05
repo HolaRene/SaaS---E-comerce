@@ -8,15 +8,14 @@ const Page = async ({ searchParams }: { searchParams: Promise<{ busqueda?: strin
     return (
         <div className="h-screen flex flex-col bg-background">
             <main className="flex-1 overflow-hidden">
-                {/* VERSIÓN ESCRITORIO */}
+                {/* ✅ DESKTOP: QUITA 'embedded' para usar sticky normal */}
                 <div className="hidden md:block h-full">
                     <ResizablePanelGroup direction="horizontal">
                         <ResizablePanel defaultSize={60} minSize={45} maxSize={75}>
-                            <MapPanelClient embedded />
+                            <MapPanelClient />  {/* SIN embedded */}
                         </ResizablePanel>
                         <ResizableHandle withHandle />
                         <ResizablePanel defaultSize={40} minSize={25} maxSize={55}>
-                            {/*  CRÍTICO: Envolver con min-h-0 + flex */}
                             <div className="h-full flex flex-col min-h-0">
                                 <ListaNegocios busqueda={busqueda} />
                             </div>
@@ -24,15 +23,13 @@ const Page = async ({ searchParams }: { searchParams: Promise<{ busqueda?: strin
                     </ResizablePanelGroup>
                 </div>
 
-                {/*  VERSIÓN MÓVIL */}
+                {/* ✅ MOBILE: SÍ usa 'embedded' */}
                 <div className="md:hidden h-full overflow-hidden flex flex-col">
-                    {/* Listas de negocios */}
                     <div className="flex-1 h-full min-h-0 overflow-y-auto">
                         <ListaNegocios busqueda={busqueda} />
                     </div>
-                    {/* Mapa (móvil) */}
                     <div className="h-[45vh] border-t">
-                        <MapPanelClient embedded />
+                        <MapPanelClient embedded />  {/* SÓLO AQUÍ */}
                     </div>
                 </div>
             </main>

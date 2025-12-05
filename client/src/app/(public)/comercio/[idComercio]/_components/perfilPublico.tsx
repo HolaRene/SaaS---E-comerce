@@ -336,17 +336,17 @@ export default function PerfilPublico({ id }: PerfilProps) {
                                                 </div>
 
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <span className="text-lg font-bold text-gray-900">${producto.precio}</span>
+                                                    <span className="text-lg font-bold text-gray-900">NIO {producto.precio}</span>
                                                     {/* {producto.costo && <span className="text-sm text-gray-500 line-through">${producto.costo}</span>} */}
                                                 </div>
 
-                                                <div className="text-xs text-gray-600 mb-3">
+                                                {/* <div className="text-xs text-gray-600 mb-3">
                                                     por <span className="text-blue-600 hover:underline">{tiendaPublica.nombre}</span>
-                                                </div>
+                                                </div> */}
 
 
-                                                <Link href={`/user/carrito/`}>
-                                                    <Button className="w-full bg-yellow-400 hover:bg-yellow-500 text-black">Agregar al carrito</Button></Link>
+                                                {/* <Link href={`/user/carrito/`}>
+                                                    <Button className="w-full bg-yellow-400 hover:bg-yellow-500 text-black">Agregar al carrito</Button></Link> */}
                                             </div>
                                         ))
                                     )

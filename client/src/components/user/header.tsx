@@ -22,7 +22,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { useRouter } from "next/navigation"
 
 export function Header() {
-    const [cartCount] = useState(5)
     const [notificationCount] = useState(3)
     const { toggle } = useSidebar()
     const { signOut } = useClerk()
@@ -37,6 +36,12 @@ export function Header() {
         api.users.getUserById,
         clerkUser ? { clerkId: clerkUser.id } : "skip"
     );
+
+    const cartCount = useQuery(
+        api.carrito.countCarritoItems,
+        usuario?._id ? { usuarioId: usuario._id } : 'skip'
+    ) ?? 0
+
 
     // Extraer ID de usuario Convex
     const idUser = usuario?._id;
@@ -113,19 +118,20 @@ export function Header() {
                     </Button>
 
                     {/* Carrito */}
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="relative"
-                    >
-                        <ShoppingCart className="h-5 w-5" />
-                        {cartCount > 0 && (
-                            <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs">
-                                {cartCount}
-                            </Badge>
-                        )}
-                    </Button>
-
+                    <Link href={'/user/carrito'}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="relative"
+                        >
+                            <ShoppingCart className="h-5 w-5" />
+                            {cartCount > 0 && (
+                                <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs">
+                                    {cartCount}
+                                </Badge>
+                            )}
+                        </Button>
+                    </Link>
                     {/* Usuario */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>

@@ -33,8 +33,13 @@ export function Sidebar() {
 
     const favTiendas = useQuery(api.favoritos.getFavoritosTiendasByUsuario, usuario ? { usuarioId: usuario._id } : "skip");
     const favProductos = useQuery(api.favoritos.getFavoritosProductosByUsuario, usuario ? { usuarioId: usuario._id } : "skip");
-
+    // contador de favoritos
     const favoritesCount = (favTiendas?.length || 0) + (favProductos?.length || 0);
+    // contador de carrito
+    const cartCount = useQuery(
+        api.carrito.countCarritoItems,
+        usuario?._id ? { usuarioId: usuario._id } : 'skip'
+    ) ?? 0
 
     const navItems = [
         { name: "Dashboard", href: `/user/dashboard`, icon: LayoutDashboard, badge: 0 },
@@ -42,7 +47,7 @@ export function Sidebar() {
         { name: "Ver Negocios", href: `/user/negocios`, icon: Store, badge: 0 },
         { name: "Compras", href: `/user/compras`, icon: ShoppingBag, badge: 52 },
         { name: "Favoritos", href: `/user/favoritos`, icon: Heart, badge: favoritesCount },
-        { name: "Carrito", href: `/user/carrito`, icon: ShoppingCart, badge: 5 },
+        { name: "Carrito", href: `/user/carrito`, icon: ShoppingCart, badge: cartCount },
         { name: "Notificaciones", href: `/user/notificacion`, icon: Bell, badge: 3 },
     ];
 

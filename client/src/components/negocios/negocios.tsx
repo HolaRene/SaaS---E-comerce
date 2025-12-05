@@ -11,6 +11,7 @@ import { filterStores } from "@/lib/negocios-utils"
 import { StoreList } from "./negocios-lista"
 import MapView from "./vista-mapa"
 import { Doc } from "../../../convex/_generated/dataModel"
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "../ui/resizable"
 
 // Función para transformar datos de Convex al tipo Store
 function transformTiendaToStore(tienda: Doc<"tiendas">): Store | null {
@@ -134,17 +135,19 @@ export function MarketplaceContainer() {
 
             {/* Contenido principal */}
             <main className="flex-1 overflow-hidden">
+                {/* ✅ VERSIÓN ESCRITORIO CON SHADCN/RESIZABLE */}
                 <div className="hidden lg:block h-full">
-                    <ResizablePanels
-                        leftPanel={
+                    <ResizablePanelGroup direction="horizontal">
+                        <ResizablePanel defaultSize={60} minSize={45} maxSize={75}>
                             <MapView
                                 stores={filteredStores}
                                 selectedStore={selectedStore}
                                 hoveredStoreId={hoveredStoreId}
                                 onStoreSelect={handleStoreSelect}
                             />
-                        }
-                        rightPanel={
+                        </ResizablePanel>
+                        <ResizableHandle withHandle />
+                        <ResizablePanel defaultSize={40} minSize={25} maxSize={55}>
                             <StoreList
                                 stores={allStores}
                                 filters={filters}
@@ -153,15 +156,12 @@ export function MarketplaceContainer() {
                                 onStoreHover={handleStoreHover}
                                 availableCategories={availableCategories}
                             />
-                        }
-                        defaultLeftWidth={60}
-                        minLeftWidth={45}
-                        maxLeftWidth={75}
-                    />
+                        </ResizablePanel>
+                    </ResizablePanelGroup>
                 </div>
 
+                {/* ✅ VERSIÓN MÓVIL (sin cambios) */}
                 <div className="lg:hidden h-full overflow-y-auto">
-                    {/* Lista de tiendas */}
                     <div className="min-h-[50vh]">
                         <StoreList
                             stores={allStores}
@@ -172,8 +172,6 @@ export function MarketplaceContainer() {
                             availableCategories={availableCategories}
                         />
                     </div>
-
-                    {/* Mapa */}
                     <div className="h-[60vh] border-t">
                         <MapView
                             stores={filteredStores}

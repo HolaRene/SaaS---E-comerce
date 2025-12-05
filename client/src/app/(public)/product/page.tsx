@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Star, Filter, Plus, Heart, Store, ShoppingCartIcon } from "lucide-react";
+import { Star, Filter, Plus, Heart, Store, ShoppingCartIcon, Loader2, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,7 +57,10 @@ interface ProductosCard {
 
 function ProductCard({ product }: { product: ProductosCard }) {
     const [isFavorite, setIsFavorite] = useState(false);
-    console.log('es favorito', isFavorite)
+    // Estado para el carrito
+    const [isAddingToCart, setIsAddingToCart] = useState(false)
+    const [quantity, setQuantity] = useState(1)
+
 
     const tiendas = useQuery(api.tiendas.getTiendaById, { id: product.tiendaId })
     // Obtener usuario actual de Clerk
@@ -78,6 +81,7 @@ function ProductCard({ product }: { product: ProductosCard }) {
     // Mutations para favoritos
     const agregarFavorito = useMutation(api.favoritos.agregarProductoFavorito);
     const eliminarFavorito = useMutation(api.favoritos.eliminarProductoFavorito);
+    const agregarAlCarrito = useMutation(api.carrito.agregarAlCarrito)
 
     // Sincronizar estado local con el estado de Convex
     useEffect(() => {
@@ -113,6 +117,33 @@ function ProductCard({ product }: { product: ProductosCard }) {
             console.error(error);
         }
     };
+    const handleAddToCart = async () => {
+        if (!usuario?._id) {
+            toast.error('Debes iniciar sesión para agregar al carrito')
+            return
+        }
+        if (!product) return
+        setIsAddingToCart(true)
+        try {
+            const result = await agregarAlCarrito({
+                usuarioId: usuario._id,
+                productoId: product._id,
+                cantidad: quantity,
+            })
+            if (result.action === 'updated') {
+                toast.success(`Se actualizó la cantidad en tu carrito`)
+            } else {
+                toast.success(`${product.nombre} agregado al carrito`)
+            }
+            // Resetear cantidad después de agregar
+            setQuantity(1)
+        } catch (error: any) {
+            toast.error(error.message || 'Error al agregar al carrito')
+            console.error(error)
+        } finally {
+            setIsAddingToCart(false)
+        }
+    }
     if (!tiendas) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -158,8 +189,17 @@ function ProductCard({ product }: { product: ProductosCard }) {
 
                 <div className="flex justify-between">
 
-                    <Button disabled={!usuario} className=" bg-orange-400 hover:bg-orange-500 text-black"><ShoppingCartIcon className="w-4 h-4" />
-                        Agregar al carrito
+                    <Button
+                        className=" bg-green-400 hover:bg-green-500 text-black text-lg py-3"
+                        onClick={handleAddToCart}
+                        disabled={isAddingToCart || !usuario}
+                    >
+                        {isAddingToCart ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                            <ShoppingCart className="w-5 h-5" />
+                        )}
+                        {isAddingToCart ? 'Agregando...' : 'Agr. al Carrito'}
                     </Button>
                     <Button
                         variant="outline"
