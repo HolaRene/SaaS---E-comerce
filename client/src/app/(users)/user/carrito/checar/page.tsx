@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { ArrowLeft, Check, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -34,7 +34,7 @@ const paymentSchema = z.object({
 type ShippingFormData = z.infer<typeof shippingSchema>
 type PaymentFormData = z.infer<typeof paymentSchema>
 
-const CheckoutPage = () => {
+function CheckoutContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const selectedStore = searchParams.get("tienda") || "all"
@@ -42,7 +42,7 @@ const CheckoutPage = () => {
     const [step, setStep] = useState(1)
     const { user: clerkUser } = useUser()
 
-    // ✅ 1. DECLARAR USUARIO PRIMERO (antes de useEffect)
+    // Obtener usuario primero
     const usuario = useQuery(
         api.users.getUserById,
         clerkUser ? { clerkId: clerkUser.id } : 'skip'
@@ -356,7 +356,7 @@ const CheckoutPage = () => {
                                 Seguir Comprando
                             </Button>
                             <Button
-                                onClick={() => router.push('/user/dashboard')}
+                                onClick={() => router.push('/user/compras')}
                                 className="bg-blue-600 hover:bg-blue-700"
                             >
                                 Ir a Mis Compras
@@ -459,4 +459,15 @@ const CheckoutPage = () => {
     )
 }
 
-export default CheckoutPage
+// Wrapper con Suspense para fix el error de useSearchParams
+export default function CheckoutPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        }>
+            <CheckoutContent />
+        </Suspense>
+    )
+}
