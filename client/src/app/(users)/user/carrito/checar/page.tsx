@@ -120,6 +120,7 @@ function CheckoutContent() {
 
         try {
             const shippingData = shippingForm.getValues()
+
             const result = await crearVentaOnline({
                 tiendaId,
                 productos: filteredItems.map(item => ({

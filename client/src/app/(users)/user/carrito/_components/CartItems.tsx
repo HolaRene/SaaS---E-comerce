@@ -57,8 +57,8 @@ const CartItems = ({ items, selectedStore, onSelectStore }: CartItemsProps) => {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {hasMultipleStores && (
-                        <div className="flex flex-col md:flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900">
+                    {hasMultipleStores ? (
+                        <div className="flex flex-col md:flex-row items-center gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900">
                             <Store className="h-5 w-5 text-amber-600" />
                             <div className="flex-1">
                                 <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
@@ -81,6 +81,15 @@ const CartItems = ({ items, selectedStore, onSelectStore }: CartItemsProps) => {
                                     ))}
                                 </SelectContent>
                             </Select>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900">
+                            <Store className="h-5 w-5 text-blue-600" />
+                            <div>
+                                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                                    Comprando en: <span className="font-bold">{stores[0]}</span>
+                                </p>
+                            </div>
                         </div>
                     )}
                     <div className="space-y-4">

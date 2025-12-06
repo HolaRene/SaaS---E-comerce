@@ -75,10 +75,10 @@ export default function PurchasesTab() {
         let icon = Clock;
         let statusColor = "warning";
 
-        if (compra.estado === "entregado") {
+        if (compra.estado === "entregada") {
             icon = CheckCircle;
             statusColor = "default";
-        } else if (compra.estado === "enviado") {
+        } else if (compra.estado === "enviada") {
             icon = Truck;
             statusColor = "secondary";
         }

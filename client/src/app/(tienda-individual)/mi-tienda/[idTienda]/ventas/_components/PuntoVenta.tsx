@@ -172,7 +172,7 @@ const PuntoVenta = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
     }
 
     const calcularImpuesto = () => {
-        return calcularSubtotal() * 0.05
+        return calcularSubtotal() * 0
     }
 
     const calcularTotal = () => {

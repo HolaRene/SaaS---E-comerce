@@ -84,7 +84,8 @@ const OrdernesSuma = ({ items, selectedStore }: OrdernesSumaProps) => {
                         size="lg"
                         onClick={() => {
                             if (!canCheckout) return;
-                            ruta.push(`/user/carrito/checar?tienda=${encodeURIComponent(selectedStore)}`);
+                            const tiendaFinal = (!hasMultipleStores && selectedStore === "all") ? stores[0] : selectedStore;
+                            ruta.push(`/user/carrito/checar?tienda=${encodeURIComponent(tiendaFinal)}`);
                         }}
                         disabled={!canCheckout}
                     >
