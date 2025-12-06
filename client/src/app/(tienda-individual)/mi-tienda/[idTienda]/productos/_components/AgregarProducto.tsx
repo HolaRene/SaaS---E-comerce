@@ -141,7 +141,7 @@ const AddProductPulperia = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
 
 
     return (
-        <SheetContent className="px-3 pb-10">
+        <SheetContent className="px-3 pb-10 mb-2">
             <ScrollArea className="h-screen">
                 <SheetHeader>
                     <SheetTitle className="mb-4">Agregar producto (Pulpería)</SheetTitle>
@@ -372,7 +372,7 @@ const AddProductPulperia = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                             onEtiquetasChange={setEtiquetasSeleccionadas}
                         />
 
-                        <Button type="submit">Agregar producto</Button>
+                        <Button type="submit" className="mb-4 bg-green-500">Agregar producto</Button>
                     </form>
                 </Form>
             </ScrollArea>

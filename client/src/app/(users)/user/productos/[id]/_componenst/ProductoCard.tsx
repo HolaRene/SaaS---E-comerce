@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
-import { Star, Heart, Share2, ShoppingCart, Truck, RotateCcw, Award, Loader2 } from "lucide-react"
+import { Star, Heart, Share2, ShoppingCart, Truck, RotateCcw, Award, Loader2, ClipboardCopy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,7 +16,15 @@ import { Id } from "../../../../../../../convex/_generated/dataModel"
 import Image from "next/image"
 import { useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
+import { Input } from "@/components/ui/input"
 
 const reviews = [
     {
@@ -67,6 +75,9 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
     const [isFavorite, setIsFavorite] = useState(false)
     // Estado para el carrito
     const [isAddingToCart, setIsAddingToCart] = useState(false)
+    // Estado para compartir
+    const [sheetOpen, setSheetOpen] = useState(false)
+    const [copied, setCopied] = useState(false)
 
     const producto = useQuery(api.productos.getProductoId, { id })
     const tienda = useQuery(api.tiendas.getTiendaPublicaById, producto ? { id: producto.tiendaId } : "skip")
@@ -151,6 +162,18 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
             setIsAddingToCart(false)
         }
     }
+    // Handler para copiar enlace
+    const handleCopyLink = async () => {
+        const link = `${window.location.origin}/product/${id}`;
+        try {
+            await navigator.clipboard.writeText(link);
+            setCopied(true);
+            toast.success("Enlace copiado al portapapeles");
+            setTimeout(() => setCopied(false), 2000);
+        } catch (error) {
+            toast.error("Error al copiar enlace");
+        }
+    };
 
     if (producto === undefined || tienda === undefined) {
         return <div className="flex items-center justify-center min-h-screen">
@@ -297,10 +320,43 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                                 />
                                 {isFavorite ? 'Guardado' : 'Guardar'}
                             </Button>
-                            <Button variant="outline" size="sm" className="flex-1">
-                                <Share2 className="w-4 h-4 mr-2" />
-                                Compartir
-                            </Button>
+                            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+                                <SheetTrigger asChild>
+                                    <Button variant="outline" size="sm" className="flex-1">
+                                        <Share2 className="w-4 h-4 mr-2" />
+                                        Compartir
+                                    </Button>
+                                </SheetTrigger>
+                                <SheetContent side="bottom" className="h-auto">
+                                    <SheetHeader>
+                                        <SheetTitle>Compartir producto</SheetTitle>
+                                    </SheetHeader>
+                                    <div className="space-y-4 mt-4">
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                readOnly
+                                                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/product/${id}`}
+                                                className="flex-1"
+                                            />
+                                            <Button
+                                                onClick={handleCopyLink}
+                                                variant="secondary"
+                                                size="icon"
+                                                className="shrink-0"
+                                            >
+                                                {copied ? (
+                                                    <Check className="h-4 w-4 text-green-600" />
+                                                ) : (
+                                                    <ClipboardCopy className="h-4 w-4" />
+                                                )}
+                                            </Button>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">
+                                            Comparte este enlace para que otros puedan ver este producto
+                                        </p>
+                                    </div>
+                                </SheetContent>
+                            </Sheet>
                         </div>
                     </div>
 

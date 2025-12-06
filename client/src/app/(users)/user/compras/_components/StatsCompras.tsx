@@ -1,16 +1,40 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle, Clock, Package } from "lucide-react"
-
-
-const orderStats = [
-    { label: "Total de pedidos", value: "24", icon: Package },
-    { label: "Pedidos pendientes", value: "2", icon: Clock },
-    { label: "Total gastado", value: "C$12,450", icon: CheckCircle },
-]
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckCircle, Clock, Package } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../../convex/_generated/api";
+import * as React from "react";
 
 const StatsCompras = () => {
+    const { user: clerkUser } = useUser();
+
+    // Fetch Convex user document
+    const usuario = useQuery(
+        api.users.getUserById,
+        clerkUser ? { clerkId: clerkUser.id } : "skip"
+    );
+
+    // Fetch purchases for the user
+    const compras = useQuery(
+        api.compras.getComprasByUsuario,
+        usuario?._id ? { usuarioId: usuario._id } : "skip"
+    );
+
+    // Calculate stats based on purchases
+    const orderStats = React.useMemo(() => {
+        const totalOrders = compras?.length || 0;
+        const pendingOrders = compras?.filter(c => c.estado === "pendiente").length || 0;
+        const totalSpent = compras?.reduce((sum, c) => sum + c.total, 0) || 0;
+
+        return [
+            { label: "Total de Compras", value: totalOrders, icon: Package },
+            { label: "Compras Pendientes", value: pendingOrders, icon: Clock },
+            { label: "Total gastado", value: totalSpent, icon: CheckCircle },
+        ];
+    }, [compras]);
+
     return (
         <div className="grid gap-4 md:grid-cols-3">
             {orderStats.map((stat) => (
@@ -25,7 +49,7 @@ const StatsCompras = () => {
                 </Card>
             ))}
         </div>
-    )
-}
+    );
+};
 
-export default StatsCompras
+export default StatsCompras;
