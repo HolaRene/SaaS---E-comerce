@@ -447,7 +447,7 @@ export const crearVentaOnline = mutation({
     const identity = await ctx.auth.getUserIdentity()
     if (!identity) throw new Error('No autenticado')
 
-    // Obtener usuario
+    // Obtener usuario (quien realiza la compra)
     const usuario = await ctx.db
       .query('usuarios')
       .withIndex('by_clerkId', q => q.eq('clerkId', identity.subject))
@@ -455,10 +455,10 @@ export const crearVentaOnline = mutation({
 
     if (!usuario) throw new Error('Usuario no encontrado')
 
-    // Generar número de orden
+    // Generar número de orden único
     const numeroOrden = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
-    // ========== BUSCAR O CREAR CLIENTE EN LA TIENDA ==========
+    // ========== 1. GESTIÓN DE CLIENTE (BUSCAR O CREAR) ==========
     let clienteId: Id<'clientes'> | undefined = undefined
 
     // Buscar cliente existente por teléfono en esta tienda
@@ -470,9 +470,16 @@ export const crearVentaOnline = mutation({
       .first()
 
     if (clienteExistente) {
+      // Si existe, actualizamos sus datos con la información reciente del formulario
+      // Esto corrige el problema de que aparezca con un nombre antiguo
+      await ctx.db.patch(clienteExistente._id, {
+        nombre: args.nombreComprador, // Actualizar nombre
+        direccion: `${args.direccionEntrega}, ${args.ciudadEntrega}`, // Actualizar dirección
+        // No sobrescribimos email si ya tiene, o otros datos sensibles si no es necesario
+      })
       clienteId = clienteExistente._id as any
     } else {
-      // Crear nuevo cliente en la base de datos de la tienda
+      // Crear nuevo cliente en la base de datos de la tienda si no existe
       clienteId = (await ctx.db.insert('clientes', {
         tiendaId: args.tiendaId,
         nombre: args.nombreComprador,
@@ -488,26 +495,26 @@ export const crearVentaOnline = mutation({
     const tienda = await ctx.db.get(args.tiendaId)
     if (!tienda) throw new Error('Tienda no encontrada')
 
-    // 1. Crear la venta (registro para la tienda) CON el clienteId
-    // Usamos el ID del propietario de la tienda como el "cajero" para ventas online
+    // El propietario es el responsable de la venta online (actúa como cajero)
     const usuarioId = tienda.propietario
 
+    // ========== 2. CREAR LA VENTA (REGISTRO TIENDA) ==========
     const ventaId = await ctx.db.insert('ventas', {
       tiendaId: args.tiendaId,
-      clienteId: clienteId as any, // Ahora incluye el cliente real
-      usuarioId: usuarioId, // El propietario es el responsable de la venta online
+      clienteId: clienteId as any,
+      usuarioId: usuarioId,
       fecha: new Date().toISOString(),
-      compraOnlineId: null, // Temporal
+      // compraOnlineId se omite inicialmente (undefined) porque es opcional y no null
       subtotal: args.subtotal,
       impuesto: 0,
       total: args.total,
       metodoPago: args.metodoPago,
       estado: 'completada',
-      notas: `Compra online - ${numeroOrden}`,
-      canal: 'online', // Identificador para ventas online
+      notas: `Compra online - ${numeroOrden} - ${args.notasEntrega || ''}`,
+      canal: 'online',
     })
 
-    // 2. Crear la compra (registro para el usuario)
+    // ========== 3. CREAR LA COMPRA (REGISTRO USUARIO) ==========
     const compraId = await ctx.db.insert('compras', {
       usuarioId: usuario._id,
       tiendaId: args.tiendaId,
@@ -522,12 +529,15 @@ export const crearVentaOnline = mutation({
       fecha: new Date().toISOString(),
       estado: 'pendiente',
     })
+
+    // Vincular la venta con la compra online
     await ctx.db.patch(ventaId, {
       compraOnlineId: compraId,
     })
 
-    // 3. Crear detalles de venta y compra, actualizar stock
+    // ========== 4. DETALLES Y STOCK ==========
     for (const item of args.productos) {
+      // Detalle para la venta (tienda)
       await ctx.db.insert('detallesVenta', {
         ventaId,
         productoId: item.productoId,
@@ -537,6 +547,7 @@ export const crearVentaOnline = mutation({
         nombreProducto: item.nombreProducto,
       })
 
+      // Detalle para la compra (usuario)
       await ctx.db.insert('detallesCompra', {
         compraId,
         productoId: item.productoId,
@@ -546,16 +557,18 @@ export const crearVentaOnline = mutation({
         subtotal: item.cantidad * item.precioUnitario,
       })
 
+      // Actualizar inventario
       const producto = await ctx.db.get(item.productoId)
       if (producto) {
         await ctx.db.patch(item.productoId, {
           cantidad: producto.cantidad - item.cantidad,
         })
 
+        // Registrar movimiento de inventario
         await ctx.db.insert('movimientosInventario', {
           productoId: item.productoId,
           tiendaId: args.tiendaId,
-          usuarioId: usuarioId, // Movimiento registrado a nombre de la tienda/propietario
+          usuarioId: usuarioId,
           tipo: 'SALIDA',
           cantidad: item.cantidad,
           stockAnterior: producto.cantidad,
@@ -567,7 +580,8 @@ export const crearVentaOnline = mutation({
       }
     }
 
-    // ========== MANEJAR PAGO FIADO ==========
+    // ========== 5. MANEJO DE CRÉDITO (FIADO) ==========
+    // Si el método de pago es fiado, debemos registrar o actualizar el crédito
     if (args.metodoPago === 'fiado' && clienteId) {
       const creditoExistente = await ctx.db
         .query('creditos')
@@ -576,31 +590,36 @@ export const crearVentaOnline = mutation({
         .first()
 
       if (creditoExistente) {
-        // Actualizar crédito existente
+        // Actualizar crédito existente sumando el nuevo total
         await ctx.db.patch(creditoExistente._id, {
           saldoActual: creditoExistente.saldoActual + args.total,
+          notas:
+            (creditoExistente.notas || '') +
+            `\n+ Compra online: ${numeroOrden}`,
         })
       } else {
-        // Crear nuevo crédito
+        // Crear nuevo crédito si no existe uno activo
         await ctx.db.insert('creditos', {
           tiendaId: args.tiendaId,
           clienteId: clienteId as any,
-          limiteCredito: 5000,
+          limiteCredito: 5000, // Límite inicial por defecto
           saldoActual: args.total,
           fechaInicio: new Date().toISOString(),
-          estado: 'activo',
+          estado: 'activo', // El crédito queda activo para ser pagado después
           notas: `Crédito iniciado con compra online ${numeroOrden}`,
         })
       }
     }
 
-    // ========== ACTUALIZAR ESTADÍSTICAS DEL CLIENTE ==========
+    // ========== 6. ACTUALIZAR ESTADÍSTICAS DEL CLIENTE ==========
     if (clienteId) {
-      const clienteActual = clienteExistente || (await ctx.db.get(clienteId))
-      if (clienteActual && 'totalCompras' in clienteActual) {
+      // Volvemos a obtener el cliente para tener los datos más frescos (aunque lo acabamos de actualizar/crear)
+      // pero usamos los valores acumulados
+      const clienteStats = await ctx.db.get(clienteId)
+      if (clienteStats) {
         await ctx.db.patch(clienteId, {
-          totalCompras: (clienteActual.totalCompras || 0) + args.total,
-          cantidadCompras: (clienteActual.cantidadCompras || 0) + 1,
+          totalCompras: (clienteStats.totalCompras || 0) + args.total,
+          cantidadCompras: (clienteStats.cantidadCompras || 0) + 1,
           ultimaCompra: new Date().toISOString(),
         })
       }
@@ -611,7 +630,6 @@ export const crearVentaOnline = mutation({
       compraId,
       numeroOrden,
       clienteId,
-      prueba: 'prueba',
     }
   },
 })
