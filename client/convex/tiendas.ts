@@ -1,4 +1,4 @@
-import { v } from 'convex/values'
+import { ConvexError, v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 
 export const getTiendaById = query({
@@ -17,81 +17,81 @@ export const buscarTiendas = query({
     limite: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const limite = args.limite ?? 20;
+    const limite = args.limite ?? 20
 
     // ✅ CASO 1: Con búsqueda de texto (sin .order() - ya está ordenado por relevancia)
     if (args.search && args.search.trim() !== '') {
       let consulta = ctx.db
-        .query("tiendas")
-        .withSearchIndex("search_nombre", (q) => 
-          q.search("nombre", args.search.trim())
+        .query('tiendas')
+        .withSearchIndex('search_nombre', q =>
+          q.search('nombre', args.search.trim())
         )
-        .filter((q) => q.eq(q.field("publica"), true))
-        .filter((q) =>
+        .filter(q => q.eq(q.field('publica'), true))
+        .filter(q =>
           q.or(
-            q.eq(q.field("estado"), "activo"),
-            q.eq(q.field("estado"), "pendiente")
+            q.eq(q.field('estado'), 'activo'),
+            q.eq(q.field('estado'), 'pendiente')
           )
-        );
+        )
 
       if (args.departamento) {
-        consulta = consulta.filter((q) => 
-          q.eq(q.field("departamento"), args.departamento)
-        );
+        consulta = consulta.filter(q =>
+          q.eq(q.field('departamento'), args.departamento)
+        )
       }
 
       if (args.categoria) {
-        consulta = consulta.filter((q) => 
-          q.eq(q.field("categoria"), args.categoria)
-        );
+        consulta = consulta.filter(q =>
+          q.eq(q.field('categoria'), args.categoria)
+        )
       }
 
       if (args.puntuacionMinima !== undefined) {
-        consulta = consulta.filter((q) => 
-          q.gte(q.field("puntuacion"), args.puntuacionMinima)
-        );
+        consulta = consulta.filter(q =>
+          q.gte(q.field('puntuacion'), args.puntuacionMinima)
+        )
       }
 
-      return await consulta.take(limite);
+      return await consulta.take(limite)
     }
 
     // ✅ CASO 2: Sin búsqueda de texto (usa índice + .order())
     // Usamos el índice por `publica` y luego filtramos por estados
     // (activo | pendiente) para alinear el comportamiento con `getTiendasPublicas`.
     let consulta = ctx.db
-      .query("tiendas")
-      .withIndex("by_publica", (q) => q.eq("publica", true))
-      .filter((q) =>
+      .query('tiendas')
+      .withIndex('by_publica', q => q.eq('publica', true))
+      .filter(q =>
         q.or(
-          q.eq(q.field("estado"), "activo"),
-          q.eq(q.field("estado"), "pendiente")
+          q.eq(q.field('estado'), 'activo'),
+          q.eq(q.field('estado'), 'pendiente')
         )
-      );
+      )
 
     if (args.departamento) {
-      consulta = consulta.filter((q) => 
-        q.eq(q.field("departamento"), args.departamento)
-      );
+      consulta = consulta.filter(q =>
+        q.eq(q.field('departamento'), args.departamento)
+      )
     }
 
     if (args.categoria) {
-      consulta = consulta.filter((q) => 
-        q.eq(q.field("categoria"), args.categoria)
-      );
+      consulta = consulta.filter(q =>
+        q.eq(q.field('categoria'), args.categoria)
+      )
     }
 
     if (args.puntuacionMinima !== undefined) {
-      consulta = consulta.filter((q) => 
-        q.gte(q.field("puntuacion"), args.puntuacionMinima)
-      );
+      consulta = consulta.filter(q =>
+        q.gte(q.field('puntuacion'), args.puntuacionMinima)
+      )
     }
 
     // Ordenar por `puntuacion` en memoria si el índice no permite orden directo
-    const resultados = await consulta.collect();
-    resultados.sort((a, b) => (b.puntuacion || 0) - (a.puntuacion || 0));
-    return resultados.slice(0, limite);
+    const resultados = await consulta.collect()
+    resultados.sort((a, b) => (b.puntuacion || 0) - (a.puntuacion || 0))
+    return resultados.slice(0, limite)
   },
-});
+})
 
 export const updateTienda = mutation({
   args: {
@@ -280,43 +280,6 @@ export const getTiendasPublicas = query({
     return tiendas
   },
 })
-// Obtener tienda por busqueda
-// export const getPodcastBySearch = query({
-//   args: {
-//     search: v.string(),
-//   },
-//   handler: async (ctx, args) => {
-//     if (args.search === "") {
-//       return await ctx.db.query("podcasts").order("desc").collect();
-//     }
-
-//     // Intentar búsqueda por autor primero
-//     const authorSearch = await ctx.db
-//       .query("podcasts")
-//       .withSearchIndex("search_author", (q) => q.search("author", args.search))
-//       .take(10);
-
-//     if (authorSearch.length > 0) {
-//       return authorSearch;
-//     }
-
-//     // Intentar búsqueda por título
-//     const titleSearch = await ctx.db
-//       .query("podcasts")
-//       .withSearchIndex("search_title", (q) => q.search("podcastTitle", args.search))
-//       .take(10);
-
-//     if (titleSearch.length > 0) {
-//       return titleSearch;
-//     }
-
-//     // Finalmente, búsqueda por descripción
-//     return await ctx.db
-//       .query("podcasts")
-//       .withSearchIndex("search_body", (q) => q.search("podcastDescription", args.search))
-//       .take(10);
-//   },
-// });
 
 /**
  * Obtiene una tienda pública por ID
@@ -384,5 +347,155 @@ export const getResenasPublicasByTienda = query({
     )
 
     return resenasConCliente
+  },
+})
+
+export const getTiendasByPropietario = query({
+  args: { propietarioId: v.id('usuarios') },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) {
+      throw new ConvexError('No autenticado')
+    }
+
+    const tiendas = await ctx.db
+      .query('tiendas')
+      .withIndex('by_propietario', q => q.eq('propietario', args.propietarioId))
+      .collect()
+
+    return tiendas ?? null
+  },
+})
+
+export const crearTienda = mutation({
+  args: {
+    nombre: v.string(),
+    categoria: v.string(),
+    descripcion: v.string(),
+    direccion: v.string(),
+    telefono: v.string(),
+    departamento: v.string(),
+    lat: v.number(),
+    lng: v.number(),
+    avatar: v.optional(v.string()),
+    imgBanner: v.optional(v.string()),
+
+    configuracion: v.object({
+      NIT: v.optional(v.string()),
+      RUC: v.optional(v.string()),
+      moneda: v.string(),
+      whatsapp: v.optional(v.string()),
+      backup: v.optional(v.string()),
+      permisosTienda: v.object({
+        vendedoresPuedenCrearProductos: v.boolean(),
+        vendedoresPuedenModificarPrecios: v.boolean(),
+        vendedoresPuedenVerReportes: v.boolean(),
+        maxVendedores: v.number(),
+      }),
+    }),
+
+    horarios: v.array(
+      v.object({
+        dia: v.string(),
+        apertura: v.string(),
+        cierre: v.string(),
+        cerrado: v.boolean(),
+        aperturaEspecial: v.optional(v.string()),
+        cierreEspecial: v.optional(v.string()),
+      })
+    ),
+  },
+
+  handler: async (ctx, args) => {
+    // Obtener usuario actual desde Clerk
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) throw new ConvexError('No autenticado este diablo falla')
+
+    // Buscar usuario en la DB Convex
+    const user = await ctx.db
+      .query('usuarios')
+      .filter(q => q.eq(q.field('correo'), identity.email))
+      .collect()
+    if (user.length === 0) throw new ConvexError('Usuario no encontrado')
+
+    const tiendaId = await ctx.db.insert('tiendas', {
+      avatar:
+        args.avatar ??
+        'https://images.pexels.com/photos/1833586/pexels-photo-1833586.jpeg',
+      imgBanner:
+        args.imgBanner ??
+        'https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg',
+      nombre: args.nombre,
+      categoria: args.categoria,
+      descripcion: args.descripcion,
+      direccion: args.direccion,
+      lat: args.lat,
+      lng: args.lng,
+      puntuacion: 5, // ✔ obligatorio
+      telefono: args.telefono,
+      propietario: user[0]._id, // ✔ tu ID del usuario logueado
+      estado: 'pendiente', // ✔ obligatorio
+      ventasHoy: 0, // ✔ obligatorio
+      departamento: args.departamento,
+      miembros: [
+        {
+          usuarioId: user[0]._id,
+          rol: 'admin',
+          fechaUnion: new Date().toISOString(),
+          permisos: ['full_access'],
+        },
+      ],
+      configuracion: {
+        NIT: args.configuracion?.NIT ?? '',
+        RUC: args.configuracion?.RUC ?? '',
+        moneda: args.configuracion?.moneda ?? 'NIO',
+        whatsapp: args.configuracion?.whatsapp ?? '',
+        backup: args.configuracion?.backup ?? '',
+        permisosTienda: {
+          vendedoresPuedenCrearProductos:
+            args.configuracion?.permisosTienda
+              ?.vendedoresPuedenCrearProductos ?? true,
+          vendedoresPuedenModificarPrecios:
+            args.configuracion?.permisosTienda
+              ?.vendedoresPuedenModificarPrecios ?? false,
+          vendedoresPuedenVerReportes:
+            args.configuracion?.permisosTienda?.vendedoresPuedenVerReportes ??
+            false,
+          maxVendedores: args.configuracion?.permisosTienda?.maxVendedores ?? 5,
+        },
+      },
+      favoritos: 0,
+      likes: 0,
+      publica: true,
+      visitas: 0,
+      estadisticas: {
+        clientesTotales: 0,
+        productosActivos: 0,
+        ventasTotales: 0,
+      },
+      delivery: {
+        costo: 10,
+        habilitado: true,
+        tiempoEstimado: '1h',
+        zonas: ['boaco'],
+      },
+      facturacion: {
+        habilitada: true,
+        numeracionActual: 1234,
+        serie: 'lo que venga me da igual',
+        tipo: 'automatica',
+      },
+      ultimaActualizacion: new Date().toISOString(),
+
+      horarios: args.horarios,
+      metricasEquipo: {
+        totalVendedores: 0,
+        ventasEsteMes: 0,
+        productoMasVendido: undefined,
+      },
+      creadoEn: new Date().toISOString(),
+    })
+
+    return tiendaId
   },
 })

@@ -41,7 +41,7 @@ const Navegacion = () => {
     const idUser = usuario?._id
     // Obtener tiendas del usuario
     const tiendaUser = useQuery(
-        api.tienda.getTiendasByPropietario,
+        api.tiendas.getTiendasByPropietario,
         idUser ? { propietarioId: idUser } : "skip"
     );
 

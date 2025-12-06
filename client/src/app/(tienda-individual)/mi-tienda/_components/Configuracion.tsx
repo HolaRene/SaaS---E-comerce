@@ -31,8 +31,8 @@ import { useUser } from "@clerk/nextjs";
 const Configuracion = ({ id }: { id: Id<"tiendas"> }) => {
 
     const tienda = useQuery(
-        api.tienda.getTiendaById,
-        { tiendaId: id }
+        api.tiendas.getTiendaById,
+        { id }
     );
     const { user: clerkUser } = useUser()
 

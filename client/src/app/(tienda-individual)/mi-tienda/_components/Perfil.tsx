@@ -60,8 +60,8 @@ const ErrorState = ({ message }: { message: string }) => (
 export default function Perfil({ id }: PerfilProps) {
 
     const tienda = useQuery(
-        api.tienda.getTiendaById,
-        id ? { tiendaId: id } : "skip"
+        api.tiendas.getTiendaById,
+        id ? { id } : "skip"
     );
 
     const productosTienda = useQuery(

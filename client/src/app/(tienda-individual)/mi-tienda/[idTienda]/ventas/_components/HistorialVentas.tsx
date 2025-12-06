@@ -31,6 +31,7 @@ const HistorialVentas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
         api.ventas.getDetalleVenta,
         ventaIdSeleccionada ? { ventaId: ventaIdSeleccionada } : "skip"
     )
+    console.log(detalleVenta)
 
     const columns = useMemo(() => getColumnsVentas(setVentaIdSeleccionada), [])
 
@@ -109,7 +110,7 @@ const HistorialVentas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                                 </div>
                                 <div>
                                     <span className="text-muted-foreground">Cajero:</span>
-                                    <p className="font-medium">{detalleVenta.cajero?.nombre || "N/A"}</p>
+                                    <p className="font-medium">{detalleVenta.cajero || "N/A"}</p>
                                 </div>
                                 <div>
                                     <span className="text-muted-foreground">Método de Pago:</span>

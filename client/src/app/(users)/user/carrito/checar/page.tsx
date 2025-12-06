@@ -99,12 +99,12 @@ function CheckoutContent() {
     const [ordenId, setOrdenId] = useState<string>("")
     const [isSubmitting, setIsSubmitting] = useState(false)
 
-    useEffect(() => {
-        // Redirect if no items or no store selected
-        if (carritoItems !== undefined && filteredItems.length === 0) {
-            router.push('/user/carrito')
-        }
-    }, [carritoItems, filteredItems, router])
+    // useEffect(() => {
+    //     // Redirect if no items or no store selected
+    //     if (carritoItems !== undefined && filteredItems.length === 0) {
+    //         router.push('/user/carrito')
+    //     }
+    // }, [carritoItems, filteredItems, router])
 
     const handleShippingSubmit = (data: ShippingFormData) => {
         setStep(2)
@@ -120,7 +120,6 @@ function CheckoutContent() {
 
         try {
             const shippingData = shippingForm.getValues()
-
             const result = await crearVentaOnline({
                 tiendaId,
                 productos: filteredItems.map(item => ({
@@ -149,6 +148,7 @@ function CheckoutContent() {
             setOrdenId(result.numeroOrden)
             setStep(3)
             toast.success("¡Pedido realizado exitosamente!")
+            router.push('/user/compras')
         } catch (error: any) {
             toast.error(error.message || "Error al procesar el pedido")
             console.error(error)

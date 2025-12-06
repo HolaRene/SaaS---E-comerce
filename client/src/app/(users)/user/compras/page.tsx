@@ -140,7 +140,7 @@ export default function PurchasesTab() {
 
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {/* Header */}
             <div>
                 <h2 className="text-3xl font-bold tracking-tight">Mis compras</h2>
@@ -157,18 +157,18 @@ export default function PurchasesTab() {
 
             {/* Dialog de Detalles */}
             <Dialog open={!!compraIdSeleccionada} onOpenChange={() => setCompraIdSeleccionada(null)}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className=" ">
                     <DialogHeader>
-                        <DialogTitle>
+                        <DialogTitle className="mt-2">
                             Detalle de Compra #{compraSeleccionadaInfo?.numeroOrden}
                         </DialogTitle>
                         <DialogDescription>Información completa de tu pedido</DialogDescription>
                     </DialogHeader>
 
                     {compraSeleccionadaInfo && detalleCompra && (
-                        <div className="space-y-4">
+                        <div className="space-y-2">
                             {/* Información General */}
-                            <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="grid grid-cols-2 gap-2 text-sm">
                                 <div>
                                     <span className="text-muted-foreground">Tienda:</span>
                                     <p className="font-medium">{compraSeleccionadaInfo.nombreTienda}</p>
@@ -255,7 +255,7 @@ export default function PurchasesTab() {
                     )}
 
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setCompraIdSeleccionada(null)}>
+                        <Button className="mb-2" variant="outline" onClick={() => setCompraIdSeleccionada(null)}>
                             Cerrar
                         </Button>
                         {/* <Button>

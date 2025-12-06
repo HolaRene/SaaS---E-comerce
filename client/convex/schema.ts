@@ -352,6 +352,7 @@ export default defineSchema({
     subtotal: v.number(),
     impuesto: v.number(),
     total: v.number(),
+    compraOnlineId: v.optional(v.id('compras')),
     metodoPago: v.union(
       v.literal('efectivo'),
       v.literal('tarjeta'),
@@ -364,6 +365,7 @@ export default defineSchema({
       v.literal('pendiente')
     ),
     notas: v.optional(v.string()),
+    canal: v.optional(v.string()), // "online", "pos", etc.
   })
     .index('by_tienda', ['tiendaId'])
     .index('by_cliente', ['clienteId'])
@@ -502,33 +504,32 @@ export default defineSchema({
   compras: defineTable({
     usuarioId: v.id('usuarios'),
     tiendaId: v.id('tiendas'),
-    numeroOrden: v.string(), // Número de orden único (ej: "ORD-2024-00001")
-    fecha: v.string(), // ISO timestamp
+    clienteId: v.optional(v.id('clientes')), // Opcional: solo para ventas online
+    numeroOrden: v.string(), // ← IMPORTANTE: Agregar este campo
     subtotal: v.number(),
     costoEnvio: v.number(),
     total: v.number(),
-    estado: v.union(
-      v.literal('pendiente'),
-      v.literal('en_preparacion'),
-      v.literal('enviado'),
-      v.literal('entregado'),
-      v.literal('cancelado')
-    ),
     metodoPago: v.union(
       v.literal('efectivo'),
-      v.literal('tarjeta'),
       v.literal('transferencia'),
       v.literal('fiado')
     ),
-    direccionEntrega: v.string(),
+    direccionEntrega: v.optional(v.string()), // ← Para ventas online
     notas: v.optional(v.string()),
-    fechaEntrega: v.optional(v.string()), // Fecha estimada o real de entrega
+    fecha: v.string(),
+    estado: v.union(
+      v.literal('pendiente'),
+      v.literal('en_proceso'),
+      v.literal('enviada'),
+      v.literal('entregada'),
+      v.literal('cancelada')
+    ),
+    canal: v.optional(v.string()), // "online", "pos", etc.
   })
-    .index('by_usuario', ['usuarioId'])
     .index('by_tienda', ['tiendaId'])
-    .index('by_estado', ['estado'])
+    .index('by_usuario', ['usuarioId'])
     .index('by_fecha', ['fecha'])
-    .index('by_usuario_fecha', ['usuarioId', 'fecha']),
+    .index('by_numeroOrden', ['numeroOrden']), // ← IMPORTANTE: Agregar este índice
 
   // Detalles de Compra (items de cada compra)
   detallesCompra: defineTable({

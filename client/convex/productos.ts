@@ -600,7 +600,7 @@ export const filtrarProductosPublicos = query({
   },
 })
 
-// ==================== OBTENER PRECIO MÁXIMO ====================
+// ==================== OBTENER PRECIO MÁXIMO
 /**
  * Obtiene el precio máximo de todos los productos públicos (para el slider de filtro)
  */

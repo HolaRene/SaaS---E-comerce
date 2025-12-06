@@ -152,17 +152,21 @@ export const getVentasByTienda = query({
 
         const usuario = await ctx.db.get(venta.usuarioId)
 
+        let cajeroNombre = usuario?.nombre || 'Desconocido'
+        if (venta.canal === 'online') {
+          cajeroNombre = 'Tienda' // Nombre genérico para ventas online
+        }
+
         return {
           ...venta,
           clienteNombre: cliente?.nombre || 'Cliente General',
-          cajeroNombre: usuario?.nombre || 'Desconocido',
+          cajeroNombre,
         }
       })
     )
   },
 })
 
-// Obtener detalle de venta
 export const getDetalleVenta = query({
   args: { ventaId: v.id('ventas') },
   handler: async (ctx, args) => {
@@ -174,15 +178,50 @@ export const getDetalleVenta = query({
       .withIndex('by_venta', q => q.eq('ventaId', args.ventaId))
       .collect()
 
-    const cliente = venta.clienteId ? await ctx.db.get(venta.clienteId) : null
+    // ✅ OBTENER CLIENTE
+    let cliente = null
+    if (venta.clienteId) {
+      cliente = await ctx.db.get(venta.clienteId)
+    }
 
-    const usuario = await ctx.db.get(venta.usuarioId)
+    // ✅ OBTENER DATOS DE COMPRA ONLINE
+    let datosCompraOnline = null
+    if (venta.canal === 'online') {
+      // Buscar la compra asociada por tiendaId y usando el clienteId
+      // (más robusto que buscar por número de orden)
+      datosCompraOnline = await ctx.db
+        .query('compras')
+        .withIndex('by_tienda', q => q.eq('tiendaId', venta.tiendaId))
+        .filter(q => q.eq(q.field('clienteId'), venta.clienteId))
+        .filter(q => q.eq(q.field('canal'), 'online'))
+        .order('desc')
+        .first()
+    }
+
+    // ✅ DETERMINAR CAJERO CORRECTO
+    let cajero = 'Cajero Desconocido'
+    if (venta.canal === 'online' && venta.compraOnlineId) {
+      datosCompraOnline = await ctx.db.get(venta.compraOnlineId)
+    } else {
+      const usuarioVenta = await ctx.db.get(venta.usuarioId)
+      cajero = usuarioVenta?.nombre || 'Cajero Desconocido'
+    }
 
     return {
       ...venta,
       detalles,
       cliente,
-      cajero: usuario,
+      cajero,
+      esOnline: venta.canal === 'online',
+      // ✅ INCLUIR DATOS DEL FORMULARIO DE COMPRA
+      datosEnvio: datosCompraOnline
+        ? {
+            direccionEntrega: datosCompraOnline.direccionEntrega,
+            notasEntrega: datosCompraOnline.notas,
+            nombreComprador: cliente?.nombre,
+            telefonoComprador: cliente?.telefono,
+          }
+        : null,
     }
   },
 })
@@ -446,24 +485,33 @@ export const crearVentaOnline = mutation({
       })) as any
     }
 
+    const tienda = await ctx.db.get(args.tiendaId)
+    if (!tienda) throw new Error('Tienda no encontrada')
+
     // 1. Crear la venta (registro para la tienda) CON el clienteId
+    // Usamos el ID del propietario de la tienda como el "cajero" para ventas online
+    const usuarioId = tienda.propietario
+
     const ventaId = await ctx.db.insert('ventas', {
       tiendaId: args.tiendaId,
       clienteId: clienteId as any, // Ahora incluye el cliente real
-      usuarioId: usuario._id,
+      usuarioId: usuarioId, // El propietario es el responsable de la venta online
       fecha: new Date().toISOString(),
+      compraOnlineId: null, // Temporal
       subtotal: args.subtotal,
       impuesto: 0,
       total: args.total,
       metodoPago: args.metodoPago,
       estado: 'completada',
       notas: `Compra online - ${numeroOrden}`,
+      canal: 'online', // Identificador para ventas online
     })
 
     // 2. Crear la compra (registro para el usuario)
     const compraId = await ctx.db.insert('compras', {
       usuarioId: usuario._id,
       tiendaId: args.tiendaId,
+      clienteId: clienteId,
       numeroOrden,
       subtotal: args.subtotal,
       costoEnvio: args.costoEnvio,
@@ -473,6 +521,9 @@ export const crearVentaOnline = mutation({
       notas: args.notasEntrega,
       fecha: new Date().toISOString(),
       estado: 'pendiente',
+    })
+    await ctx.db.patch(ventaId, {
+      compraOnlineId: compraId,
     })
 
     // 3. Crear detalles de venta y compra, actualizar stock
@@ -504,7 +555,7 @@ export const crearVentaOnline = mutation({
         await ctx.db.insert('movimientosInventario', {
           productoId: item.productoId,
           tiendaId: args.tiendaId,
-          usuarioId: usuario._id,
+          usuarioId: usuarioId, // Movimiento registrado a nombre de la tienda/propietario
           tipo: 'SALIDA',
           cantidad: item.cantidad,
           stockAnterior: producto.cantidad,
@@ -559,6 +610,8 @@ export const crearVentaOnline = mutation({
       ventaId,
       compraId,
       numeroOrden,
+      clienteId,
+      prueba: 'prueba',
     }
   },
 })

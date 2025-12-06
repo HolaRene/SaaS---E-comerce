@@ -56,7 +56,7 @@ const PuntoVenta = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
     // Datos simulados para cajero (esto podría venir del auth)
     const [cajeroActual] = useState({ nombre: "Cajero Actual", rol: "Vendedor" })
 
-    const tienda = useQuery(api.tienda.getTiendaById, { tiendaId: idTienda })
+    const tienda = useQuery(api.tiendas.getTiendaById, { id: idTienda })
     // Obtener datos reales de Convex
     const productosDB = useQuery(api.productos.getProductosByTienda, { tiendaId: idTienda })
     const clientesDB = useQuery(api.clientes.getClientesByTienda, { tiendaId: idTienda })
