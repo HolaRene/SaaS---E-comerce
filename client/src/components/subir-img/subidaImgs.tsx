@@ -1,14 +1,15 @@
 import Image from "next/image"
 import { Input } from "../ui/input"
-import { Loader } from "lucide-react"
+import { Loader, X, UploadCloud } from "lucide-react"
 import { useRef, useState } from "react"
 import { useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { useUploadFiles } from "@xixixao/uploadstuff/react"
-import { GenerateThumbnailProps } from "@/types/tipos_img"
+import { SubidaMultiplesImgsProps } from "@/types/tipos_img"
 import { toast } from "sonner"
+import { Id } from "../../../convex/_generated/dataModel"
 
-const SubidaImgs = ({ setImage, setImageStorageId, image }: GenerateThumbnailProps) => {
+const SubidaImgs = ({ imageUrls, setImageUrls, imageStorageIds, setImageStorageIds }: SubidaMultiplesImgsProps) => {
     const [isImageLoading, setIsImageLoading] = useState(false)
 
     const imageRef = useRef<HTMLInputElement | null>(null);
@@ -21,24 +22,29 @@ const SubidaImgs = ({ setImage, setImageStorageId, image }: GenerateThumbnailPro
     const { startUpload } = useUploadFiles(generarSubidaUrl)
 
     // función de manejo
-    const manejoImage = async (blob: Blob, fileName: string) => {
+    const manejoImages = async (files: File[]) => {
         setIsImageLoading(true)
-        setImage('')
         try {
-            const file = new File([blob], fileName, { type: 'image/png' });
-            // iniciar la subida del archivo
-            const uploadResults = await startUpload([file]);
-            const storageId = (uploadResults[0].response as any).storageId;
+            // iniciar la subida de archivos
+            const uploadResults = await startUpload(files);
 
-            setImageStorageId(storageId);
+            const newUrls: string[] = []
+            const newStorageIds: Id<"_storage">[] = []
 
-            // obtener la URL del archivo subido
-            const imgUrl = await getImageURL({ storageId });
-            setImage(imgUrl!)
+            await Promise.all(uploadResults.map(async (result) => {
+                const storageId = (result.response as any).storageId as Id<"_storage">;
+                newStorageIds.push(storageId);
+                const url = await getImageURL({ storageId });
+                if (url) newUrls.push(url);
+            }));
+
+            setImageStorageIds(prev => [...prev, ...newStorageIds]);
+            setImageUrls(prev => [...prev, ...newUrls]);
+
             setIsImageLoading(false)
-            toast.success('Se ha subido la imagen')
+            toast.success('Imágenes subidas correctamente')
         } catch (error) {
-            toast.error('Error al subir la img')
+            toast.error('Error al subir las imágenes')
             setIsImageLoading(false)
             console.log(error)
         }
@@ -50,47 +56,87 @@ const SubidaImgs = ({ setImage, setImageStorageId, image }: GenerateThumbnailPro
 
         try {
             const files = e.target.files
-            if (!files) return
-            const file = files[0];
-            const blob = await file.arrayBuffer()
-                .then((ab) => new Blob([ab]))
-            await manejoImage(blob, file.name)
+            if (!files || files.length === 0) return
+
+            const filesArray = Array.from(files);
+
+            if (imageUrls.length + filesArray.length > 5) {
+                toast.error("Solo puedes subir un máximo de 5 imágenes.");
+                return;
+            }
+
+            await manejoImages(filesArray)
         } catch (error) {
             console.log(error)
-            toast('Error al subir la img a convex')
+            toast('Error al procesar las imágenes')
         }
     }
 
+    const removeImage = (index: number) => {
+        const newUrls = [...imageUrls];
+        const newStorageIds = [...imageStorageIds];
+
+        newUrls.splice(index, 1);
+        newStorageIds.splice(index, 1);
+
+        setImageUrls(newUrls);
+        setImageStorageIds(newStorageIds);
+    }
+
     return (
-        <>
-            <div className="flex items-center justify-center mt-5 h-[142px] w-full cursor-pointer flex-col gap-3 rounded-xl border-[3.2px] border-dashed border-black-6 bg-black-1" onClick={() => imageRef?.current?.click()} >
-                <Input type="file" className="hidden" ref={imageRef} onChange={(e) => subirImg(e)} />
+        <div className="w-full">
+            <div className="flex items-center justify-center mt-5 h-[142px] w-full cursor-pointer flex-col gap-3 rounded-xl border-[3.2px] border-dashed border-black-6 bg-black-1 hover:bg-gray-50 transition-colors" onClick={() => imageRef?.current?.click()} >
+                <Input
+                    type="file"
+                    className="hidden"
+                    ref={imageRef}
+                    onChange={(e) => subirImg(e)}
+                    multiple
+                    accept="image/*"
+                />
                 {
                     !isImageLoading ? (
-                        <Image src={'/icons/subir-96.png'} width={40} height={40} alt="Subir img" />
+                        <>
+                            <UploadCloud size={40} className="text-gray-400" />
+                        </>
                     ) : (
-                        <div className="text-[16px] flex items-center justify-center font-medium text-white-1">
-                            Subiendo Img...
+                        <div className="text-[16px] flex items-center justify-center font-medium text-black">
+                            Subiendo...
                             <Loader size={20} className="animate-spin ml-2" />
                         </div>
                     )
                 }
                 <div className="flex flex-col items-center gap-1">
-                    <h2 className="text-[12px] font-bold text-orange-1">
-                        Click para subir
+                    <h2 className="text-[12px] font-bold text-orange-600">
+                        Click para subir imágenes
                     </h2>
-                    <p className="text-[12px] font-normal text-gray-1">SVG, PNG, JPG, or GIF (max, 1080x1080px)</p>
+                    <p className="text-[12px] font-normal text-gray-500">Máximo 5 imágenes (JPG, PNG, GIF)</p>
                 </div>
             </div>
-            {
-                image && (
-                    <div className="flex-center w-full">
-                        <Image src={image} alt="imgTHum" width={200} height={200} className="mt-5" />
-                    </div>
-                )
-            }
-        </>
 
+            {imageUrls.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-6">
+                    {imageUrls.map((url, index) => (
+                        <div key={index} className="relative group aspect-square rounded-xl overflow-hidden border border-gray-200">
+                            <Image
+                                src={url}
+                                alt={`Producto imagen ${index + 1}`}
+                                className="object-cover w-full h-full"
+                                width={200}
+                                height={200}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => removeImage(index)}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                                <X size={14} />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
     )
 }
 

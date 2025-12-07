@@ -60,9 +60,9 @@ const formSchema = z.object({
 const AddProductPulperia = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
     const [cargando, setCargando] = useState(false)
     // imagen en el archivo
-    const [imageStorageId, setImageStorageId] = useState<Id<"_storage"> | null>(null)
+    const [imageStorageIds, setImageStorageIds] = useState<Id<"_storage">[]>([])
     // imge url
-    const [imageUrl, setImageUrl] = useState('')
+    const [imageUrls, setImageUrls] = useState<string[]>([])
 
     const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState<Id<"etiquetas">[]>([])
     const asignarEtiqueta = useMutation(api.productoEtiquetas.asignarEtiqueta)
@@ -115,7 +115,7 @@ const AddProductPulperia = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                 codigoBarras: data.attributes.codigoBarras,
                 tiendaId: idTienda,
                 // Campos requeridos adicionales
-                imagenes: [imageUrl], // Por ahora vacío, después agregarás subida de imágenes
+                imagenes: imageUrls, // Por ahora vacío, después agregarás subida de imágenes
                 estado: "activo" as const,
                 attributes: {
                     fechaExpiracion: data.attributes.fechaExpiracion,
@@ -175,9 +175,10 @@ const AddProductPulperia = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                         />
                         <div className="pt-10 flex flex-col">
                             <SubidaImgs
-                                setImage={setImageUrl}
-                                setImageStorageId={setImageStorageId}
-                                image={imageUrl}
+                                imageUrls={imageUrls}
+                                setImageUrls={setImageUrls}
+                                imageStorageIds={imageStorageIds}
+                                setImageStorageIds={setImageStorageIds}
                             />
                         </div>
                         <FormField

@@ -85,6 +85,7 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
     const [isFavorite, setIsFavorite] = useState(false);
     const [sheetOpen, setSheetOpen] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [selectedImage, setSelectedImage] = useState(0)
 
     // Queries
     const producto = useQuery(api.productos.getProductoId, { id });
@@ -199,10 +200,22 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                 <div className="space-y-4">
                     <div className="aspect-square bg-white rounded-lg p-4">
                         <img
-                            src={producto.imagenes[0] || "/placeholder.svg"}
+                            src={producto.imagenes[selectedImage] || "/icons/producto-64.png"}
                             alt={producto.nombre}
                             className="w-full h-full object-cover rounded-md"
                         />
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                        {producto.imagenes.map((image, index) => (
+                            <Button
+                                key={index}
+                                onClick={() => setSelectedImage(index)}
+                                className={`aspect-square bg-white rounded-md p-2 border-2 ${selectedImage === index ? "border-blue-500" : "border-gray-200"
+                                    }`}
+                            >
+                                <img src={image || "/placeholder.svg"} alt="" className="w-full h-full object-cover rounded" />
+                            </Button>
+                        ))}
                     </div>
                 </div>
 
