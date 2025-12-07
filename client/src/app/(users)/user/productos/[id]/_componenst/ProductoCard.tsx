@@ -156,7 +156,7 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
             // Resetear cantidad después de agregar
             setQuantity(1)
         } catch (error: any) {
-            toast.error(error.message || 'Error al agregar al carrito')
+            toast.error('Error al agregar al carrito, verifica la cantidad')
             console.error(error)
         } finally {
             setIsAddingToCart(false)

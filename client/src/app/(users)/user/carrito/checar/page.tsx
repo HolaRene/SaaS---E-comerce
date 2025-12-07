@@ -149,7 +149,7 @@ function CheckoutContent() {
             setOrdenId(result.numeroOrden)
             setStep(3)
             toast.success("¡Pedido realizado exitosamente!")
-            router.push('/user/compras')
+            // router.push('/user/compras')
         } catch (error: any) {
             toast.error(error.message || "Error al procesar el pedido")
             console.error(error)

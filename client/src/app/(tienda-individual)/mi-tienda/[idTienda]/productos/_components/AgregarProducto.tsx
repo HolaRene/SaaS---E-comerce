@@ -21,6 +21,7 @@ import { api } from "../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { SelectorEtiquetas } from "./SelectorEtiquetas";
+import SubidaImgs from "@/components/subir-img/subidaImgs";
 
 // --- Categorías internas de pulpería ---
 const pulperiaCategories = [
@@ -58,6 +59,10 @@ const formSchema = z.object({
 
 const AddProductPulperia = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
     const [cargando, setCargando] = useState(false)
+    // imagen en el archivo
+    const [imageStorageId, setImageStorageId] = useState<Id<"_storage"> | null>(null)
+    // imge url
+    const [imageUrl, setImageUrl] = useState('')
 
     const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState<Id<"etiquetas">[]>([])
     const asignarEtiqueta = useMutation(api.productoEtiquetas.asignarEtiqueta)
@@ -68,9 +73,9 @@ const AddProductPulperia = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
             name: "prueba 1",
             description: "esta es una prueba",
             price: 45,
-            costo: 45,
+            costo: 40,
             category: pulperiaCategories[0],
-            cantidad: 10,
+            cantidad: 15,
             attributes: {
                 marca: "",
                 contenido: "",
@@ -98,6 +103,7 @@ const AddProductPulperia = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                 toast.error("El costo es mayor o igual al precio. Marca la casilla para confirmar y continuar.")
                 return
             }
+
             setCargando(true)
             const newProductId = await crearProductos({
                 nombre: data.name,
@@ -109,7 +115,7 @@ const AddProductPulperia = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                 codigoBarras: data.attributes.codigoBarras,
                 tiendaId: idTienda,
                 // Campos requeridos adicionales
-                imagenes: [], // Por ahora vacío, después agregarás subida de imágenes
+                imagenes: [imageUrl], // Por ahora vacío, después agregarás subida de imágenes
                 estado: "activo" as const,
                 attributes: {
                     fechaExpiracion: data.attributes.fechaExpiracion,
@@ -167,6 +173,13 @@ const AddProductPulperia = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                                 </FormItem>
                             )}
                         />
+                        <div className="pt-10 flex flex-col">
+                            <SubidaImgs
+                                setImage={setImageUrl}
+                                setImageStorageId={setImageStorageId}
+                                image={imageUrl}
+                            />
+                        </div>
                         <FormField
                             control={form.control}
                             name="cantidad"

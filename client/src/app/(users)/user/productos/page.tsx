@@ -279,8 +279,8 @@ export default function BuyerHomepage() {
 
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            <div className="p-6 md:p-8 pb-0">
+        <div className="min-h-screen flex flex-col">
+            <div className="p-1 md:p-1">
                 <Breadcrumb>
                     <BreadcrumbList>
                         <BreadcrumbItem>

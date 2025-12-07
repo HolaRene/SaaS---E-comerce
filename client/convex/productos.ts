@@ -60,9 +60,7 @@ export const crearProducto = mutation({
       ventasTotales: 0,
       vistasTotales: 0,
       ultimaActualizacion: now,
-      imagenes: [
-        'https://images.pexels.com/photos/1695052/pexels-photo-1695052.jpeg',
-      ],
+      imagenes: args.imagenes || ['/icons/producto-nuevo-64.png'],
       estado: 'activo',
       creadoEn: now,
     })

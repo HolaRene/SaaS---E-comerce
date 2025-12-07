@@ -24,7 +24,7 @@ const CartItems = ({ items, selectedStore, onSelectStore }: CartItemsProps) => {
         try {
             await actualizarCantidad({ itemId, cantidad: newQuantity })
         } catch (error: any) {
-            toast.error(error.message || 'Error al actualizar cantidad')
+            toast.error('Error al actualizar cantidad, solo esa cantidad disponible')
         }
     }
 
@@ -33,7 +33,7 @@ const CartItems = ({ items, selectedStore, onSelectStore }: CartItemsProps) => {
             await eliminarDelCarrito({ itemId })
             toast.success('Producto eliminado del carrito')
         } catch (error: any) {
-            toast.error(error.message || 'Error al eliminar producto')
+            toast.error('Error al eliminar producto')
         }
     }
 
