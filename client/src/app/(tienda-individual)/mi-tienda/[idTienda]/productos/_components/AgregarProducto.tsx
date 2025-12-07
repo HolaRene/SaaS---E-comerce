@@ -147,13 +147,13 @@ const AddProductPulperia = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
 
 
     return (
-        <SheetContent className="px-3 pb-10 mb-2">
+        <SheetContent className="px-2 pb-10 mb-2">
             <ScrollArea className="h-screen">
                 <SheetHeader>
                     <SheetTitle className="mb-4">Agregar producto (Pulpería)</SheetTitle>
                 </SheetHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(manejoEnvío)} className="space-y-3">
+                    <form onSubmit={form.handleSubmit(manejoEnvío)} className="space-y-3 p-2">
 
                         {/* Nombre */}
                         <FormField

@@ -20,6 +20,7 @@ import { useQuery } from "convex/react";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { api } from "../../../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
+import EditarTiendaDialog from "./EditarTiendaDialog";
 
 interface PerfilProps {
     id: Id<"tiendas">;
@@ -130,9 +131,7 @@ export default function Perfil({ id }: PerfilProps) {
                             </CardHeader>
                             <CardContent>
                                 <div className="flex flex-wrap gap-2">
-                                    <Button>
-                                        <Edit className="mr-2 h-4 w-4" /> Editar Perfil
-                                    </Button>
+                                    <EditarTiendaDialog tienda={tienda} />
                                     <Button variant="outline" onClick={handleWhatsAppChat}>
                                         <Phone className="mr-2 h-4 w-4" /> Chatear por WhatsApp
                                     </Button>
@@ -160,7 +159,7 @@ export default function Perfil({ id }: PerfilProps) {
                                             productosTienda.length > 0 ? (
                                                 productosTienda.map((src) => (
                                                     <div key={src._id} className="group cursor-pointer">
-                                                        <Link href={'/mi-tienda/productos'}>
+                                                        <Link href={`/mi-tienda/${tienda._id}/productos`}>
                                                             <Image
                                                                 src={src.imagenes[0]}
                                                                 alt={src.nombre}

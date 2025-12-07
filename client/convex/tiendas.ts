@@ -101,7 +101,11 @@ export const updateTienda = mutation({
     direccion: v.optional(v.string()),
     telefono: v.optional(v.string()),
     departamento: v.optional(v.string()),
-    // Add other fields as needed
+    avatar: v.optional(v.string()),
+    imgBanner: v.optional(v.string()),
+    categoria: v.optional(v.string()),
+    lat: v.optional(v.number()),
+    lng: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { id, ...fields } = args

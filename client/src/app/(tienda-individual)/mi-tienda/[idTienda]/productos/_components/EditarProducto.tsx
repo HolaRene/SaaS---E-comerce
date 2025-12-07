@@ -11,10 +11,11 @@ import { Button } from "@/components/ui/button"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Doc } from "../../../../../../../convex/_generated/dataModel"
+import { Doc, Id } from "../../../../../../../convex/_generated/dataModel"
 import { useMutation } from "convex/react"
 import { api } from "../../../../../../../convex/_generated/api"
 import { toast } from "sonner"
+import SubidaImgs from "@/components/subir-img/subidaImgs"
 
 const formSchema = z.object({
     nombre: z.string().min(1),
@@ -26,7 +27,16 @@ const formSchema = z.object({
 })
 
 const EditarProducto = ({ producto }: { producto: Doc<"productos"> }) => {
+
     const [open, setOpen] = useState(false)
+    // imagen en el archivo
+    // Inicializamos con IDs dummy para mantener la sincronización con imageUrls
+    const [imageStorageIds, setImageStorageIds] = useState<Id<"_storage">[]>(
+        (producto.imagenes || []).map(() => "existing_image" as Id<"_storage">)
+    )
+    // imge url
+    const [imageUrls, setImageUrls] = useState<string[]>(producto.imagenes || [])
+
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -54,7 +64,13 @@ const EditarProducto = ({ producto }: { producto: Doc<"productos"> }) => {
                 return
             }
 
-            await actualizar({ productoId: producto._id, datos: data })
+            await actualizar({
+                productoId: producto._id,
+                datos: {
+                    ...data,
+                    imagenes: imageUrls
+                }
+            })
             toast.success("Producto actualizado")
             setOpen(false)
             // No recargamos la página: Convex actualizará las queries suscritas
@@ -76,7 +92,7 @@ const EditarProducto = ({ producto }: { producto: Doc<"productos"> }) => {
                     <SheetTitle>Editar producto</SheetTitle>
                 </SheetHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full px-2">
                         <div className="space-y-3 max-h-[60vh] overflow-auto pr-2">
                             <FormField control={form.control} name="nombre" render={({ field }) => (
                                 <FormItem>
@@ -97,6 +113,15 @@ const EditarProducto = ({ producto }: { producto: Doc<"productos"> }) => {
                                     <FormMessage />
                                 </FormItem>
                             )} />
+
+                            <div className="pt-10 flex flex-col">
+                                <SubidaImgs
+                                    imageUrls={imageUrls}
+                                    setImageUrls={setImageUrls}
+                                    imageStorageIds={imageStorageIds}
+                                    setImageStorageIds={setImageStorageIds}
+                                />
+                            </div>
 
                             <FormField control={form.control} name="precio" render={({ field }) => (
                                 <FormItem>
