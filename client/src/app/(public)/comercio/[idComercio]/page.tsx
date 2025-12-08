@@ -33,7 +33,6 @@ const Page = async ({ params }: { params: Promise<{ idComercio: Id<"tiendas"> }>
                 </Breadcrumb>
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="perfil">Perfil Público</TabsTrigger>
-
                     <TabsTrigger value="horarios">Horarios</TabsTrigger>
                 </TabsList>
 

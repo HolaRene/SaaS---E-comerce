@@ -240,11 +240,13 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
 
                     {/* Price */}
                     <div className="flex items-center gap-4">
-                        <span className="text-3xl font-bold text-red-600">${producto.precio}</span>
+                        <span className="text-3xl font-bold text-red-600">{producto.precio}</span>
+                        <div className=" flex gap-2 text-3xl font-bold text-blue-500 items-center"><Heart className="w-5 h-5 text-gray-400" /> {producto.megusta || 0}</div>
+
 
                         {discount > 0 && (
                             <Badge className="bg-red-500 text-white">
-                                Guardar ${discount.toFixed(2)}
+                                Guardar {discount.toFixed(2)}
                             </Badge>
                         )}
                     </div>
@@ -252,7 +254,7 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                     {/* Seller Info */}
                     {tienda && (
                         <Card>
-                            <CardContent className="p-1">
+                            <CardContent className="p-2">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <div className="font-medium">Vendido por {tienda.nombre}</div>

@@ -138,15 +138,22 @@ export const agregarTiendaFavorita = mutation({
       throw new Error('Tienda no encontrada')
     }
 
+    // Insertar el favorito
     const favoritoId = await ctx.db.insert('favoritosTiendas', {
       usuarioId: args.usuarioId,
       tiendaId: args.tiendaId,
       fechaAgregado: new Date().toISOString(),
     })
 
-    // Actualizar contador de favoritos en la tienda
+    // Calcular el número real de favoritos actuales
+    const favoritosActuales = await ctx.db
+      .query('favoritosTiendas')
+      .withIndex('by_tienda', q => q.eq('tiendaId', args.tiendaId))
+      .collect()
+
+    // Actualizar contador con el número real
     await ctx.db.patch(args.tiendaId, {
-      favoritos: (tienda.favoritos || 0) + 1,
+      favoritos: favoritosActuales.length,
     })
 
     return favoritoId
@@ -173,15 +180,27 @@ export const eliminarTiendaFavorita = mutation({
       throw new Error('Esta tienda no está en tus favoritos')
     }
 
+    // Eliminar el favorito primero
     await ctx.db.delete(favorito._id)
+
+    // Calcular el número real de favoritos restantes
+    const favoritosRestantes = await ctx.db
+      .query('favoritosTiendas')
+      .withIndex('by_tienda', q => q.eq('tiendaId', args.tiendaId))
+      .collect()
+
+    // Actualizar contador con el número real
+    await ctx.db.patch(args.tiendaId, {
+      favoritos: favoritosRestantes.length,
+    })
+
     return favorito._id
   },
 })
-
 // ==================== MUTATIONS - PRODUCTOS ====================
 
 /**
- * Agregar producto a favoritos
+ * Agregar producto a favoritos (me gusta)
  */
 export const agregarProductoFavorito = mutation({
   args: {
@@ -201,12 +220,13 @@ export const agregarProductoFavorito = mutation({
       throw new Error('Este producto ya está en tus favoritos')
     }
 
-    // Verificar que el producto existe y obtener su tienda
+    // Verificar que el producto existe y obtener sus datos
     const producto = await ctx.db.get(args.productoId)
     if (!producto) {
       throw new Error('Producto no encontrado')
     }
 
+    // Insertar el favorito
     const favoritoId = await ctx.db.insert('favoritosProductos', {
       usuarioId: args.usuarioId,
       productoId: args.productoId,
@@ -214,12 +234,23 @@ export const agregarProductoFavorito = mutation({
       fechaAgregado: new Date().toISOString(),
     })
 
+    // Calcular el número real de "me gusta" actuales
+    const meGustasActuales = await ctx.db
+      .query('favoritosProductos')
+      .withIndex('by_producto', q => q.eq('productoId', args.productoId))
+      .collect()
+
+    // Actualizar contador de "me gusta" en el producto
+    await ctx.db.patch(args.productoId, {
+      megusta: meGustasActuales.length,
+    })
+
     return favoritoId
   },
 })
 
 /**
- * Eliminar producto de favoritos
+ * Eliminar producto de favoritos (me gusta)
  */
 export const eliminarProductoFavorito = mutation({
   args: {
@@ -238,7 +269,20 @@ export const eliminarProductoFavorito = mutation({
       throw new Error('Este producto no está en tus favoritos')
     }
 
+    // Eliminar el favorito primero
     await ctx.db.delete(favorito._id)
+
+    // Calcular el número real de "me gusta" restantes
+    const meGustasRestantes = await ctx.db
+      .query('favoritosProductos')
+      .withIndex('by_producto', q => q.eq('productoId', args.productoId))
+      .collect()
+
+    // Actualizar contador de "me gusta" en el producto
+    await ctx.db.patch(args.productoId, {
+      megusta: meGustasRestantes.length,
+    })
+
     return favorito._id
   },
 })

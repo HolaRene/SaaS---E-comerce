@@ -126,7 +126,6 @@ export default function PerfilPublico({ id }: PerfilProps) {
 
     const todayHours = getTodaySchedule(tiendaPublica?.horarios)
 
-    // ✅ Handler seguro para WhatsApp
     const handleWhatsAppChat = () => {
         if (!tiendaPublica.telefono) return;
         const phone = tiendaPublica.telefono.replace(/\D/g, '');

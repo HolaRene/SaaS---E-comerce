@@ -167,6 +167,9 @@ export default defineSchema({
     codigoBarras: v.optional(v.string()),
     sku: v.optional(v.string()),
 
+    // likes
+    megusta: v.number(),
+
     autorId: v.array(v.id('usuarios')),
     ultimaActualizacion: v.string(),
     creadoEn: v.optional(v.string()),
