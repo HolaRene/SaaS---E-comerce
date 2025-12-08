@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import React, { useState, useEffect, Suspense } from "react"
 import { ArrowLeft, Check, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -385,23 +385,29 @@ function CheckoutContent() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Content */}
                     <div className="lg:col-span-2">
-                        {/* Progress Steps */}
-                        <div className="flex items-center mb-8">
+                        {/* Progress Steps - Responsive */}
+                        <div className="flex items-center mb-8 overflow-x-auto">
                             {[1, 2, 3].map((stepNumber) => (
-                                <div key={stepNumber} className="flex items-center">
-                                    <div
-                                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= stepNumber ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-600"
-                                            }`}
-                                    >
-                                        {step > stepNumber ? <Check className="w-4 h-4" /> : stepNumber}
+                                <React.Fragment key={stepNumber}>
+                                    <div className="flex flex-col items-center flex-shrink-0">
+                                        <div
+                                            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= stepNumber ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-600"
+                                                }`}
+                                        >
+                                            {step > stepNumber ? <Check className="w-4 h-4" /> : stepNumber}
+                                        </div>
+                                        {/* Texto visible solo en md+ */}
+                                        <div className={`hidden md:block text-xs mt-1 text-center whitespace-nowrap ${step >= stepNumber ? "text-blue-600 font-medium" : "text-gray-600"
+                                            }`}>
+                                            {stepNumber === 1 ? "Entrega" : stepNumber === 2 ? "Pago" : "Confirmación"}
+                                        </div>
                                     </div>
-                                    <div className={`ml-2 text-sm ${step >= stepNumber ? "text-blue-600 font-medium" : "text-gray-600"}`}>
-                                        {stepNumber === 1 ? "Entrega" : stepNumber === 2 ? "Pago" : "Confirmación"}
-                                    </div>
+                                    {/* Línea entre pasos */}
                                     {stepNumber < 3 && (
-                                        <div className={`w-16 h-0.5 mx-4 ${step > stepNumber ? "bg-blue-600" : "bg-gray-200"}`} />
+                                        <div className={`flex-1 h-0.5 mx-2 md:mx-4 md:flex-none md:w-16 ${step > stepNumber ? "bg-blue-600" : "bg-gray-200"
+                                            }`} />
                                     )}
-                                </div>
+                                </React.Fragment>
                             ))}
                         </div>
 

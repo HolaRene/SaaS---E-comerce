@@ -39,7 +39,7 @@ const ListaNegocios = ({ busqueda }: { busqueda?: string }) => {
                         tiendasToShow.length > 0 ? (
                             <ScrollArea className="h-full w-full rounded-md">
                                 <div className="flex flex-col gap-5">
-                                    {tiendasToShow.map(({ _id, imgBanner, nombre, descripcion, departamento, categoria }: any) => (
+                                    {tiendasToShow.map(({ _id, imgBanner, nombre, descripcion, departamento, categoria, estado, horarios }: any) => (
                                         <TiendaCard
                                             key={_id}
                                             imgUrl={imgBanner!}
@@ -48,6 +48,8 @@ const ListaNegocios = ({ busqueda }: { busqueda?: string }) => {
                                             departamento={departamento}
                                             categoria={categoria}
                                             tiendaId={_id}
+                                            estado={estado}
+                                            horarios={horarios}
                                         />
                                     ))}
                                 </div>

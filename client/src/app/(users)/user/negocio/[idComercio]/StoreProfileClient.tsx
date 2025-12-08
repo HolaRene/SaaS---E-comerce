@@ -54,7 +54,7 @@ export default function StoreProfileClient({ idComercio }: Props) {
                 <div className="mt-6 h-72 w-full rounded-md overflow-hidden">
                     <MapContainer center={[tienda.lat, tienda.lng]} zoom={15} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
                         <TileLayer
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">Rusia</a>'
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         />
                         <Marker position={[tienda.lat, tienda.lng]}>

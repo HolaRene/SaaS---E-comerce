@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation"
 import { Badge } from "../ui/badge"
 import { BadgeCheck, Clock, FileText, Star, Truck } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Schedule } from "@/lib/types-negocios"
+import { isStoreOpen } from "@/lib/negocios-utils"
 
 interface TiendaCardProps {
     description: string
@@ -12,14 +14,39 @@ interface TiendaCardProps {
     categoria: string
     title: string
     tiendaId: string
+    horarios?: Schedule[]
+    estado?: string
 }
 
-const TiendaCard = ({ description, imgUrl, departamento, categoria, title, tiendaId }: TiendaCardProps) => {
+export function getTiendaEstadoInfo(estado: string, horarios: Schedule[]): {
+    text: string
+    color: 'success' | 'destructive' | 'warning' | 'muted'
+    isOpen: boolean
+} {
+    // Primero verificar estado general de la tienda
+    switch (estado) {
+        case 'cerrado_temporal':
+            return { text: 'Cerrado temporal', color: 'warning', isOpen: false }
+        case 'suspendido':
+            return { text: 'Suspendido', color: 'muted', isOpen: false }
+        case 'cerrado':
+            return { text: 'Cerrado', color: 'destructive', isOpen: false }
+    }
+
+    // Si está activo, verificar horarios
+    const open = isStoreOpen(horarios)
+    return open
+        ? { text: 'Abierto', color: 'success', isOpen: true }
+        : { text: 'Cerrado', color: 'destructive', isOpen: false }
+}
+
+const TiendaCard = ({ imgUrl, departamento, categoria, title, tiendaId, estado, horarios }: TiendaCardProps) => {
     const ruta = useRouter()
     // función para manejar las vistas del podcast
     const manejoVistas = () => {
         ruta.push(`/comercio/${tiendaId}`, { scroll: true })
     }
+    const statusInfo = getTiendaEstadoInfo(estado, horarios)
     return (
         <div className='w-full border rounded-lg p-4 cursor-pointer' onClick={manejoVistas}>
             <figure className="flex gap-4">
@@ -69,13 +96,13 @@ const TiendaCard = ({ description, imgUrl, departamento, categoria, title, tiend
                             variant="outline"
                             className={cn(
                                 "text-xs font-medium",
-                                'success' === "success" && "border-green-500 text-green-600 bg-green-50",
-                                'destructive' === "destructive" && "border-red-500 text-red-600 bg-red-50",
-                                'warning' === "warning" && "border-yellow-500 text-yellow-600 bg-yellow-50",
-                                'muted' === "muted" && "border-gray-400 text-gray-500 bg-gray-100",
+                                statusInfo.color === "success" && "border-green-500 text-green-600 bg-green-50",
+                                statusInfo.color === "destructive" && "border-red-500 text-red-600 bg-red-50",
+                                statusInfo.color === "warning" && "border-yellow-500 text-yellow-600 bg-yellow-50",
+                                statusInfo.color === "muted" && "border-gray-400 text-gray-500 bg-gray-100",
                             )}
                         >
-                            {'success'}
+                            {statusInfo.text}
                         </Badge>
                     </div>
 

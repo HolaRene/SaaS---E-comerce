@@ -276,8 +276,8 @@ export default function PerfilPublico({ id }: PerfilProps) {
                             </span>
                         )}
                     </div>
-                    <div className="flex md:flex-wrap justify-between">
-                        <div className="flex gap-2 md:flex-row ">
+                    <div className="flex md:flex-wrap justify-between flex-col gap-2 ">
+                        <div className="flex gap-2 md:flex-row mt-2">
                             <Button variant="outline" className="bg-green-500" onClick={handleWhatsAppChat}>
                                 <Phone className="mr-1 h-4 w-4" />
                                 <span className="md:block hidden">Chatear por</span> WhatsApp
@@ -291,7 +291,7 @@ export default function PerfilPublico({ id }: PerfilProps) {
                                 <span>{todayHours}</span>
                             </div>
                         </div>
-                        <div className="hidden lg:flex items-center gap-6 text-center pr-4">
+                        <div className="flex items-center gap-6 text-center pr-4">
                             <div>
                                 <p className="text-2xl font-bold">{tiendaPublica.visitas}</p>
                                 <p className="text-xs text-muted-foreground">Visitas</p>
@@ -300,7 +300,6 @@ export default function PerfilPublico({ id }: PerfilProps) {
                                 <p className="text-2xl font-bold">{tiendaPublica.favoritos}</p>
                                 <p className="text-xs text-muted-foreground">Favoritos</p>
                             </div>
-
                         </div>
                     </div>
                 </CardContent>

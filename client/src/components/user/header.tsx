@@ -1,7 +1,7 @@
 "use client"
 
 import { useSidebar } from "./sidebar-provider"
-import { Bell, Search, Menu, ShoppingCart, User2, BadgePlus, Cog, LogOut, Store } from "lucide-react"
+import { Bell, Search, Menu, ShoppingCart, User2, BadgePlus, Cog, LogOut, Store, LayoutDashboard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -165,7 +165,7 @@ export function Header() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem>
                                 <Link href="/user/dashboard" className="flex gap-2">
-                                    <User2 className="mr-2 h-4 w-4" />
+                                    <LayoutDashboard className="mr-2 h-4 w-4" />
                                     Mi Tablero</Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem>
