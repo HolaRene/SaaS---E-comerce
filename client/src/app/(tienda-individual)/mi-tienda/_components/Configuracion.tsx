@@ -17,12 +17,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building, CheckCircle2, FileText, Globe, Save, XCircle, Loader2 } from "lucide-react";
+import { Building, CheckCircle2, FileText, Globe, Save, Loader2 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
@@ -272,7 +271,7 @@ const Configuracion = ({ id }: { id: Id<"tiendas"> }) => {
                                                     </div>
                                                 </FormControl>
                                                 <FormDescription className="text-xs text-muted-foreground">
-                                                    Este número se usará para el enlace directo "wa.me". Si se deja vacío, se usará el teléfono principal.
+                                                    Este número se usará para el enlace directo &quot;wa.me&quot;. Si se deja vacío, se usará el teléfono principal.
                                                 </FormDescription>
                                                 <FormMessage />
                                             </FormItem>
