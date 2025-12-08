@@ -106,13 +106,53 @@ export const updateTienda = mutation({
     categoria: v.optional(v.string()),
     lat: v.optional(v.number()),
     lng: v.optional(v.number()),
+    configuracion: v.optional(
+      v.object({
+        NIT: v.optional(v.string()),
+        RUC: v.optional(v.string()),
+        moneda: v.string(),
+        whatsapp: v.optional(v.string()),
+        backup: v.optional(v.string()),
+        permisosTienda: v.object({
+          vendedoresPuedenCrearProductos: v.boolean(),
+          vendedoresPuedenModificarPrecios: v.boolean(),
+          vendedoresPuedenVerReportes: v.boolean(),
+          maxVendedores: v.number(),
+        }),
+      })
+    ),
+    horarios: v.optional(
+      v.array(
+        v.object({
+          dia: v.string(),
+          apertura: v.string(),
+          cierre: v.string(),
+          cerrado: v.boolean(),
+          aperturaEspecial: v.optional(v.string()),
+          cierreEspecial: v.optional(v.string()),
+        })
+      )
+    ),
   },
   handler: async (ctx, args) => {
     const { id, ...fields } = args
     await ctx.db.patch(id, {
       ...fields,
+      ...fields,
       ultimaActualizacion: new Date().toISOString(),
     })
+  },
+})
+
+export const incrementarVisitas = mutation({
+  args: { id: v.id('tiendas') },
+  handler: async (ctx, args) => {
+    const tienda = await ctx.db.get(args.id)
+    if (tienda) {
+      await ctx.db.patch(args.id, {
+        visitas: (tienda.visitas || 0) + 1,
+      })
+    }
   },
 })
 
@@ -423,12 +463,8 @@ export const crearTienda = mutation({
     if (user.length === 0) throw new ConvexError('Usuario no encontrado')
 
     const tiendaId = await ctx.db.insert('tiendas', {
-      avatar:
-        args.avatar ??
-        'https://images.pexels.com/photos/1833586/pexels-photo-1833586.jpeg',
-      imgBanner:
-        args.imgBanner ??
-        'https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg',
+      avatar: args.avatar ?? '/icons/icons8-tienda-80.png',
+      imgBanner: args.imgBanner ?? '/icons/icons8-tienda-80.png',
       nombre: args.nombre,
       categoria: args.categoria,
       descripcion: args.descripcion,

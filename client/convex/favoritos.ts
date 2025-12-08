@@ -144,6 +144,11 @@ export const agregarTiendaFavorita = mutation({
       fechaAgregado: new Date().toISOString(),
     })
 
+    // Actualizar contador de favoritos en la tienda
+    await ctx.db.patch(args.tiendaId, {
+      favoritos: (tienda.favoritos || 0) + 1,
+    })
+
     return favoritoId
   },
 })

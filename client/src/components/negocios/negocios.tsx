@@ -135,7 +135,7 @@ export function MarketplaceContainer() {
 
             {/* Contenido principal */}
             <main className="flex-1 overflow-hidden">
-                {/* ✅ VERSIÓN ESCRITORIO CON SHADCN/RESIZABLE */}
+                {/* VERSIÓN ESCRITORIO CON SHADCN/RESIZABLE */}
                 <div className="hidden lg:block h-full">
                     <ResizablePanelGroup direction="horizontal">
                         <ResizablePanel defaultSize={60} minSize={45} maxSize={75}>
@@ -160,7 +160,7 @@ export function MarketplaceContainer() {
                     </ResizablePanelGroup>
                 </div>
 
-                {/* ✅ VERSIÓN MÓVIL (sin cambios) */}
+                {/* VERSIÓN MÓVIL (sin cambios) */}
                 <div className="lg:hidden h-full overflow-y-auto">
                     <div className="min-h-[50vh]">
                         <StoreList

@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Eye, Heart, ImageIcon, MapPin, Phone, Share2, Star, ClipboardCopy, Check } from "lucide-react";
+import { Edit, Eye, Heart, ImageIcon, MapPin, Phone, Share2, Star, ClipboardCopy, Check, Clock } from "lucide-react";
 import Link from "next/link";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useQuery, useMutation } from "convex/react";
@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { getTodaySchedule } from "@/lib/negocios-utils";
 
 
 interface PerfilProps {
@@ -96,6 +97,8 @@ export default function PerfilPublico({ id }: PerfilProps) {
         tiendaId: id
     });
 
+
+
     // Verificar si la tienda es favorita
     const esFavorita = useQuery(
         api.favoritos.isTiendaFavorita,
@@ -120,6 +123,8 @@ export default function PerfilPublico({ id }: PerfilProps) {
     if (tiendaPublica === null) {
         return <ErrorState message="No tienes acceso a esta tienda o no existe" />;
     }
+
+    const todayHours = getTodaySchedule(tiendaPublica?.horarios)
 
     // ✅ Handler seguro para WhatsApp
     const handleWhatsAppChat = () => {
@@ -280,6 +285,11 @@ export default function PerfilPublico({ id }: PerfilProps) {
                             <Button variant="outline">
                                 <Star className="mr-1 h-4 w-4" />Ver Reseñas
                             </Button>
+                            {/* Horario de hoy */}
+                            <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+                                <Clock className="w-3 h-3" />
+                                <span>{todayHours}</span>
+                            </div>
                         </div>
                         <div className="hidden lg:flex items-center gap-6 text-center pr-4">
                             <div>

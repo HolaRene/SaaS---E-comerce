@@ -31,6 +31,7 @@ import {
     DEPARTAMENTOS_NIC,
     DIAS_SEMANA,
 } from "@/lib/crear-tienda-datos";
+import SubidaImg from "@/components/subir-img/subidaImg";
 
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -38,8 +39,7 @@ import { useMutation } from "convex/react";
 import { ConvexError } from "convex/values";
 import { Checkbox } from "@/components/ui/checkbox";
 import { api } from "../../../../../convex/_generated/api";
-
-// Componente para mostrar errores
+import { Id } from "../../../../../convex/_generated/dataModel";
 const ErrorMessage = ({ message }: { message?: string }) => {
     if (!message) return null;
     return <p className="text-sm text-red-500 mt-1">{message}</p>;
@@ -92,8 +92,15 @@ const steps = [
 export default function CreateStoreForm() {
     const [currentStep, setCurrentStep] = useState(1);
     const [cargando, setCargando] = useState(false);
+    // Estados para imágenes
+    const [avatarUrl, setAvatarUrl] = useState("");
+    const [avatarStorageId, setAvatarStorageId] = useState<Id<"_storage"> | null>(null); // No se usa directamente en update pero good to have
+
+    const [bannerUrl, setBannerUrl] = useState("");
+    const [bannerStorageId, setBannerStorageId] = useState<Id<"_storage"> | null>(null);
     const router = useRouter();
-    const crearTienda = useMutation(api.tienda.crearTienda);
+    const crearTienda = useMutation(api.tiendas.crearTienda);
+
 
     const {
         register,
@@ -179,6 +186,8 @@ export default function CreateStoreForm() {
                 telefono: data.telefono,
                 lat: data.lat,
                 lng: data.lng,
+                avatar: avatarUrl,
+                imgBanner: bannerUrl,
                 configuracion: {
                     NIT: data.configuracion.NIT || "",
                     RUC: data.configuracion.RUC || "",
@@ -268,7 +277,26 @@ export default function CreateStoreForm() {
                                     <Input {...register("nombre")} placeholder="Ej: El Buen Precio" />
                                     <ErrorMessage message={errors.nombre?.message} />
                                 </div>
-
+                                <div className="space-y-2">
+                                    <Label>Logo / Avatar</Label>
+                                    <div className="pt-10 flex flex-col">
+                                        <SubidaImg
+                                            image={avatarUrl}
+                                            setImage={setAvatarUrl}
+                                            setImageStorageId={setAvatarStorageId as any} // Cast simple por ahora
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Banner / Portada</Label>
+                                    <div className="pt-10 flex flex-col">
+                                        <SubidaImg
+                                            image={bannerUrl}
+                                            setImage={setBannerUrl}
+                                            setImageStorageId={setBannerStorageId as any}
+                                        />
+                                    </div>
+                                </div>
                                 <div className="space-y-2">
                                     <Label>Categoría *</Label>
                                     <Select

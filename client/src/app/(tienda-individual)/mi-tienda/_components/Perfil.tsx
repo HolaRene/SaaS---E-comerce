@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Eye, ImageIcon, Phone, Star } from "lucide-react";
+import { Edit, Eye, Heart, ImageIcon, Phone, Star, User } from "lucide-react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { Id } from "../../../../../convex/_generated/dataModel";
@@ -138,9 +138,9 @@ export default function Perfil({ id }: PerfilProps) {
                                     <Button variant="outline">
                                         <Star className="mr-2 h-4 w-4" />Ver Reseñas
                                     </Button>
-                                    <Button variant="ghost">
-                                        <Eye className="mr-2 h-4 w-4" /> Vista Pública
-                                    </Button>
+                                    <span className="flex items-center gap-2"><Eye className="mr-1 h-4 w-4" /> {tienda.visitas || 0}</span>
+                                    <span className="flex items-center gap-2"><User className="mr-1 h-4 w-4" /> {tienda.favoritos || 0} Seguidores</span>
+
                                 </div>
                             </CardContent>
                         </Card>

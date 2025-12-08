@@ -44,11 +44,11 @@ export default defineSchema({
     ),
 
     configuracion: v.object({
-      NIT: v.string(),
-      RUC: v.string(),
+      NIT: v.optional(v.string()),
+      RUC: v.optional(v.string()),
       moneda: v.string(),
-      whatsapp: v.string(),
-      backup: v.string(),
+      whatsapp: v.optional(v.string()),
+      backup: v.optional(v.string()),
       permisosTienda: v.object({
         vendedoresPuedenCrearProductos: v.boolean(),
         vendedoresPuedenModificarPrecios: v.boolean(),

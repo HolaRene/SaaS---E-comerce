@@ -20,6 +20,7 @@ import { useQuery } from "convex/react";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { api } from "../../../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
+import EditarHorarioDialog from "./EditarHorarioDialog";
 
 
 
@@ -65,7 +66,10 @@ const Horario = ({ id }: { id: Id<"tiendas"> }) => {
                     <>
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><Clock className="h-5 w-5" /> Horarios Regulares</CardTitle>
+                                <div className="flex justify-between items-center">
+                                    <CardTitle className="flex items-center gap-2"><Clock className="h-5 w-5" /> Horarios Regulares</CardTitle>
+                                    <EditarHorarioDialog tienda={tienda} />
+                                </div>
                                 <CardDescription>Define las horas de apertura y cierre para cada día de la semana.</CardDescription>
                             </CardHeader>
                             <CardContent>

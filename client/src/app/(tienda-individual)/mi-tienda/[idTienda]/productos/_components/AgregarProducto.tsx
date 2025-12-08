@@ -173,7 +173,7 @@ const AddProductPulperia = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                                 </FormItem>
                             )}
                         />
-                        <div className="pt-10 flex flex-col">
+                        <div className="pt-2 flex flex-col">
                             <SubidaImgs
                                 imageUrls={imageUrls}
                                 setImageUrls={setImageUrls}
