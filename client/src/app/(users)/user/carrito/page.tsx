@@ -26,6 +26,7 @@ export default function CartTab() {
         usuario?._id ? { usuarioId: usuario._id } : 'skip'
     )
 
+
     // Auto-seleccionar tienda si solo hay una
     if (carritoItems && carritoItems.length > 0 && selectedStore === "all") {
         const stores = Array.from(new Set(carritoItems.map((item) => item.tienda?.nombre || 'Tienda')))

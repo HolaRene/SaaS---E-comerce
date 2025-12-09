@@ -60,7 +60,7 @@ const SubidaImgs = ({ imageUrls, setImageUrls, imageStorageIds, setImageStorageI
 
             const filesArray = Array.from(files);
 
-            if (imageUrls.length + filesArray.length > 5) {
+            if (imageUrls.length + filesArray.length > 3) {
                 toast.error("Solo puedes subir un máximo de 5 imágenes.");
                 return;
             }

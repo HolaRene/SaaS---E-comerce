@@ -22,8 +22,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { useEffect } from "react";
+
 
 
 export function Sidebar() {
@@ -36,6 +38,7 @@ export function Sidebar() {
 
     const favTiendas = useQuery(api.favoritos.getFavoritosTiendasByUsuario, usuario ? { usuarioId: usuario._id } : "skip");
     const favProductos = useQuery(api.favoritos.getFavoritosProductosByUsuario, usuario ? { usuarioId: usuario._id } : "skip");
+    const limpiarCarrito = useMutation(api.carrito.limpiarCarritoHuerfanos)
     // contador de favoritos
     const favoritesCount = (favTiendas?.length || 0) + (favProductos?.length || 0);
     // contador de carrito
@@ -49,6 +52,23 @@ export function Sidebar() {
         usuario?._id ? { usuarioId: usuario._id } : "skip"
     );
 
+    // Ejecutar limpieza al cargar
+    useEffect(() => {
+        const limpiar = async () => {
+            if (usuario?._id) {
+                try {
+                    const resultado = await limpiarCarrito({
+                        usuarioId: usuario._id
+                    })
+                    console.log('Limpieza completada:', resultado)
+                } catch (error) {
+                    console.log('Error al limpiar:', error)
+                }
+            }
+        }
+
+        limpiar()
+    }, [usuario])
 
     const ordersData = compras?.map((compra) => {
         // Determinar el ícono según el estado
@@ -93,6 +113,8 @@ export function Sidebar() {
             shipping: `C$${compra.costoEnvio.toFixed(2)}`,
         };
     }) || [];
+
+
 
     const navItems = [
         { name: "Dashboard", href: `/user/dashboard`, icon: LayoutDashboard, badge: 0 },

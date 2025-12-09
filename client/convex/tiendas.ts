@@ -1,5 +1,6 @@
 import { ConvexError, v } from 'convex/values'
 import { mutation, query } from './_generated/server'
+import { Id } from './_generated/dataModel'
 
 export const getTiendaById = query({
   args: { id: v.id('tiendas') },
@@ -136,8 +137,41 @@ export const updateTienda = mutation({
   },
   handler: async (ctx, args) => {
     const { id, ...fields } = args
+    const tienda = await ctx.db.get(id)
+
+    if (!tienda) {
+      throw new ConvexError('Tienda no encontrada')
+    }
+
+    // Gestionar borrado de AVATAR anterior
+    if (
+      fields.avatar &&
+      tienda.avatar &&
+      tienda.avatar !== fields.avatar &&
+      !tienda.avatar.startsWith('/') // No borrar assets por defecto
+    ) {
+      try {
+        await ctx.storage.delete(tienda.avatar as Id<'_storage'>)
+      } catch (error) {
+        console.error('Error eliminando avatar anterior:', error)
+      }
+    }
+
+    // Gestionar borrado de BANNER anterior
+    if (
+      fields.imgBanner &&
+      tienda.imgBanner &&
+      tienda.imgBanner !== fields.imgBanner &&
+      !tienda.imgBanner.startsWith('/') // No borrar assets por defecto
+    ) {
+      try {
+        await ctx.storage.delete(tienda.imgBanner as Id<'_storage'>)
+      } catch (error) {
+        console.error('Error eliminando banner anterior:', error)
+      }
+    }
+
     await ctx.db.patch(id, {
-      ...fields,
       ...fields,
       ultimaActualizacion: new Date().toISOString(),
     })
@@ -160,6 +194,25 @@ export const deleteTienda = mutation({
   args: { id: v.id('tiendas') },
   handler: async (ctx, args) => {
     const tiendaId = args.id
+
+    // 0. Obtener la tienda para borrar sus IMÁGENES
+    const tienda = await ctx.db.get(tiendaId)
+    if (tienda) {
+      if (tienda.avatar && !tienda.avatar.startsWith('/')) {
+        try {
+          await ctx.storage.delete(tienda.avatar as Id<'_storage'>)
+        } catch (error) {
+          console.error('Error eliminando avatar de tienda:', error)
+        }
+      }
+      if (tienda.imgBanner && !tienda.imgBanner.startsWith('/')) {
+        try {
+          await ctx.storage.delete(tienda.imgBanner as Id<'_storage'>)
+        } catch (error) {
+          console.error('Error eliminando banner de tienda:', error)
+        }
+      }
+    }
 
     // 1. Obtener y eliminar VENTAS y sus dependencias
     const ventas = await ctx.db

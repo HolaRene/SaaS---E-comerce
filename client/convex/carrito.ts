@@ -14,36 +14,69 @@ export const getCarritoByUsuario = query({
       .withIndex('by_usuario', q => q.eq('usuarioId', args.usuarioId))
       .collect()
 
-    // Enriquecer con datos del producto y tienda
+    // Si no hay items, retornar array vacío
+    if (items.length === 0) {
+      return []
+    }
+
     const enrichedItems = await Promise.all(
       items.map(async item => {
         const producto = await ctx.db.get(item.productoId)
         const tienda = await ctx.db.get(item.tiendaId)
+        
+        // Si no existen producto O tienda, retornar null para filtrar
+        if (!producto || !tienda) {
+          return null
+        }
 
         return {
           ...item,
-          producto: producto
-            ? {
-                _id: producto._id,
-                nombre: producto.nombre,
-                imagen: producto.imagenes?.[0] || null,
-                precio: producto.precio,
-                cantidad: producto.cantidad, // Stock disponible
-                estado: producto.estado,
-              }
-            : null,
-          tienda: tienda
-            ? {
-                _id: tienda._id,
-                nombre: tienda.nombre,
-                avatar: tienda.avatar,
-              }
-            : null,
+          producto: {
+            _id: producto._id,
+            nombre: producto.nombre,
+            imagen: producto.imagenes?.[0] || null,
+            precio: producto.precio,
+            stock: producto.cantidad,
+            estado: producto.estado,
+          },
+          tienda: {
+            _id: tienda._id,
+            nombre: tienda.nombre,
+            avatar: tienda.avatar,
+          },
         }
       })
     )
 
-    return enrichedItems.filter(item => item.producto !== null)
+    // Filtrar solo los items válidos (no null)
+    return enrichedItems.filter(item => item !== null)
+  },
+})
+/**
+ * Limpiar carrito de items huérfanos (productos o tiendas eliminadas)
+ */
+export const limpiarCarritoHuerfanos = mutation({
+  args: { usuarioId: v.id('usuarios') },
+  handler: async (ctx, args) => {
+    const items = await ctx.db
+      .query('carrito')
+      .withIndex('by_usuario', q => q.eq('usuarioId', args.usuarioId))
+      .collect()
+
+    let eliminados = 0
+
+    for (const item of items) {
+      const producto = await ctx.db.get(item.productoId)
+      const tienda = await ctx.db.get(item.tiendaId)
+      
+      // Si el producto o la tienda no existen, eliminar del carrito
+      if (!producto || !tienda) {
+        await ctx.db.delete(item._id)
+        eliminados++
+      }
+    }
+
+    return { eliminados, mensaje: `Se eliminaron ${eliminados} items huérfanos` }
   },
 })
 
@@ -58,8 +91,33 @@ export const countCarritoItems = query({
       .withIndex('by_usuario', q => q.eq('usuarioId', args.usuarioId))
       .collect()
 
-    // Contar la suma de cantidades
-    return items.reduce((total, item) => total + item.cantidad, 0)
+    // console.log('DEBUG countCarritoItems: Total items encontrados:', items.length)
+    // console.log('DEBUG Items crudos:', items)
+
+    let total = 0
+    
+    for (const item of items) {
+      const producto = await ctx.db.get(item.productoId)
+      const tienda = await ctx.db.get(item.tiendaId)
+      
+      // console.log(`DEBUG Item ${item._id}:`)
+      // console.log('  - productoId:', item.productoId)
+      // console.log('  - producto encontrado?:', producto ? 'Sí' : 'No')
+      // console.log('  - tiendaId:', item.tiendaId)
+      // console.log('  - tienda encontrada?:', tienda ? 'Sí' : 'No')
+      // console.log('  - cantidad:', item.cantidad)
+      
+      // Solo contar si tanto producto como tienda existen
+      if (producto && tienda) {
+        total += item.cantidad || 0
+        console.log('  - CONTADO:', item.cantidad)
+      } else {
+        console.log('  - NO CONTADO (huérfano)')
+      }
+    }
+
+    console.log('DEBUG Total final:', total)
+    return total
   },
 })
 

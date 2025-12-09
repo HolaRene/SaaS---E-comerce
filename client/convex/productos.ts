@@ -1,5 +1,6 @@
 import { mutation, query } from './_generated/server'
 import { ConvexError, v } from 'convex/values'
+import { Id } from './_generated/dataModel'
 
 // crear producto
 export const crearProducto = mutation({
@@ -59,6 +60,7 @@ export const crearProducto = mutation({
       puntuacionPromedio: 0,
       ventasTotales: 0,
       vistasTotales: 0,
+      megusta: 0,
       ultimaActualizacion: now,
       imagenes: args.imagenes || ['/icons/producto-nuevo-64.png'],
       estado: 'activo',
@@ -376,6 +378,23 @@ export const actualizarProducto = mutation({
 
     if (Object.keys(updateData).length === 0) return { success: true }
 
+    // GESTIONAR BORRADO DE IMÁGENES
+    // Si se envían nuevas imágenes, comparar con las antiguas para borrar las que ya no están
+    if (args.datos.imagenes) {
+      const nuevasImagenes = new Set(args.datos.imagenes)
+      // Iterar sobre las imágenes actuales del producto
+      for (const imgAntigua of producto.imagenes || []) {
+        // Si una imagen antigua NO está en la nueva lista Y no es un asset por defecto
+        if (!nuevasImagenes.has(imgAntigua) && !imgAntigua.startsWith('/')) {
+          try {
+            await ctx.storage.delete(imgAntigua as Id<'_storage'>)
+          } catch (error) {
+            console.error('Error eliminando imagen de producto antigua:', error)
+          }
+        }
+      }
+    }
+
     updateData.ultimaActualizacion = new Date().toISOString()
 
     await ctx.db.patch(args.productoId, updateData)
@@ -463,6 +482,19 @@ export const eliminarProducto = mutation({
 
     if (String(tienda.propietario) !== String(usuario._id)) {
       throw new Error('No tienes permiso para eliminar este producto')
+    }
+
+    // BORRAR IMAGENES AL ELIMINAR PRODUCTO
+    if (producto.imagenes && producto.imagenes.length > 0) {
+      for (const img of producto.imagenes) {
+        if (img && !img.startsWith('/')) {
+          try {
+            await ctx.storage.delete(img as Id<'_storage'>)
+          } catch (error) {
+            console.error('Error eliminando imagen al borrar producto:', error)
+          }
+        }
+      }
     }
 
     await ctx.db.delete(args.productoId)
