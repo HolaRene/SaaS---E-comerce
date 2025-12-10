@@ -1,5 +1,6 @@
 import { ConvexError, v } from 'convex/values'
 import { mutation, query } from './_generated/server'
+import { internal } from './_generated/api'
 import { Id } from './_generated/dataModel'
 
 export const getTiendaById = query({
@@ -142,6 +143,8 @@ export const updateTienda = mutation({
     if (!tienda) {
       throw new ConvexError('Tienda no encontrada')
     }
+    const nombreAntiguo = tienda.nombre
+    const nombreNuevo = fields.nombre
 
     // Gestionar borrado de AVATAR anterior
     if (
@@ -179,6 +182,21 @@ export const updateTienda = mutation({
       ...fields,
       ultimaActualizacion: new Date().toISOString(),
     })
+    // 🔔 NOTIFICAR SOLO SI CAMBIÓ EL NOMBRE
+    if (nombreNuevo && nombreAntiguo !== nombreNuevo) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.notificaciones.crearNotificacionesParaFavoritos,
+        {
+          tipo: 'tienda_nombre_cambiado',
+          tiendaId: id,
+          datos: {
+            nombreAntiguo,
+            nombreNuevo,
+          },
+        }
+      )
+    }
   },
 })
 

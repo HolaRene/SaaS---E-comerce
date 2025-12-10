@@ -1,4 +1,5 @@
 import { mutation, query } from './_generated/server'
+import { internal } from './_generated/api'
 import { ConvexError, v } from 'convex/values'
 import { Id } from './_generated/dataModel'
 
@@ -66,6 +67,25 @@ export const crearProducto = mutation({
       estado: 'activo',
       creadoEn: now,
     })
+
+    // 🔔 NOTIFICAR A SEGUIDORES DE LA TIENDA
+    const tienda = await ctx.db.get(args.tiendaId)
+    if (tienda) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.notificaciones.crearNotificacionesParaFavoritos,
+        {
+          tipo: 'nuevo_producto',
+          tiendaId: args.tiendaId,
+          productoId: newProduct,
+          datos: {
+            nombreTienda: tienda.nombre,
+            nombreProducto: args.nombre,
+            precio: args.precio,
+          },
+        }
+      )
+    }
 
     return newProduct
   },
@@ -370,6 +390,12 @@ export const actualizarProducto = mutation({
       throw new ConvexError('No tienes permiso para editar este producto')
     }
 
+    // Guardar datos antiguos
+    const datosAntiguos = {
+      nombre: producto.nombre,
+      precio: producto.precio,
+    }
+
     // Filtrar campos undefined
     const updateData: Record<string, any> = {}
     for (const [k, v_] of Object.entries(args.datos)) {
@@ -398,6 +424,42 @@ export const actualizarProducto = mutation({
     }
 
     updateData.ultimaActualizacion = new Date().toISOString()
+
+    // 🔔 DETECTAR BAJADA DE PRECIO
+    if (args.datos.precio && datosAntiguos.precio > args.datos.precio) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.notificaciones.crearNotificacionesParaFavoritos,
+        {
+          tipo: 'precio_bajado',
+          tiendaId: producto.tiendaId,
+          productoId: args.productoId,
+          datos: {
+            nombreProducto: datosAntiguos.nombre,
+            precioAntiguo: datosAntiguos.precio,
+            precioNuevo: args.datos.precio,
+          },
+        }
+      )
+    }
+
+    // 🔔 DETECTAR SUBIDA DE PRECIO
+    else if (args.datos.precio && datosAntiguos.precio < args.datos.precio) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.notificaciones.crearNotificacionesParaFavoritos,
+        {
+          tipo: 'precio_subido',
+          tiendaId: producto.tiendaId,
+          productoId: args.productoId,
+          datos: {
+            nombreProducto: datosAntiguos.nombre,
+            precioAntiguo: datosAntiguos.precio,
+            precioNuevo: args.datos.precio,
+          },
+        }
+      )
+    }
 
     await ctx.db.patch(args.productoId, updateData)
     return { success: true }
@@ -485,6 +547,20 @@ export const eliminarProducto = mutation({
     if (String(tienda.propietario) !== String(usuario._id)) {
       throw new Error('No tienes permiso para eliminar este producto')
     }
+
+    // 🔔 NOTIFICAR ANTES DE ELIMINAR
+    await ctx.scheduler.runAfter(
+      0,
+      internal.notificaciones.crearNotificacionesParaFavoritos,
+      {
+        tipo: 'producto_eliminado',
+        tiendaId: producto.tiendaId,
+        productoId: args.productoId,
+        datos: {
+          nombreProducto: producto.nombre,
+        },
+      }
+    )
 
     // BORRAR IMAGENES AL ELIMINAR PRODUCTO
     if (producto.imagenes && producto.imagenes.length > 0) {

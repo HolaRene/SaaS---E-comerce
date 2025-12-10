@@ -567,6 +567,7 @@ export default defineSchema({
     .index('by_usuario', ['usuarioId'])
     .index('by_producto', ['productoId'])
     .index('by_usuario_producto', ['usuarioId', 'productoId']), // Evitar duplicados
+    
 
   // ==================== CARRITO DE COMPRAS ====================
   carrito: defineTable({
@@ -581,4 +582,29 @@ export default defineSchema({
     .index('by_usuario_producto', ['usuarioId', 'productoId'])
     .index('by_tienda', ['tiendaId'])
     .index('by_usuario_tienda', ['usuarioId', 'tiendaId']),
+
+  // ==================== NOTIFICACIONES ====================
+  notificaciones: defineTable({
+    usuarioId: v.id("usuarios"),
+    tipo: v.union(
+      v.literal("nuevo_producto"),
+      v.literal("precio_bajado"),
+      v.literal("precio_subido"),
+      v.literal("producto_actualizado"),
+      v.literal("producto_eliminado"),
+      v.literal("tienda_nombre_cambiado"),
+      v.literal("tienda_datos_actualizados"),
+      v.literal("sistema")
+    ),
+    titulo: v.string(),
+    mensaje: v.string(),
+    prioridad: v.union(v.literal("alta"), v.literal("media"), v.literal("baja")),
+    tiendaId: v.optional(v.id("tiendas")),
+    productoId: v.optional(v.id("productos")),
+    url: v.optional(v.string()), // URL para redirigir al hacer clic
+    leido: v.boolean(),
+    datos: v.optional(v.any()),
+  })
+    .index("by_usuario", ["usuarioId"])
+    .index("by_usuario_leido", ["usuarioId", "leido"]),
 })
