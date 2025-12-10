@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
-import { CheckCircle2, Package, Tag, Settings, Search, Bell, BellOff, Store, TrendingDown, Truck } from "lucide-react"
+import { Package, Tag, Settings, Search, Bell, BellOff, Store, TrendingDown } from "lucide-react"
 import NotificacionOder from "./_components/notificacion-order"
 import Notificacionpromocion from "./_components/notificacion-promocion"
 import Notificacionprecios from "./_components/notificacion-precios"
@@ -38,27 +38,28 @@ export default function NotificationsTab() {
 
     const notifications: Notification[] = (rawNotifications || []).map((n) => {
         let icon = <Bell className="h-5 w-5 text-gray-500" />
-        if (n.tipo === "nuevo_producto" || n.tipo === "producto_actualizado") icon = <Tag className="h-5 w-5 text-amber-600" />
-        if (n.tipo === "precio_bajado") icon = <TrendingDown className="h-5 w-5 text-blue-600" />
+        if (n.tipo === "nuevo_producto" || n.tipo === "producto_actualizado" || n.tipo === "nueva_tienda") icon = <Tag className="h-5 w-5 text-amber-600" />
+        if (n.tipo === "precio_bajado" || n.tipo === "credito_movimiento") icon = <TrendingDown className="h-5 w-5 text-blue-600" />
         if (n.tipo === "tienda_datos_actualizados" || n.tipo === "tienda_nombre_cambiado") icon = <Store className="h-5 w-5 text-primary" />
         if (n.tipo === "sistema") icon = <Settings className="h-5 w-5 text-muted-foreground" />
+        if (n.tipo === "compra_estado") icon = <Package className="h-5 w-5 text-green-600" />
+        if (n.tipo === "recordatorio") icon = <Bell className="h-5 w-5 text-destructive" />
 
         return {
             id: n._id,
             type: n.tipo === "precio_bajado" || n.tipo === "precio_subido" ? "price" :
-                n.tipo === "nuevo_producto" ? "promotion" :
-                    n.tipo === "sistema" ? "system" : "order", // Fallback mapping
+                n.tipo === "nuevo_producto" || n.tipo === "nueva_tienda" ? "promotion" :
+                    n.tipo === "sistema" ? "system" : "order", // Fallback includes others
             title: n.titulo,
             message: n.mensaje,
-            time: new Date(n._creationTime).toLocaleDateString(), // Format as needed, maybe use a relative time lib
+            time: new Date(n._creationTime).toLocaleDateString(),
             read: n.leido,
             icon: icon,
+            url: n.url // Pass URL
         }
     })
 
     const markAsRead = async (id: string) => {
-        // Optimistic update or just wait for Convex reactivity
-        // For simplicity, we just call mutation. Convex updates the UI automatically.
         await marcarLeido({ id: id as any })
     }
 
@@ -69,7 +70,6 @@ export default function NotificationsTab() {
     const filterNotifications = (type?: string) => {
         let filtered = notifications
         if (type && type !== "all") {
-            // Simplified mapping for the tabs
             if (type === "price") filtered = filtered.filter(n => n.type === "price")
             if (type === "promotion") filtered = filtered.filter(n => n.type === "promotion")
             if (type === "system") filtered = filtered.filter(n => n.type === "system")
@@ -85,7 +85,7 @@ export default function NotificationsTab() {
         return filtered
     }
 
-    if (rawNotifications === undefined) { // Loading state
+    if (rawNotifications === undefined) {
         return (
             <Card>
                 <CardHeader>
@@ -108,7 +108,7 @@ export default function NotificationsTab() {
         )
     }
 
-    const NotificationCard = ({ notification }: { notification: Notification }) => (
+    const NotificationCard = ({ notification }: { notification: Notification & { url?: string } }) => (
         <div
             className={`flex gap-4 p-4 rounded-lg border transition-all duration-300 ${notification.read ? "bg-card" : "bg-accent/50 border-primary/20"
                 } hover:bg-accent cursor-pointer`}
@@ -125,7 +125,18 @@ export default function NotificationsTab() {
                     )}
                 </div>
                 <p className="text-sm text-muted-foreground">{notification.message}</p>
-                <p className="text-xs text-muted-foreground">{notification.time}</p>
+                <div className="flex justify-between items-center mt-2">
+                    <p className="text-xs text-muted-foreground">{notification.time}</p>
+                    {notification.url && (
+                        <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={(e) => {
+                            e.stopPropagation();
+                            // Navegar
+                            window.location.href = notification.url!;
+                        }}>
+                            Ver detalle
+                        </Button>
+                    )}
+                </div>
             </div>
         </div>
     )

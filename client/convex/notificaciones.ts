@@ -13,7 +13,11 @@ export const crearNotificacionesParaFavoritos = internalMutation({
       v.literal('producto_eliminado'),
       v.literal('tienda_nombre_cambiado'),
       v.literal('tienda_datos_actualizados'),
-      v.literal('sistema')
+      v.literal('tienda_datos_actualizados'),
+      v.literal('sistema'),
+      v.literal('compra_estado'),
+      v.literal('credito_movimiento'),
+      v.literal('nueva_tienda')
     ),
     tiendaId: v.optional(v.id('tiendas')),
     productoId: v.optional(v.id('productos')),
@@ -28,6 +32,10 @@ export const crearNotificacionesParaFavoritos = internalMutation({
       tienda_nombre_cambiado: 'baja',
       tienda_datos_actualizados: 'baja',
       sistema: 'baja',
+      compra_estado: 'alta',
+      credito_movimiento: 'alta',
+      nueva_tienda: 'media',
+      recordatorio: 'alta',
     } as const
 
     const usuariosIds = new Set<Id<'usuarios'>>()
@@ -104,6 +112,68 @@ export const crearNotificacionesParaFavoritos = internalMutation({
         datos: args.datos,
       })
       // No cleanup here to avoid performance bottleneck
+    }
+  },
+})
+
+export const crearNotificacionUsuario = internalMutation({
+  args: {
+    usuarioId: v.id('usuarios'),
+    tipo: v.union(
+      v.literal('compra_estado'),
+      v.literal('credito_movimiento'),
+      v.literal('sistema'),
+      v.literal('recordatorio')
+    ),
+    titulo: v.string(),
+    mensaje: v.string(),
+    url: v.optional(v.string()),
+    datos: v.optional(v.any()),
+    tiendaId: v.optional(v.id('tiendas')),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert('notificaciones', {
+      usuarioId: args.usuarioId,
+      tipo: args.tipo,
+      titulo: args.titulo,
+      mensaje: args.mensaje,
+      url: args.url,
+      prioridad: 'alta', // Por defecto alta para mensajes directos
+      leido: false,
+      datos: args.datos,
+      tiendaId: args.tiendaId,
+    })
+  },
+})
+
+export const crearNotificacionNuevaTienda = internalMutation({
+  args: {
+    tiendaId: v.id('tiendas'),
+    nombreTienda: v.string(),
+    departamento: v.string(), // Para filtrar usuarios
+  },
+  handler: async (ctx, args) => {
+    const usuarios = await ctx.db
+      .query('usuarios')
+      .filter(q => q.neq(q.field('configuracion'), undefined))
+      .collect()
+
+    const usuariosDestino = usuarios.filter(
+      u => u.configuracion?.departamento === args.departamento
+    )
+
+    for (const usuario of usuariosDestino) {
+      await ctx.db.insert('notificaciones', {
+        usuarioId: usuario._id,
+        tipo: 'nueva_tienda',
+        titulo: `¡Nueva tienda en ${args.departamento}!`,
+        mensaje: `${args.nombreTienda} acaba de abrir cerca de ti.`,
+        url: `/tienda/${args.tiendaId}`,
+        prioridad: 'media',
+        tiendaId: args.tiendaId,
+        leido: false,
+        datos: { departamento: args.departamento },
+      })
     }
   },
 })

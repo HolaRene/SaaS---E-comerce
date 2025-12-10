@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { Id } from './_generated/dataModel'
+import { internal } from './_generated/api'
 
 // ==================== QUERIES ====================
 
@@ -79,11 +80,11 @@ export const getEstadisticasCompras = query({
     const totalGastado = compras.reduce((sum, c) => sum + c.total, 0)
 
     const comprasPendientes = compras.filter(
-      c => c.estado === 'pendiente' || c.estado === 'en_preparacion'
+      c => c.estado === 'pendiente' || c.estado === 'en_proceso'
     ).length
 
     const comprasEntregadas = compras.filter(
-      c => c.estado === 'entregado'
+      c => c.estado === 'entregada'
     ).length
 
     return {
@@ -161,10 +162,10 @@ export const actualizarEstadoCompra = mutation({
     compraId: v.id('compras'),
     estado: v.union(
       v.literal('pendiente'),
-      v.literal('en_preparacion'),
-      v.literal('enviado'),
-      v.literal('entregado'),
-      v.literal('cancelado')
+      v.literal('en_proceso'),
+      v.literal('enviada'),
+      v.literal('entregada'),
+      v.literal('cancelada')
     ),
     fechaEntrega: v.optional(v.string()),
   },
@@ -175,6 +176,22 @@ export const actualizarEstadoCompra = mutation({
       estado,
       ...(fechaEntrega && { fechaEntrega }),
     })
+
+    const compra = await ctx.db.get(compraId)
+    if (compra) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.notificaciones.crearNotificacionUsuario,
+        {
+          usuarioId: compra.usuarioId,
+          tipo: 'compra_estado',
+          titulo: 'Actualización de Pedido',
+          mensaje: `Tu pedido #${compra.numeroOrden} ahora está: ${estado.replace('_', ' ')}`,
+          url: '/user/compras',
+          tiendaId: compra.tiendaId,
+        }
+      )
+    }
 
     return compraId
   },
@@ -194,16 +211,30 @@ export const cancelarCompra = mutation({
       throw new Error('Compra no encontrada')
     }
 
-    // Solo se pueden cancelar compras pendientes o en preparación
-    if (compra.estado !== 'pendiente' && compra.estado !== 'en_preparacion') {
+    // Solo se pueden cancelar compras pendientes o en proceso
+    if (compra.estado !== 'pendiente' && compra.estado !== 'en_proceso') {
       throw new Error(
         'Solo se pueden cancelar compras pendientes o en preparación'
       )
     }
 
     await ctx.db.patch(args.compraId, {
-      estado: 'cancelado',
+      estado: 'cancelada',
     })
+
+    // Notificar cancelación
+    await ctx.scheduler.runAfter(
+      0,
+      internal.notificaciones.crearNotificacionUsuario,
+      {
+        usuarioId: compra.usuarioId,
+        tipo: 'compra_estado',
+        titulo: 'Pedido Cancelado',
+        mensaje: `Tu pedido #${compra.numeroOrden} ha sido cancelado.`,
+        url: '/user/compras',
+        tiendaId: compra.tiendaId,
+      }
+    )
 
     return args.compraId
   },

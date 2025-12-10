@@ -199,6 +199,7 @@ export default defineSchema({
       v.object({
         tema: v.string(),
         notificaciones: v.boolean(),
+        departamento: v.optional(v.string()), // Para notificaciones de nuevas tiendas
       })
     ),
   })
@@ -515,7 +516,8 @@ export default defineSchema({
     metodoPago: v.union(
       v.literal('efectivo'),
       v.literal('transferencia'),
-      v.literal('fiado')
+      v.literal('fiado'),
+      v.literal('tarjeta')
     ),
     direccionEntrega: v.optional(v.string()), // ← Para ventas online
     notas: v.optional(v.string()),
@@ -567,7 +569,6 @@ export default defineSchema({
     .index('by_usuario', ['usuarioId'])
     .index('by_producto', ['productoId'])
     .index('by_usuario_producto', ['usuarioId', 'productoId']), // Evitar duplicados
-    
 
   // ==================== CARRITO DE COMPRAS ====================
   carrito: defineTable({
@@ -585,26 +586,34 @@ export default defineSchema({
 
   // ==================== NOTIFICACIONES ====================
   notificaciones: defineTable({
-    usuarioId: v.id("usuarios"),
+    usuarioId: v.id('usuarios'),
     tipo: v.union(
-      v.literal("nuevo_producto"),
-      v.literal("precio_bajado"),
-      v.literal("precio_subido"),
-      v.literal("producto_actualizado"),
-      v.literal("producto_eliminado"),
-      v.literal("tienda_nombre_cambiado"),
-      v.literal("tienda_datos_actualizados"),
-      v.literal("sistema")
+      v.literal('nuevo_producto'),
+      v.literal('precio_bajado'),
+      v.literal('precio_subido'),
+      v.literal('producto_actualizado'),
+      v.literal('producto_eliminado'),
+      v.literal('tienda_nombre_cambiado'),
+      v.literal('tienda_datos_actualizados'),
+      v.literal('sistema'),
+      v.literal('compra_estado'), // Nuevo: Estado de pedido
+      v.literal('credito_movimiento'), // Nuevo: Pagos o cargos extra
+      v.literal('nueva_tienda'), // Nuevo: Tienda nueva en zona
+      v.literal('recordatorio') // Nuevo: Recordatorios de cobro
     ),
     titulo: v.string(),
     mensaje: v.string(),
-    prioridad: v.union(v.literal("alta"), v.literal("media"), v.literal("baja")),
-    tiendaId: v.optional(v.id("tiendas")),
-    productoId: v.optional(v.id("productos")),
+    prioridad: v.union(
+      v.literal('alta'),
+      v.literal('media'),
+      v.literal('baja')
+    ),
+    tiendaId: v.optional(v.id('tiendas')),
+    productoId: v.optional(v.id('productos')),
     url: v.optional(v.string()), // URL para redirigir al hacer clic
     leido: v.boolean(),
     datos: v.optional(v.any()),
   })
-    .index("by_usuario", ["usuarioId"])
-    .index("by_usuario_leido", ["usuarioId", "leido"]),
+    .index('by_usuario', ['usuarioId'])
+    .index('by_usuario_leido', ['usuarioId', 'leido']),
 })

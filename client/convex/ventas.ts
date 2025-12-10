@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { Id } from './_generated/dataModel'
+import { internal } from './_generated/api'
 
 // Crear venta completa
 export const crearVenta = mutation({
@@ -114,7 +115,7 @@ export const crearVenta = mutation({
       }
     }
 
-    // 6. Actualizar estadísticas del cliente (si existe)
+    // 6. Actualizar estadísticas del cliente (si existe) y Notificar si es Fiado (POS)
     if (args.clienteId) {
       const cliente = await ctx.db.get(args.clienteId)
       if (cliente) {
@@ -123,6 +124,28 @@ export const crearVenta = mutation({
           cantidadCompras: cliente.cantidadCompras + 1,
           ultimaCompra: new Date().toISOString(),
         })
+
+        // Si es fiado, intentar notificar al usuario App si existe por email
+        if (args.metodoPago === 'fiado' && cliente.email) {
+          const user = await ctx.db
+            .query('usuarios')
+            .withIndex('by_correo', q => q.eq('correo', cliente.email!))
+            .first()
+
+          if (user) {
+            await ctx.scheduler.runAfter(
+              0,
+              internal.notificaciones.crearNotificacionUsuario,
+              {
+                usuarioId: user._id,
+                tipo: 'credito_movimiento',
+                titulo: 'Nuevo Cargo (Fiado)',
+                mensaje: `Compra en tienda por $${args.total}`,
+                tiendaId: args.tiendaId,
+              }
+            )
+          }
+        }
       }
     }
 
@@ -659,11 +682,28 @@ export const confirmarVentaOnline = mutation({
       estado: 'completada',
     })
 
-    // Actualizar estado compra (si existe vinculo)
+    // Actualizar estado compra (si existe vinculo) y Notificar
     if (venta.compraOnlineId) {
       await ctx.db.patch(venta.compraOnlineId, {
         estado: 'en_proceso', // O lista para entrega
       })
+
+      // Obtener la compra para saber el usuario
+      const compra = await ctx.db.get(venta.compraOnlineId)
+      if (compra) {
+        await ctx.scheduler.runAfter(
+          0,
+          internal.notificaciones.crearNotificacionUsuario,
+          {
+            usuarioId: compra.usuarioId,
+            tipo: 'compra_estado',
+            titulo: 'Pedido Confirmado',
+            mensaje: `Tu pedido #${compra.numeroOrden} ha sido aceptado y está en proceso.`,
+            url: '/user/compras',
+            tiendaId: venta.tiendaId,
+          }
+        )
+      }
     }
 
     return { success: true }

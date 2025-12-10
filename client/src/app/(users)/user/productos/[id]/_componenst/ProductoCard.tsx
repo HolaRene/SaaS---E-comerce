@@ -78,6 +78,8 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
     // Estado para compartir
     const [sheetOpen, setSheetOpen] = useState(false)
     const [copied, setCopied] = useState(false)
+    // Estado para imagen seleccionada
+    const [selectedImage, setSelectedImage] = useState(0)
 
     const producto = useQuery(api.productos.getProductoId, { id })
     const tienda = useQuery(api.tiendas.getTiendaPublicaById, producto ? { id: producto.tiendaId } : "skip")
@@ -202,7 +204,7 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                         </div>
 
                         <Image
-                            src={producto.imagenes?.[0] || "/icons/producto-64.png"}
+                            src={producto.imagenes?.[selectedImage] || "/icons/producto-64.png"}
                             alt={producto.nombre}
                             fill
                             className="object-cover rounded-md"
@@ -212,6 +214,18 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                                 e.target.src = "/icons/producto-64.png";
                             }}
                         />
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                        {producto.imagenes.map((image, index) => (
+                            <Button
+                                key={index}
+                                onClick={() => setSelectedImage(index)}
+                                className={`aspect-square bg-white rounded-md p-2 border-2 ${selectedImage === index ? "border-blue-500" : "border-gray-200"
+                                    }`}
+                            >
+                                <img src={image || "/placeholder.svg"} alt="" className="w-full h-full object-cover rounded" />
+                            </Button>
+                        ))}
                     </div>
                 </div>
 

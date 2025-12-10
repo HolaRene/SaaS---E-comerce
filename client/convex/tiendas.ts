@@ -108,6 +108,7 @@ export const updateTienda = mutation({
     categoria: v.optional(v.string()),
     lat: v.optional(v.number()),
     lng: v.optional(v.number()),
+    publica: v.optional(v.boolean()), // Asegurarnos que existía o agregarlo si faltaba en el mutation original
     configuracion: v.optional(
       v.object({
         NIT: v.optional(v.string()),
@@ -196,6 +197,27 @@ export const updateTienda = mutation({
           },
         }
       )
+    }
+
+    // 🔔 NOTIFICAR SI SE HACE PÚBLICA (NUEVA TIENDA)
+    // Si antes no era pública y ahora si (o si estaba pendiente y pasa a activo, etc)
+    // El trigger sencillo es: publica: true (y antes false)
+    if (fields.publica === true && !tienda.publica) {
+      // Validar que tenga departamento set
+      const depto = fields.departamento || tienda.departamento
+      const nombre = fields.nombre || tienda.nombre
+
+      if (depto && nombre) {
+        await ctx.scheduler.runAfter(
+          0,
+          internal.notificaciones.crearNotificacionNuevaTienda,
+          {
+            tiendaId: id,
+            nombreTienda: nombre,
+            departamento: depto,
+          }
+        )
+      }
     }
   },
 })

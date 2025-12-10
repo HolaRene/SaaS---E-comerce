@@ -89,7 +89,10 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
 
     // Queries
     const producto = useQuery(api.productos.getProductoId, { id });
+
+
     const tienda = useQuery(api.tiendas.getTiendaPublicaById, producto ? { id: producto.tiendaId } : "skip");
+    console.log(tienda)
     // Mutation para agregar al carrito
     const agregarAlCarrito = useMutation(api.carrito.agregarAlCarrito)
 
