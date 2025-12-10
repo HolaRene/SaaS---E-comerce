@@ -22,7 +22,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { useRouter } from "next/navigation"
 
 export function Header() {
-    const [notificationCount] = useState(3)
     const { toggle } = useSidebar()
     const { signOut } = useClerk()
 
@@ -41,6 +40,7 @@ export function Header() {
         api.carrito.countCarritoItems,
         usuario?._id ? { usuarioId: usuario._id } : 'skip'
     ) ?? 0
+    const notificacionesCount = useQuery(api.notificaciones.getUnreadCount)
 
 
     // Extraer ID de usuario Convex
@@ -106,15 +106,17 @@ export function Header() {
                         size="icon"
                         className="relative"
                     >
-                        <Bell className="h-5 w-5" />
-                        {notificationCount > 0 && (
-                            <Badge
-                                className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs"
-                                variant="destructive"
-                            >
-                                {notificationCount}
-                            </Badge>
-                        )}
+                        <Link href={'/user/notificacion'}>
+                            <Bell className="h-5 w-5" />
+                            {notificacionesCount > 0 && (
+                                <Badge
+                                    className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs"
+                                    variant="destructive"
+                                >
+                                    {notificacionesCount}
+                                </Badge>
+                            )}
+                        </Link>
                     </Button>
 
                     {/* Carrito */}

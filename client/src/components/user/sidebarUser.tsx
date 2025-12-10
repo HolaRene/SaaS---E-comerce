@@ -46,6 +46,10 @@ export function Sidebar() {
         api.carrito.countCarritoItems,
         usuario?._id ? { usuarioId: usuario._id } : 'skip'
     ) ?? 0
+
+    const notificacionesCount = useQuery(api.notificaciones.getUnreadCount)
+
+
     // Obtener compras del usuario
     const compras = useQuery(
         api.compras.getComprasByUsuario,
@@ -123,7 +127,7 @@ export function Sidebar() {
         { name: "Compras", href: `/user/compras`, icon: ShoppingBag, badge: ordersData.length || 0 },
         { name: "Favoritos", href: `/user/favoritos`, icon: Heart, badge: favoritesCount },
         { name: "Carrito", href: `/user/carrito`, icon: ShoppingCart, badge: cartCount },
-        { name: "Notificaciones", href: `/user/notificacion`, icon: Bell, badge: 3 },
+        { name: "Notificaciones", href: `/user/notificacion`, icon: Bell, badge: notificacionesCount },
     ];
 
     const footerItems = [

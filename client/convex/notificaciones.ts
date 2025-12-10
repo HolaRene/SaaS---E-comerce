@@ -1,6 +1,6 @@
 // convex/notificaciones.ts
-import { v } from 'convex/values'
-import { internalMutation } from './_generated/server'
+import { v, ConvexError } from 'convex/values'
+import { internalMutation, mutation, query } from './_generated/server'
 import { Id } from './_generated/dataModel'
 
 export const crearNotificacionesParaFavoritos = internalMutation({
@@ -130,5 +130,116 @@ export const limpiarNotificacionesAntiguas = internalMutation({
     if (toDelete.length > 0) {
       console.log(`Deleted ${toDelete.length} old notifications`)
     }
+  },
+})
+
+// ==================== QUERIES PARA FRONTEND ====================
+
+// Obtener mis notificaciones
+export const getMisNotificaciones = query({
+  args: {},
+  handler: async ctx => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) return []
+
+    const usuario = await ctx.db
+      .query('usuarios')
+      .withIndex('by_clerkId', q => q.eq('clerkId', identity.subject))
+      .first()
+
+    if (!usuario) return []
+
+    const notificaciones = await ctx.db
+      .query('notificaciones')
+      .withIndex('by_usuario', q => q.eq('usuarioId', usuario._id))
+      .order('desc')
+      .take(50) // Límite de 50 para la vista
+
+    return notificaciones
+  },
+})
+
+// Contar no leídas
+export const getUnreadCount = query({
+  args: {},
+  handler: async ctx => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) return 0
+
+    const usuario = await ctx.db
+      .query('usuarios')
+      .withIndex('by_clerkId', q => q.eq('clerkId', identity.subject))
+      .first()
+
+    if (!usuario) return 0
+
+    const unread = await ctx.db
+      .query('notificaciones')
+      .withIndex('by_usuario_leido', q =>
+        q.eq('usuarioId', usuario._id).eq('leido', false)
+      )
+      .collect()
+
+    return unread.length
+  },
+})
+
+// Marcar como leída
+export const marcarLeido = mutation({
+  args: { id: v.id('notificaciones') },
+  handler: async (ctx, args) => {
+    // Validar usuario (opcional pero recomendado)
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) throw new ConvexError('No autenticado')
+
+    await ctx.db.patch(args.id, { leido: true })
+  },
+})
+
+// Marcar como NO leída (Toggle)
+export const marcarNoLeido = mutation({
+  args: { id: v.id('notificaciones') },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) throw new ConvexError('No autenticado')
+
+    await ctx.db.patch(args.id, { leido: false })
+  },
+})
+
+// Marcar todas como leídas
+export const marcarTodasLeidas = mutation({
+  args: {},
+  handler: async ctx => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) throw new ConvexError('No autenticado')
+
+    const usuario = await ctx.db
+      .query('usuarios')
+      .withIndex('by_clerkId', q => q.eq('clerkId', identity.subject))
+      .first()
+
+    if (!usuario) return
+
+    const unread = await ctx.db
+      .query('notificaciones')
+      .withIndex('by_usuario_leido', q =>
+        q.eq('usuarioId', usuario._id).eq('leido', false)
+      )
+      .collect()
+
+    for (const notif of unread) {
+      await ctx.db.patch(notif._id, { leido: true })
+    }
+  },
+})
+
+// Eliminar notificación
+export const eliminarNotificacion = mutation({
+  args: { id: v.id('notificaciones') },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) throw new ConvexError('No autenticado')
+    await ctx.db.delete(args.id)
   },
 })

@@ -14,6 +14,8 @@ import { CheckCircle2, Package, Tag, Settings, Search, Bell, BellOff, Store, Tre
 import NotificacionOder from "./_components/notificacion-order"
 import Notificacionpromocion from "./_components/notificacion-promocion"
 import Notificacionprecios from "./_components/notificacion-precios"
+import { useMutation, useQuery } from "convex/react"
+import { api } from "../../../../../convex/_generated/api"
 import NotificacionSistema from "./_components/notificacion-sistema"
 
 interface Notification {
@@ -27,95 +29,51 @@ interface Notification {
 }
 
 export default function NotificationsTab() {
-    const [isLoading, setIsLoading] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
-    const [notifications, setNotifications] = useState<Notification[]>([
-        {
-            id: "1",
-            type: "order",
-            title: "Pedido entregado",
-            message: "Tu pedido #00125 fue entregado con éxito en tu dirección.",
-            time: "Hace 2 horas",
-            read: false,
-            icon: <CheckCircle2 className="h-5 w-5 text-green-600" />,
-        },
-        {
-            id: "2",
-            type: "promotion",
-            title: "Nueva promoción en Tienda San José",
-            message: "2x1 en Refrescos Coca-Cola 1L. Válido hasta el domingo.",
-            time: "Hace 5 horas",
-            read: false,
-            icon: <Tag className="h-5 w-5 text-amber-600" />,
-        },
-        {
-            id: "3",
-            type: "price",
-            title: "Bajó de precio",
-            message: "Café Presto Tradicional 500g ahora está a C$ 185.00 (antes C$ 210.00)",
-            time: "Hace 1 día",
-            read: false,
-            icon: <TrendingDown className="h-5 w-5 text-blue-600" />,
-        },
-        {
-            id: "4",
-            type: "order",
-            title: "Pedido en camino",
-            message: "Tu pedido #00124 está en camino. Llegará en aproximadamente 30 minutos.",
-            time: "Hace 1 día",
-            read: true,
-            icon: <Truck className="h-5 w-5 text-primary" />,
-        },
-        {
-            id: "5",
-            type: "promotion",
-            title: "Descuento especial",
-            message: "Panadería La Esperanza: 15% de descuento en pan dulce hoy.",
-            time: "Hace 2 días",
-            read: true,
-            icon: <Tag className="h-5 w-5 text-amber-600" />,
-        },
-        {
-            id: "6",
-            type: "system",
-            title: "Actualización del sistema",
-            message: "Mantenimiento programado el 15/10 a las 2:00 AM. Duración estimada: 1 hora.",
-            time: "Hace 3 días",
-            read: true,
-            icon: <Settings className="h-5 w-5 text-muted-foreground" />,
-        },
-        {
-            id: "7",
-            type: "order",
-            title: "Pedido confirmado",
-            message: "Tu pedido #00123 ha sido confirmado por Pulpería San José.",
-            time: "Hace 4 días",
-            read: true,
-            icon: <Package className="h-5 w-5 text-primary" />,
-        },
-        {
-            id: "8",
-            type: "promotion",
-            title: "Nueva tienda disponible",
-            message: "Tienda El Ahorro ahora está disponible en tu zona. ¡Descubre sus productos!",
-            time: "Hace 5 días",
-            read: true,
-            icon: <Store className="h-5 w-5 text-amber-600" />,
-        },
-    ])
+    const unreadCount = useQuery(api.notificaciones.getUnreadCount) ?? 0
+    const rawNotifications = useQuery(api.notificaciones.getMisNotificaciones)
 
-    const markAsRead = (id: string) => {
-        setNotifications((prev) => prev.map((notif) => (notif.id === id ? { ...notif, read: true } : notif)))
+    const marcarLeido = useMutation(api.notificaciones.marcarLeido)
+    const marcarTodas = useMutation(api.notificaciones.marcarTodasLeidas)
+
+    const notifications: Notification[] = (rawNotifications || []).map((n) => {
+        let icon = <Bell className="h-5 w-5 text-gray-500" />
+        if (n.tipo === "nuevo_producto" || n.tipo === "producto_actualizado") icon = <Tag className="h-5 w-5 text-amber-600" />
+        if (n.tipo === "precio_bajado") icon = <TrendingDown className="h-5 w-5 text-blue-600" />
+        if (n.tipo === "tienda_datos_actualizados" || n.tipo === "tienda_nombre_cambiado") icon = <Store className="h-5 w-5 text-primary" />
+        if (n.tipo === "sistema") icon = <Settings className="h-5 w-5 text-muted-foreground" />
+
+        return {
+            id: n._id,
+            type: n.tipo === "precio_bajado" || n.tipo === "precio_subido" ? "price" :
+                n.tipo === "nuevo_producto" ? "promotion" :
+                    n.tipo === "sistema" ? "system" : "order", // Fallback mapping
+            title: n.titulo,
+            message: n.mensaje,
+            time: new Date(n._creationTime).toLocaleDateString(), // Format as needed, maybe use a relative time lib
+            read: n.leido,
+            icon: icon,
+        }
+    })
+
+    const markAsRead = async (id: string) => {
+        // Optimistic update or just wait for Convex reactivity
+        // For simplicity, we just call mutation. Convex updates the UI automatically.
+        await marcarLeido({ id: id as any })
     }
 
-    const markAllAsRead = () => {
-        setNotifications((prev) => prev.map((notif) => ({ ...notif, read: true })))
+    const markAllAsRead = async () => {
+        await marcarTodas({})
     }
 
     const filterNotifications = (type?: string) => {
         let filtered = notifications
         if (type && type !== "all") {
-            filtered = filtered.filter((n) => n.type === type)
+            // Simplified mapping for the tabs
+            if (type === "price") filtered = filtered.filter(n => n.type === "price")
+            if (type === "promotion") filtered = filtered.filter(n => n.type === "promotion")
+            if (type === "system") filtered = filtered.filter(n => n.type === "system")
+            if (type === "order") filtered = filtered.filter(n => n.type === "order")
         }
         if (searchQuery) {
             filtered = filtered.filter(
@@ -127,9 +85,7 @@ export default function NotificationsTab() {
         return filtered
     }
 
-    const unreadCount = notifications.filter((n) => !n.read).length
-
-    if (isLoading) {
+    if (rawNotifications === undefined) { // Loading state
         return (
             <Card>
                 <CardHeader>
@@ -156,7 +112,7 @@ export default function NotificationsTab() {
         <div
             className={`flex gap-4 p-4 rounded-lg border transition-all duration-300 ${notification.read ? "bg-card" : "bg-accent/50 border-primary/20"
                 } hover:bg-accent cursor-pointer`}
-            onClick={() => markAsRead(notification.id)}
+            onClick={() => !notification.read && markAsRead(notification.id)}
         >
             <div className="flex-shrink-0">{notification.icon}</div>
             <div className="flex-1 space-y-1">
