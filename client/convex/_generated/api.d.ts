@@ -14,6 +14,7 @@ import type * as clientes from "../clientes.js";
 import type * as compras from "../compras.js";
 import type * as creditos from "../creditos.js";
 import type * as crons from "../crons.js";
+import type * as dashboard from "../dashboard.js";
 import type * as etiquetas from "../etiquetas.js";
 import type * as favoritos from "../favoritos.js";
 import type * as finanzas from "../finanzas.js";
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   compras: typeof compras;
   creditos: typeof creditos;
   crons: typeof crons;
+  dashboard: typeof dashboard;
   etiquetas: typeof etiquetas;
   favoritos: typeof favoritos;
   finanzas: typeof finanzas;

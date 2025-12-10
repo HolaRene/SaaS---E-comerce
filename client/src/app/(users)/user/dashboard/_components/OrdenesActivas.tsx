@@ -1,67 +1,35 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { AlertCircle, Clock } from "lucide-react"
-
-const activeOrders = [
-    {
-        id: "00125",
-        store: "Pulpería San José",
-        status: "En preparación",
-        total: "C$420",
-        statusColor: "warning",
-        icon: Clock,
-    },
-    {
-        id: "00126",
-        store: "Tienda La Esperanza",
-        status: "Pendiente",
-        total: "C$180",
-        statusColor: "default",
-        icon: AlertCircle,
-    },
-]
-
-const statusVariants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
-    Entregado: "default",
-    Pendiente: "secondary",
-    Cancelado: "destructive",
-    Enviado: "outline",
-};
+import { useQuery } from "convex/react"
+import { api } from "../../../../../../convex/_generated/api"
+import { Skeleton } from "@/components/ui/skeleton"
+import { DataTable } from "./data-table"
+import { columnsOrdenes, OrdenActiva } from "./columns-ordenes"
 
 
 const OrdenesActivas = () => {
+    const ordenes = useQuery(api.dashboard.getOrdenesActivas);
+
+    if (ordenes === undefined) {
+        return <div className="space-y-4">
+            <h3 className="mb-4 text-xl font-semibold">Pedidos en curso</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+                <Skeleton className="h-[150px] w-full" />
+                <Skeleton className="h-[150px] w-full" />
+            </div>
+        </div>
+    }
+
+    if (ordenes.length === 0) {
+        return null; // O un mensaje de "No tienes pedidos activos"
+    }
+
     return (
         <div className=''>
             {/* Active Orders */}
             <div>
                 <h3 className="mb-4 text-xl font-semibold">Pedidos en curso</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                    {activeOrders.map((order) => (
-                        <Card key={order.id}>
-                            <CardHeader>
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <CardTitle className="text-base">Pedido #{order.id}</CardTitle>
-                                        <CardDescription>{order.store}</CardDescription>
-                                    </div>
-                                    <Badge variant={statusVariants[order.statusColor] || "secondary"} className="gap-1">
-                                        <order.icon className="h-3 w-3" />
-                                        {order.status}
-                                    </Badge>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-2xl font-bold">{order.total}</span>
-                                    <Button size="sm">Ver detalles</Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
+                <DataTable columns={columnsOrdenes} data={ordenes as OrdenActiva[]} />
             </div>
         </div>
     )
