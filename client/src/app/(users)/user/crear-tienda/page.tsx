@@ -40,6 +40,7 @@ import { ConvexError } from "convex/values";
 import { Checkbox } from "@/components/ui/checkbox";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
+import Link from "next/link";
 const ErrorMessage = ({ message }: { message?: string }) => {
     if (!message) return null;
     return <p className="text-sm text-red-500 mt-1">{message}</p>;
@@ -371,7 +372,7 @@ export default function CreateStoreForm() {
                                                         <p className="text-sm">
                                                             Coordenada geográfica que indica la posición norte-sur de tu tienda.
                                                             Puedes obtenerla desde Google Maps haciendo clic derecho en tu ubicación.
-                                                            Rango: -90 a 90
+                                                            Rango: -90 a 90, puedes obtener tu lat y long en <Link className="text-blue-500 underline" href={'https://www.latlong.net/'}>lalong</Link>
                                                         </p>
                                                     </TooltipContent>
                                                 </Tooltip>
@@ -395,7 +396,7 @@ export default function CreateStoreForm() {
                                                         <p className="text-sm">
                                                             Coordenada geográfica que indica la posición este-oeste de tu tienda.
                                                             Puedes obtenerla desde Google Maps haciendo clic derecho en tu ubicación.
-                                                            Rango: -180 a 180
+                                                            Rango: -180 a 180, puedes obtener tu lat y long en <Link target="_blank" className="text-blue-500 underline" href={'https://www.latlong.net/'}>lalong</Link>
                                                         </p>
                                                     </TooltipContent>
                                                 </Tooltip>
