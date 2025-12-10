@@ -52,7 +52,7 @@ export default function CartTab() {
                     <p className="text-muted-foreground text-center mb-6">
                         Agrega productos de tus comercios favoritos para comenzar tu compra
                     </p>
-                    <Button onClick={() => router.push('/product')}>Explorar productos</Button>
+                    <Button onClick={() => router.push('/user/productos')} >Explorar productos</Button>
                 </CardContent>
             </Card>
         )
