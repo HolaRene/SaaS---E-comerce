@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, Suspense } from "react"
-import { ArrowLeft, Check, Loader2 } from "lucide-react"
+import { ArrowLeft, Check, Loader2, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -334,20 +334,20 @@ function CheckoutContent() {
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-green-600">
-                        <Check className="w-5 h-5" />
-                        ¡Pedido Confirmado!
+                    <CardTitle className="flex items-center gap-2 text-blue-600">
+                        <Clock className="w-5 h-5" />
+                        Pedido Recibido
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="text-center py-6">
-                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Check className="w-8 h-8 text-green-600" />
+                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Clock className="w-8 h-8 text-blue-600" />
                         </div>
-                        <h3 className="text-lg font-semibold mb-2">¡Gracias por tu compra!</h3>
+                        <h3 className="text-lg font-semibold mb-2">Pedido Pendiente de Aprobación</h3>
                         <p className="text-gray-600 mb-4">Orden #{ordenId}</p>
-                        <p className="text-sm text-gray-600">
-                            Recibirás un correo de confirmación con los detalles de tu pedido.
+                        <p className="text-sm text-gray-600 max-w-md mx-auto">
+                            Tu pedido ha sido enviado a la tienda. El propietario revisará tu solicitud y recibirás una notificación cuando sea <strong>aprobada</strong>.
                         </p>
                         <div className="flex gap-3 justify-center mt-6">
                             <Button

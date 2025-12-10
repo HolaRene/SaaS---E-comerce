@@ -1,34 +1,69 @@
-/**
- * PÁGINA DE PERFIL DE TIENDA
- * Ruta: /comercio/[id]/tienda
- * Muestra información completa de la tienda con tabs de productos, info y reseñas
- */
 
-import StoreProfileClient from "./StoreProfileClient"
-import { notFound } from "next/navigation"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ErrorBoundary } from "@/components/error/ErrorBoundery"
+import { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { ArrowLeftIcon } from "lucide-react";
+import { Id } from "../../../../../../convex/_generated/dataModel";
+import PerfilPublico from "@/app/(public)/comercio/[idComercio]/_components/perfilPublico";
+import HorarioPublico from "@/app/(public)/comercio/[idComercio]/_components/HorariosPublicTienda";
 
-interface StorePageProps {
-    params: Promise<{ idComercio: string }>
-}
 
-export default async function StorePage({ params }: StorePageProps) {
+const Page = async ({ params }: { params: Promise<{ idComercio: Id<"tiendas"> }> }) => {
     const { idComercio } = await params
 
-    // Renderizamos un cliente que hará la consulta a Convex.
-    // Si prefieres SSR completo, podemos usar ConvexHttpClient en el servidor.
     if (!idComercio) notFound()
 
-    return <StoreProfileClient idComercio={idComercio} />
+
+    return (
+        <ErrorBoundary>
+            <Tabs defaultValue="perfil" className="w-full mt-3 md:px-3 px-1">
+                <Breadcrumb>
+                    <BreadcrumbList>
+                        <BreadcrumbItem>
+                            <BreadcrumbLink href="/user/negocios" className="flex gap-2 items-center">
+                                <ArrowLeftIcon className="w-4 h-4" /> Negocios</BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                            <BreadcrumbPage>Tienda</BreadcrumbPage>
+                        </BreadcrumbItem>
+                    </BreadcrumbList>
+                </Breadcrumb>
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="perfil">Perfil Público</TabsTrigger>
+                    <TabsTrigger value="horarios">Horarios</TabsTrigger>
+                </TabsList>
+
+                {/* 1. Perfil Público */}
+                <TabsContent value="perfil" className="space-y-6">
+                    <PerfilPublico id={idComercio} />
+                </TabsContent>
+
+                {/* 3. Horarios de Atención */}
+                <TabsContent value="horarios" className="space-y-6">
+                    {/* <Horario id={idComercio} /> */}
+                    <HorarioPublico id={idComercio} />
+                </TabsContent>
+            </Tabs>
+        </ErrorBoundary>
+    )
 }
 
 // Metadata dinámica mínima (puede mejorarse después de obtener datos en cliente)
-export async function generateMetadata({ params }: StorePageProps) {
+export async function generateMetadata({ params }: { params: Promise<{ idComercio: Id<"tiendas"> }> }) {
     const { idComercio } = await params
     if (!idComercio) {
         return { title: "Tienda no encontrada | Marketplace Tiendas" }
     }
 
     return {
-        title: `Tienda | Marketplace Tiendas`,
+        title: `Tienda | ver Tienda`,
+        icons: {
+            icon: "/icons/logo-tienda-64.png"
+        }
     }
 }
+
+export default Page

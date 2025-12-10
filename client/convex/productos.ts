@@ -387,7 +387,9 @@ export const actualizarProducto = mutation({
         // Si una imagen antigua NO está en la nueva lista Y no es un asset por defecto
         if (!nuevasImagenes.has(imgAntigua) && !imgAntigua.startsWith('/')) {
           try {
-            await ctx.storage.delete(imgAntigua as Id<'_storage'>)
+            const parts = imgAntigua.split('/')
+            const storageId = parts[parts.length - 1] as Id<'_storage'>
+            await ctx.storage.delete(storageId)
           } catch (error) {
             console.error('Error eliminando imagen de producto antigua:', error)
           }
@@ -489,7 +491,9 @@ export const eliminarProducto = mutation({
       for (const img of producto.imagenes) {
         if (img && !img.startsWith('/')) {
           try {
-            await ctx.storage.delete(img as Id<'_storage'>)
+            const parts = img.split('/')
+            const storageId = parts[parts.length - 1] as Id<'_storage'>
+            await ctx.storage.delete(storageId)
           } catch (error) {
             console.error('Error eliminando imagen al borrar producto:', error)
           }

@@ -36,7 +36,7 @@ const SubidaImgs = ({ image, setImage, setImageStorageId }: SubidaImgProps) => {
             const imgUrl = await getImageURL({ storageId });
             setImage(imgUrl!)
             setIsImageLoading(false)
-            toast('Se ha generado el img de miniatura')
+            toast('Se ha subido la img')
         } catch (error) {
             toast('Error en el manejo del img')
             setIsImageLoading(false)

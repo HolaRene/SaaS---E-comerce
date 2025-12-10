@@ -72,9 +72,6 @@ export function MarketplaceContainer() {
             .map(transformTiendaToStore)
             .filter((store): store is Store => store !== null)
 
-        console.log("Tiendas de Convex:", tiendasConvex)
-        console.log("Tiendas transformadas:", transformed)
-
         return transformed
     }, [tiendasConvex])
 

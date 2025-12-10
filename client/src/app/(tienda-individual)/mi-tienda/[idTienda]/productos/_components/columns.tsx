@@ -24,7 +24,7 @@ export const columns: ColumnDef<ProductoConvex>[] = [
             const imagenes = row.original.imagenes;
             const imagenUrl = imagenes && imagenes.length > 0
                 ? imagenes[0]
-                : 'https://images.pexels.com/photos/1695052/pexels-photo-1695052.jpeg';
+                : '/icons/producto-nuevo-64.png';
             return <Image src={imagenUrl} alt={row.original.nombre} width={50} height={50} className="rounded-md" />
         },
         filterFn: "includesString",

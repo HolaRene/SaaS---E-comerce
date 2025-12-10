@@ -75,9 +75,9 @@ export default function PurchasesTab() {
         let icon = Clock;
         let statusColor = "warning";
 
-        if (compra.estado === "entregada") {
+        if (compra.estado === "entregada" || compra.estado === "en_proceso") {
             icon = CheckCircle;
-            statusColor = "default";
+            statusColor = "default"; // green/success usually
         } else if (compra.estado === "enviada") {
             icon = Truck;
             statusColor = "secondary";
@@ -94,10 +94,10 @@ export default function PurchasesTab() {
         // Mapear estado a texto en español
         const estadoTexto: Record<string, string> = {
             pendiente: "Pendiente",
-            en_preparacion: "En preparación",
-            enviado: "Enviado",
-            entregado: "Entregado",
-            cancelado: "Cancelado",
+            en_proceso: "Completada", // User requested 'Completada' for accepted orders
+            enviada: "Enviado",
+            entregada: "Entregado",
+            cancelada: "Cancelado",
         };
 
         return {

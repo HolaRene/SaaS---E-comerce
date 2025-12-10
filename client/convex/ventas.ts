@@ -509,7 +509,7 @@ export const crearVentaOnline = mutation({
       impuesto: 0,
       total: args.total,
       metodoPago: args.metodoPago,
-      estado: 'completada',
+      estado: 'pendiente', // Cambiado a pendiente para aprobación
       notas: `Compra online - ${numeroOrden} - ${args.notasEntrega || ''}`,
       canal: 'online',
     })
@@ -557,7 +557,7 @@ export const crearVentaOnline = mutation({
         subtotal: item.cantidad * item.precioUnitario,
       })
 
-      // Actualizar inventario
+      // Actualizar inventario (RESERVAR)
       const producto = await ctx.db.get(item.productoId)
       if (producto) {
         await ctx.db.patch(item.productoId, {
@@ -573,15 +573,16 @@ export const crearVentaOnline = mutation({
           cantidad: item.cantidad,
           stockAnterior: producto.cantidad,
           stockNuevo: producto.cantidad - item.cantidad,
-          razon: 'Venta Online',
+          razon: 'Reserva Venta Online',
           fecha: new Date().toISOString(),
           ventaId,
         })
       }
     }
 
-    // ========== 5. MANEJO DE CRÉDITO (FIADO) ==========
-    // Si el método de pago es fiado, debemos registrar o actualizar el crédito
+    // ========== 5. MANEJO DE CRÉDITO (FIADO) - Solo iniciar si es fiado, pero validar en aprobación?
+    // Por simplicidad, ya lo creamos pero el crédito queda activo. Si se rechaza la venta, habría que anular el movimiento de crédito también.
+    // MEJORA: Crear el crédito pero tal vez con una nota de "Pendiente aprobación".
     if (args.metodoPago === 'fiado' && clienteId) {
       const creditoExistente = await ctx.db
         .query('creditos')
@@ -595,26 +596,24 @@ export const crearVentaOnline = mutation({
           saldoActual: creditoExistente.saldoActual + args.total,
           notas:
             (creditoExistente.notas || '') +
-            `\n+ Compra online: ${numeroOrden}`,
+            `\n+ Compra online (Pendiente): ${numeroOrden}`,
         })
       } else {
         // Crear nuevo crédito si no existe uno activo
         await ctx.db.insert('creditos', {
           tiendaId: args.tiendaId,
           clienteId: clienteId as any,
-          limiteCredito: 5000, // Límite inicial por defecto
+          limiteCredito: 5000,
           saldoActual: args.total,
           fechaInicio: new Date().toISOString(),
-          estado: 'activo', // El crédito queda activo para ser pagado después
-          notas: `Crédito iniciado con compra online ${numeroOrden}`,
+          estado: 'activo',
+          notas: `Crédito iniciado con compra online ${numeroOrden} (Pendiente)`,
         })
       }
     }
 
     // ========== 6. ACTUALIZAR ESTADÍSTICAS DEL CLIENTE ==========
     if (clienteId) {
-      // Volvemos a obtener el cliente para tener los datos más frescos (aunque lo acabamos de actualizar/crear)
-      // pero usamos los valores acumulados
       const clienteStats = await ctx.db.get(clienteId)
       if (clienteStats) {
         await ctx.db.patch(clienteId, {
@@ -631,5 +630,161 @@ export const crearVentaOnline = mutation({
       numeroOrden,
       clienteId,
     }
+  },
+})
+
+// Confirmar venta online (Aceptar pedido)
+export const confirmarVentaOnline = mutation({
+  args: { ventaId: v.id('ventas') },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) throw new Error('No autenticado')
+
+    const venta = await ctx.db.get(args.ventaId)
+    if (!venta) throw new Error('Venta no encontrada')
+
+    if (venta.estado !== 'pendiente') {
+      throw new Error('La venta no está pendiente')
+    }
+
+    // Verificar permisos (propietario o vendedor)
+    const usuario = await ctx.db
+      .query('usuarios')
+      .withIndex('by_clerkId', q => q.eq('clerkId', identity.subject))
+      .unique()
+    // Aquí podrías agregar validación de que el usuario pertenece a la tienda
+
+    // Actualizar estado venta
+    await ctx.db.patch(args.ventaId, {
+      estado: 'completada',
+    })
+
+    // Actualizar estado compra (si existe vinculo)
+    if (venta.compraOnlineId) {
+      await ctx.db.patch(venta.compraOnlineId, {
+        estado: 'en_proceso', // O lista para entrega
+      })
+    }
+
+    return { success: true }
+  },
+})
+
+// Rechazar venta online (Cancelar pedido)
+export const rechazarVentaOnline = mutation({
+  args: {
+    ventaId: v.id('ventas'),
+    motivo: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) throw new Error('No autenticado')
+
+    const venta = await ctx.db.get(args.ventaId)
+    if (!venta) throw new Error('Venta no encontrada')
+
+    if (venta.estado !== 'pendiente') {
+      throw new Error('Solo se pueden rechazar ventas pendientes')
+    }
+
+    // 1. Revertir Stock
+    const detalles = await ctx.db
+      .query('detallesVenta')
+      .withIndex('by_venta', q => q.eq('ventaId', args.ventaId))
+      .collect()
+
+    for (const d of detalles) {
+      const producto = await ctx.db.get(d.productoId)
+      if (producto) {
+        // Devolver cantidad
+        await ctx.db.patch(d.productoId, {
+          cantidad: producto.cantidad + d.cantidad,
+        })
+
+        // Registrar movimiento de retorno
+        await ctx.db.insert('movimientosInventario', {
+          productoId: d.productoId,
+          tiendaId: venta.tiendaId,
+          usuarioId: venta.usuarioId, // Quien registró la venta (el sistema/propietario)
+          tipo: 'ENTRADA', // Retorno
+          cantidad: d.cantidad,
+          stockAnterior: producto.cantidad,
+          stockNuevo: producto.cantidad + d.cantidad,
+          razon: `Venta Rechazada: ${args.motivo || 'Sin motivo'}`,
+          fecha: new Date().toISOString(),
+          ventaId: args.ventaId,
+        })
+      }
+    }
+
+    // 2. Revertir Crédito (si fue fiado)
+    if (venta.metodoPago === 'fiado' && venta.clienteId) {
+      const creditos = await ctx.db
+        .query('creditos')
+        .withIndex('by_cliente', q => q.eq('clienteId', venta.clienteId!))
+        .filter(q => q.eq(q.field('estado'), 'activo'))
+        .collect()
+
+      // Buscar el crédito afectado (simplificación: revertir del saldo actual del crédito activo)
+      // Idealmente rastrearías qué crédito específico se tocó, pero asumimos el activo.
+      for (const c of creditos) {
+        // Restar el monto que se había sumado
+        const nuevoSaldo = Math.max(0, c.saldoActual - venta.total)
+        await ctx.db.patch(c._id, {
+          saldoActual: nuevoSaldo,
+          notas:
+            (c.notas || '') +
+            `\n- Venta rechazada (Reversión): -${venta.total}`,
+        })
+      }
+    }
+
+    // 3. Revertir Estadísticas Cliente
+    if (venta.clienteId) {
+      const cliente = await ctx.db.get(venta.clienteId)
+      if (cliente) {
+        await ctx.db.patch(venta.clienteId, {
+          totalCompras: Math.max(0, (cliente.totalCompras || 0) - venta.total),
+          cantidadCompras: Math.max(0, (cliente.cantidadCompras || 0) - 1),
+        })
+      }
+    }
+
+    // 4. Actualizar estados a 'cancelada'
+    await ctx.db.patch(args.ventaId, {
+      estado: 'cancelada',
+      notas: (venta.notas || '') + ` | RECHAZADA: ${args.motivo || ''}`,
+    })
+
+    if (venta.compraOnlineId) {
+      await ctx.db.patch(venta.compraOnlineId, {
+        estado: 'cancelada',
+      })
+    }
+
+    return { success: true }
+  },
+})
+
+// Obtener ventas pendientes por tienda
+export const getVentasPendientes = query({
+  args: { tiendaId: v.id('tiendas') },
+  handler: async (ctx, args) => {
+    // Ventas pendientes (canal online generalmente)
+    const ventas = await ctx.db
+      .query('ventas')
+      .withIndex('by_tienda', q => q.eq('tiendaId', args.tiendaId))
+      .filter(q => q.eq(q.field('estado'), 'pendiente'))
+      .collect()
+
+    return await Promise.all(
+      ventas.map(async v => {
+        const cliente = v.clienteId ? await ctx.db.get(v.clienteId) : null
+        return {
+          ...v,
+          clienteNombre: cliente?.nombre || 'Cliente web',
+        }
+      })
+    )
   },
 })

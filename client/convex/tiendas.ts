@@ -151,7 +151,9 @@ export const updateTienda = mutation({
       !tienda.avatar.startsWith('/') // No borrar assets por defecto
     ) {
       try {
-        await ctx.storage.delete(tienda.avatar as Id<'_storage'>)
+        const parts = tienda.avatar.split('/')
+        const storageId = parts[parts.length - 1] as Id<'_storage'>
+        await ctx.storage.delete(storageId)
       } catch (error) {
         console.error('Error eliminando avatar anterior:', error)
       }
@@ -165,7 +167,9 @@ export const updateTienda = mutation({
       !tienda.imgBanner.startsWith('/') // No borrar assets por defecto
     ) {
       try {
-        await ctx.storage.delete(tienda.imgBanner as Id<'_storage'>)
+        const parts = tienda.imgBanner.split('/')
+        const storageId = parts[parts.length - 1] as Id<'_storage'>
+        await ctx.storage.delete(storageId)
       } catch (error) {
         console.error('Error eliminando banner anterior:', error)
       }
@@ -200,14 +204,18 @@ export const deleteTienda = mutation({
     if (tienda) {
       if (tienda.avatar && !tienda.avatar.startsWith('/')) {
         try {
-          await ctx.storage.delete(tienda.avatar as Id<'_storage'>)
+          const parts = tienda.avatar.split('/')
+          const storageId = parts[parts.length - 1] as Id<'_storage'>
+          await ctx.storage.delete(storageId)
         } catch (error) {
           console.error('Error eliminando avatar de tienda:', error)
         }
       }
       if (tienda.imgBanner && !tienda.imgBanner.startsWith('/')) {
         try {
-          await ctx.storage.delete(tienda.imgBanner as Id<'_storage'>)
+          const parts = tienda.imgBanner.split('/')
+          const storageId = parts[parts.length - 1] as Id<'_storage'>
+          await ctx.storage.delete(storageId)
         } catch (error) {
           console.error('Error eliminando banner de tienda:', error)
         }

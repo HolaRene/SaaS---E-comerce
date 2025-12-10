@@ -42,6 +42,7 @@ export function getTiendaEstadoInfo(estado: string, horarios: Schedule[]): {
 
 const TiendaCard = ({ imgUrl, departamento, categoria, title, tiendaId, estado, horarios }: TiendaCardProps) => {
     const ruta = useRouter()
+    console.log(imgUrl)
     // función para manejar las vistas del podcast
     const manejoVistas = () => {
         ruta.push(`/comercio/${tiendaId}`, { scroll: true })

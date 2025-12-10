@@ -68,9 +68,14 @@ const AppSideBar = ({ idTienda }: AppSideBarProps) => {
             icon: PackageOpen,
         },
         {
-            title: "Ventas/Pedidos",
+            title: "Ventas",
             url: idTienda ? `/mi-tienda/${idTienda}/ventas` : "/mi-tienda/ventas",
             icon: ShoppingCart,
+        },
+        {
+            title: "Pedidos Web",
+            url: idTienda ? `/mi-tienda/${idTienda}/pedidos` : "/mi-tienda/pedidos",
+            icon: PackageOpen, // Or another icon like Inbox or Bell
         },
         {
             title: "Clientes",
@@ -175,13 +180,13 @@ const AppSideBar = ({ idTienda }: AppSideBarProps) => {
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <SidebarMenuButton>
-                                    <User2 /> donJoe{" "}
+                                    <Settings /> Ajustes{" "}
                                     <ChevronUp className="ml-auto opacity-70" />
                                 </SidebarMenuButton>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem asChild>
-                                    <Link href={'/cuenta'} className="w-full cursor-pointer">
+                                    <Link href={'/user/dashboard'} className="w-full cursor-pointer">
                                         <User2 className="mr-2 h-4 w-4" />
                                         <span>Cuenta</span>
                                     </Link>
