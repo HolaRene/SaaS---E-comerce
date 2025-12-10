@@ -1,6 +1,6 @@
 "use client"
 import Link from "next/link"
-import { BadgePlus, Cog, LogOut, Moon, Store, Sun, User2 } from 'lucide-react';
+import { BadgePlus, Bell, Cog, LogOut, Moon, Store, Sun, User2 } from 'lucide-react';
 
 // Componentes de shadcn
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -44,6 +44,8 @@ const Navegacion = () => {
         api.tiendas.getTiendasByPropietario,
         idUser ? { propietarioId: idUser } : "skip"
     );
+    // Fetch pending sales
+    // const pedidos = useQuery(api.ventas.getVentasPendientes, { tiendaId: idTienda });
 
     // Mientras carga o no hay usuario
     if (!isLoaded || !clerkUser) {
@@ -68,8 +70,6 @@ const Navegacion = () => {
             {/* lado derecho */}
             <div className="flex items-center gap-4">
                 <Link href={'/'}>Inicio</Link>
-                <Link href={'/comercios'}>Comercio</Link>
-
 
 
 

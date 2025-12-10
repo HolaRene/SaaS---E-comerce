@@ -47,6 +47,7 @@ const MiNegocio = async ({ params }: { params: Promise<{ idTienda: Id<"tiendas">
                 <TabsContent value="horarios" className="space-y-6">
                     <Horario id={id} />
                 </TabsContent>
+
             </Tabs>
         </ErrorBoundary>
     );
