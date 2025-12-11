@@ -1,13 +1,13 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ErrorBoundary } from "@/components/error/ErrorBoundery"
-import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { ArrowLeftIcon } from "lucide-react";
-import { Id } from "../../../../../../convex/_generated/dataModel";
 import PerfilPublico from "@/app/(public)/comercio/[idComercio]/_components/perfilPublico";
 import HorarioPublico from "@/app/(public)/comercio/[idComercio]/_components/HorariosPublicTienda";
+import ResenasTienda from "@/app/(public)/comercio/[idComercio]/_components/ResenasTienda";
+import { Id } from "../../../../../../convex/_generated/dataModel";
 
 
 const Page = async ({ params }: { params: Promise<{ idComercio: Id<"tiendas"> }> }) => {
@@ -22,8 +22,8 @@ const Page = async ({ params }: { params: Promise<{ idComercio: Id<"tiendas"> }>
                 <Breadcrumb>
                     <BreadcrumbList>
                         <BreadcrumbItem>
-                            <BreadcrumbLink href="/user/negocios" className="flex gap-2 items-center">
-                                <ArrowLeftIcon className="w-4 h-4" /> Negocios</BreadcrumbLink>
+                            <BreadcrumbLink href="/comercios" className="flex gap-2 items-center">
+                                <ArrowLeftIcon className="w-4 h-4" /> Comercios</BreadcrumbLink>
                         </BreadcrumbItem>
                         <BreadcrumbSeparator />
                         <BreadcrumbItem>
@@ -31,9 +31,10 @@ const Page = async ({ params }: { params: Promise<{ idComercio: Id<"tiendas"> }>
                         </BreadcrumbItem>
                     </BreadcrumbList>
                 </Breadcrumb>
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="perfil">Perfil Público</TabsTrigger>
                     <TabsTrigger value="horarios">Horarios</TabsTrigger>
+                    <TabsTrigger value="resenas">Reseñas</TabsTrigger>
                 </TabsList>
 
                 {/* 1. Perfil Público */}
@@ -45,6 +46,11 @@ const Page = async ({ params }: { params: Promise<{ idComercio: Id<"tiendas"> }>
                 <TabsContent value="horarios" className="space-y-6">
                     {/* <Horario id={idComercio} /> */}
                     <HorarioPublico id={idComercio} />
+                </TabsContent>
+
+                {/* 4. Reseñas */}
+                <TabsContent value="resenas" className="space-y-6">
+                    <ResenasTienda id={idComercio} />
                 </TabsContent>
             </Tabs>
         </ErrorBoundary>
@@ -59,10 +65,7 @@ export async function generateMetadata({ params }: { params: Promise<{ idComerci
     }
 
     return {
-        title: `Tienda | ver Tienda`,
-        icons: {
-            icon: "/icons/logo-tienda-64.png"
-        }
+        title: `Tienda | Marketplace Tiendas`,
     }
 }
 

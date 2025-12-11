@@ -3,11 +3,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Id } from "../../../../../convex/_generated/dataModel"
 import PerfilPublico from "./_components/perfilPublico"
 import { ErrorBoundary } from "@/components/error/ErrorBoundery"
-import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { ArrowBigLeft, ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon } from "lucide-react";
 import HorarioPublico from "./_components/HorariosPublicTienda";
+import ResenasTienda from "./_components/ResenasTienda";
 
 
 const Page = async ({ params }: { params: Promise<{ idComercio: Id<"tiendas"> }> }) => {
@@ -31,9 +31,10 @@ const Page = async ({ params }: { params: Promise<{ idComercio: Id<"tiendas"> }>
                         </BreadcrumbItem>
                     </BreadcrumbList>
                 </Breadcrumb>
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="perfil">Perfil Público</TabsTrigger>
                     <TabsTrigger value="horarios">Horarios</TabsTrigger>
+                    <TabsTrigger value="resenas">Reseñas</TabsTrigger>
                 </TabsList>
 
                 {/* 1. Perfil Público */}
@@ -45,6 +46,11 @@ const Page = async ({ params }: { params: Promise<{ idComercio: Id<"tiendas"> }>
                 <TabsContent value="horarios" className="space-y-6">
                     {/* <Horario id={idComercio} /> */}
                     <HorarioPublico id={idComercio} />
+                </TabsContent>
+
+                {/* 4. Reseñas */}
+                <TabsContent value="resenas" className="space-y-6">
+                    <ResenasTienda id={idComercio} />
                 </TabsContent>
             </Tabs>
         </ErrorBoundary>

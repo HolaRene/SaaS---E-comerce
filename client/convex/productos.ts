@@ -577,6 +577,16 @@ export const eliminarProducto = mutation({
       }
     }
 
+    // BORRAR RESEÑAS DEL PRODUCTO
+    const resenas = await ctx.db
+      .query('resenasProductos')
+      .withIndex('by_producto', q => q.eq('productoId', args.productoId))
+      .collect()
+
+    for (const resena of resenas) {
+      await ctx.db.delete(resena._id)
+    }
+
     await ctx.db.delete(args.productoId)
     return { success: true }
   },

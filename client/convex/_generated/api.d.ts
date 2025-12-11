@@ -26,6 +26,7 @@ import type * as notificaciones from "../notificaciones.js";
 import type * as productoEtiquetas from "../productoEtiquetas.js";
 import type * as productos from "../productos.js";
 import type * as recordatorios from "../recordatorios.js";
+import type * as resenas from "../resenas.js";
 import type * as tiendas from "../tiendas.js";
 import type * as users from "../users.js";
 import type * as ventas from "../ventas.js";
@@ -55,6 +56,7 @@ declare const fullApi: ApiFromModules<{
   productoEtiquetas: typeof productoEtiquetas;
   productos: typeof productos;
   recordatorios: typeof recordatorios;
+  resenas: typeof resenas;
   tiendas: typeof tiendas;
   users: typeof users;
   ventas: typeof ventas;

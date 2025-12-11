@@ -14,6 +14,9 @@ import { Spinner } from "@/components/ui/spinner"
 import EmptyState from "@/components/public-negocios/EmptyState"
 import Link from "next/link"
 import Image from "next/image"
+import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import { useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
 import {
@@ -26,47 +29,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
-const reviews = [
-    {
-        id: 1,
-        user: "Sarah M.",
-        avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
-        rating: 5,
-        date: "2024-01-15",
-        verified: true,
-        trustScore: 95,
-        title: "Excellent sound quality!",
-        content:
-            "These headphones exceeded my expectations. The noise cancellation is fantastic and the battery life is exactly as advertised. Highly recommend!",
-        helpful: 23,
-    },
-    {
-        id: 2,
-        user: "Mike R.",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-        rating: 4,
-        date: "2024-01-10",
-        verified: true,
-        trustScore: 87,
-        title: "Great value for money",
-        content:
-            "Good headphones for the price. Comfortable to wear for long periods. The only minor issue is that the touch controls can be a bit sensitive.",
-        helpful: 18,
-    },
-    {
-        id: 3,
-        user: "Jennifer L.",
-        avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
-        rating: 5,
-        date: "2024-01-08",
-        verified: true,
-        trustScore: 92,
-        title: "Perfect for work calls",
-        content:
-            "I use these for video calls all day and the microphone quality is excellent. Colleagues say I sound very clear.",
-        helpful: 15,
-    },
-]
+// Reviews handled by backend now
 
 
 const ProductCard = ({ id }: { id: Id<"productos"> }) => {
@@ -88,14 +51,34 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
     const [copied, setCopied] = useState(false);
     const [selectedImage, setSelectedImage] = useState(0)
 
+    // Reviews queries
+    const resenas = useQuery(api.resenas.getResenasProducto, { productoId: id })
+    const statsResenas = useQuery(api.resenas.getEstadisticasResenasProducto, { productoId: id })
+    const miResena = useQuery(api.resenas.getResenaUsuarioProducto, { productoId: id }); // ¡NUEVO!
+    const crearResena = useMutation(api.resenas.crearResenaProducto);
+    const editarResena = useMutation(api.resenas.editarResenaProducto);
+
+    // State for new review
+    const [isReviewOpen, setIsReviewOpen] = useState(false)
+    const [newRating, setNewRating] = useState(5)
+    const [newComment, setNewComment] = useState("")
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false)
+
+    // Precarga datos al abrir el modal
+    useEffect(() => {
+        if (miResena && isReviewOpen) {
+            setNewRating(miResena.calificacion);
+            setNewComment(miResena.comentario || "");
+        }
+    }, [miResena, isReviewOpen]);
+
+
+
     // Queries
     // Queries
     const data = useQuery(api.productos.getProductoConTienda, { id });
     const { producto, tienda } = data || {};
-    // const producto = useQuery(api.productos.getProductoId, { id });
-    // const tienda = useQuery(api.tiendas.getTiendaPublicaById, producto ? { id: producto.tiendaId } : "skip");
-    // console.log(tienda)
-    // Mutation para agregar al carrito
+
     const agregarAlCarrito = useMutation(api.carrito.agregarAlCarrito)
 
     // Verificar si el producto es favorito
@@ -114,6 +97,37 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
             setIsFavorite(esFavorito);
         }
     }, [esFavorito]);
+    // Handler modificado para crear/editar
+    const handleSubmitReview = async () => {
+        if (!usuario?._id) return toast.error("Debes iniciar sesión");
+        setIsSubmittingReview(true);
+        try {
+            if (miResena) {
+                // EDITAR reseña existente
+                await editarResena({
+                    resenaId: miResena._id,
+                    calificacion: newRating,
+                    comentario: newComment
+                });
+                toast.success("Reseña actualizada");
+            } else {
+                // CREAR nueva reseña
+                await crearResena({
+                    productoId: id,
+                    calificacion: newRating,
+                    comentario: newComment
+                });
+                toast.success("Reseña publicada");
+            }
+            setIsReviewOpen(false);
+            setNewComment("");
+            setNewRating(5);
+        } catch (error: any) {
+            toast.error(error.message || "Error al publicar reseña");
+        } finally {
+            setIsSubmittingReview(false);
+        }
+    };
 
     if (data === undefined) {
         return <div className="flex items-center justify-center min-h-screen">
@@ -274,7 +288,7 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                                     />
                                 ))}
                                 <span className="ml-2 text-sm text-gray-600">
-                                    {producto.puntuacionPromedio || 0} ({producto.ventasTotales || 0} ventas)
+                                    {statsResenas?.promedio.toFixed(1) || 0} ({statsResenas?.total || 0} valoraciones)
                                 </span>
                             </div>
                         </div>
@@ -432,7 +446,7 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="description">Descripción</TabsTrigger>
                     <TabsTrigger value="specifications">Especificaciones</TabsTrigger>
-                    <TabsTrigger value="reviews">Reseñas ({reviews.length})</TabsTrigger>
+                    <TabsTrigger value="reviews">Reseñas ({statsResenas?.total || 0})</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="description" className="mt-6">
@@ -466,44 +480,91 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                     <div className="space-y-6">
                         {/* Review Summary */}
                         <Card>
-                            <CardHeader>
-                                <CardTitle>Customer Reviews</CardTitle>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle>Opiniones de clientes</CardTitle>
+                                <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button disabled={!usuario}>
+                                            {miResena ? "Editar mi opinión" : "Escribir opinión"}
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Escribe una reseña</DialogTitle>
+                                            <DialogDescription>
+                                                Comparte tu experiencia con este producto.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="space-y-4 py-4">
+                                            <div className="space-y-2">
+                                                <Label>Calificación</Label>
+                                                <div className="flex gap-1">
+                                                    {[1, 2, 3, 4, 5].map((star) => (
+                                                        <Star
+                                                            key={star}
+                                                            className={cn(
+                                                                "w-8 h-8 cursor-pointer transition-colors",
+                                                                star <= newRating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                                                            )}
+                                                            onClick={() => setNewRating(star)}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Comentario</Label>
+                                                <Textarea
+                                                    value={newComment}
+                                                    onChange={(e) => setNewComment(e.target.value)}
+                                                    placeholder="¿Qué te pareció el producto?"
+                                                />
+                                            </div>
+                                        </div>
+                                        <DialogFooter>
+                                            <Button variant="outline" onClick={() => setIsReviewOpen(false)}>Cancelar</Button>
+                                            <Button onClick={handleSubmitReview} disabled={isSubmittingReview}>
+                                                {isSubmittingReview && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                                Publicar
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
                             </CardHeader>
                             <CardContent>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="text-center">
-                                        <div className="text-4xl font-bold mb-2">{producto.puntuacionPromedio || 0}</div>
+                                        <div className="text-4xl font-bold mb-2">{statsResenas?.promedio.toFixed(1) || 0}</div>
                                         <div className="flex justify-center mb-2">
                                             {[...Array(5)].map((_, i) => (
                                                 <Star
                                                     key={i}
-                                                    className={`w-5 h-5 ${i < Math.floor(producto.puntuacionPromedio || 0) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+                                                    className={`w-5 h-5 ${i < Math.round(statsResenas?.promedio || 0) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
                                                 />
                                             ))}
                                         </div>
-                                        <div className="text-sm text-gray-600">{reviews.length} total reviews</div>
+                                        <div className="text-sm text-gray-600">{statsResenas?.total || 0} valoraciones</div>
                                     </div>
                                     <div className="space-y-2">
-                                        {[5, 4, 3, 2, 1].map((rating) => (
-                                            <div key={rating} className="flex items-center gap-2">
-                                                <span className="text-sm w-8">{rating}★</span>
-                                                <Progress
-                                                    value={rating === 5 ? 65 : rating === 4 ? 25 : rating === 3 ? 7 : rating === 2 ? 2 : 1}
-                                                    className="flex-1"
-                                                />
-                                                <span className="text-sm text-gray-600 w-8">
-                                                    {rating === 5
-                                                        ? "65%"
-                                                        : rating === 4
-                                                            ? "25%"
-                                                            : rating === 3
-                                                                ? "7%"
-                                                                : rating === 2
-                                                                    ? "2%"
-                                                                    : "1%"}
-                                                </span>
-                                            </div>
-                                        ))}
+                                        {[5, 4, 3, 2, 1].map((rating, idx) => {
+                                            // statsResenas?.distribucion es [count1, count2, count3, count4, count5]
+                                            // rating 5 está en index 4
+                                            const count = statsResenas?.distribucion ? statsResenas.distribucion[rating - 1] : 0;
+                                            const total = statsResenas?.total || 1;
+                                            const percentage = Math.round((count / total) * 100);
+
+                                            return (
+                                                <div key={rating} className="flex items-center gap-2">
+                                                    <span className="text-sm w-8">{rating}★</span>
+                                                    <Progress
+                                                        value={percentage}
+                                                        className="flex-1"
+                                                    />
+                                                    <span className="text-sm text-gray-600 w-8">
+                                                        {percentage}%
+                                                    </span>
+                                                </div>
+                                            )
+                                        })}
                                     </div>
                                 </div>
                             </CardContent>
@@ -511,43 +572,42 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
 
                         {/* Individual Reviews */}
                         <div className="space-y-4">
-                            {reviews.map((review) => (
-                                <Card key={review.id}>
+                            {resenas?.map((review) => (
+                                <Card key={review._id}>
                                     <CardContent className="p-6">
                                         <div className="flex items-start gap-4">
                                             <Avatar>
-                                                <AvatarImage src={review.avatar || "/placeholder.svg"} />
-                                                <AvatarFallback>{review.user[0]}</AvatarFallback>
+                                                <AvatarImage src={review.usuario.avatar} />
+                                                <AvatarFallback>{review.usuario.nombre[0]}</AvatarFallback>
                                             </Avatar>
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <span className="font-medium">{review.user}</span>
-                                                    {review.verified && (
-                                                        <Badge className="bg-green-100 text-green-800 text-xs">Verified Purchase</Badge>
-                                                    )}
+                                                    <span className="font-medium">{review.usuario.nombre} {review.usuario.apellido}</span>
+                                                    {/* Verification badge could be implemented if we track purchase */}
                                                 </div>
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <div className="flex">
                                                         {[...Array(5)].map((_, i) => (
                                                             <Star
                                                                 key={i}
-                                                                className={`w-4 h-4 ${i < review.rating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+                                                                className={`w-4 h-4 ${i < review.calificacion ? "text-yellow-400 fill-current" : "text-gray-300"}`}
                                                             />
                                                         ))}
                                                     </div>
-                                                    <span className="text-sm text-gray-600">{review.date}</span>
+                                                    <span className="text-sm text-gray-600">{new Date(review.fecha).toLocaleDateString()}</span>
                                                 </div>
-                                                <h4 className="font-medium mb-2">{review.title}</h4>
-                                                <p className="text-gray-700 mb-3">{review.content}</p>
-                                                <div className="flex items-center gap-4 text-sm text-gray-600">
-                                                    <button className="hover:text-blue-600">Helpful ({review.helpful})</button>
-                                                    <button className="hover:text-blue-600">Report</button>
-                                                </div>
+                                                {/* Title removed as schema doesn't have it, or we can add it later */}
+                                                <p className="text-gray-700 mb-3">{review.comentario}</p>
                                             </div>
                                         </div>
                                     </CardContent>
                                 </Card>
                             ))}
+                            {(!resenas || resenas.length === 0) && (
+                                <div className="text-center text-gray-500 py-8">
+                                    No hay reseñas todavía. ¡Sé el primero en opinar!
+                                </div>
+                            )}
                         </div>
 
                         <div className="text-center">
