@@ -613,6 +613,43 @@ export const getProductoId = query({
   },
 })
 
+// Obtener producto con detalles de tienda (Optimizado para evitar waterfall)
+export const getProductoConTienda = query({
+  args: {
+    id: v.id('productos'),
+  },
+  handler: async (ctx, args) => {
+    // 1. Obtener producto
+    const producto = await ctx.db.get(args.id)
+
+    // Validar producto
+    if (
+      !producto ||
+      producto.publica !== true ||
+      producto.estado !== 'activo'
+    ) {
+      return null
+    }
+
+    // 2. Obtener tienda
+    const tienda = await ctx.db.get(producto.tiendaId)
+
+    // Validar tienda
+    if (
+      !tienda ||
+      tienda.publica !== true ||
+      (tienda.estado !== 'activo' && tienda.estado !== 'pendiente')
+    ) {
+      return null
+    }
+
+    return {
+      producto,
+      tienda,
+    }
+  },
+})
+
 // ==================== FILTRAR PRODUCTOS PÚBLICOS ====================
 /**
  * Filtra productos públicos por búsqueda, categorías, rango de precio, y puntuación mínima

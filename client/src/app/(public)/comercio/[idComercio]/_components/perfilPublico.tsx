@@ -297,7 +297,7 @@ export default function PerfilPublico({ id }: PerfilProps) {
                             </div>
                             <div>
                                 <p className="text-2xl font-bold">{tiendaPublica.favoritos}</p>
-                                <p className="text-xs text-muted-foreground">Favoritos</p>
+                                <p className="text-xs text-muted-foreground">Seguidores</p>
                             </div>
                         </div>
                     </div>

@@ -13,6 +13,7 @@ import { Id } from "../../../../../../convex/_generated/dataModel"
 import { Spinner } from "@/components/ui/spinner"
 import EmptyState from "@/components/public-negocios/EmptyState"
 import Link from "next/link"
+import Image from "next/image"
 import { useUser } from "@clerk/nextjs"
 import { toast } from "sonner"
 import {
@@ -88,11 +89,12 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
     const [selectedImage, setSelectedImage] = useState(0)
 
     // Queries
-    const producto = useQuery(api.productos.getProductoId, { id });
-
-
-    const tienda = useQuery(api.tiendas.getTiendaPublicaById, producto ? { id: producto.tiendaId } : "skip");
-    console.log(tienda)
+    // Queries
+    const data = useQuery(api.productos.getProductoConTienda, { id });
+    const { producto, tienda } = data || {};
+    // const producto = useQuery(api.productos.getProductoId, { id });
+    // const tienda = useQuery(api.tiendas.getTiendaPublicaById, producto ? { id: producto.tiendaId } : "skip");
+    // console.log(tienda)
     // Mutation para agregar al carrito
     const agregarAlCarrito = useMutation(api.carrito.agregarAlCarrito)
 
@@ -113,13 +115,13 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
         }
     }, [esFavorito]);
 
-    if (producto === undefined || tienda === undefined) {
+    if (data === undefined) {
         return <div className="flex items-center justify-center min-h-screen">
             <Spinner className="h-8 w-8 text-primary" />
         </div>
     }
 
-    if (!producto) {
+    if (data === null || !producto || !tienda) {
         return <EmptyState title="Producto no encontrado" buttonLink="/product" buttonText="Ver Productos" />
     }
 
@@ -201,22 +203,59 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 {/* Product Images */}
                 <div className="space-y-4">
-                    <div className="aspect-square bg-white rounded-lg p-4">
-                        <img
-                            src={producto.imagenes[selectedImage] || "/icons/producto-64.png"}
-                            alt={producto.nombre}
-                            className="w-full h-full object-cover rounded-md"
-                        />
+                    <div className="aspect-square bg-white rounded-lg p-4 relative overflow-hidden">
+                        {/* Render ALL images to preload them, toggle visibility via opacity */}
+                        {producto.imagenes.length > 0 ? (
+                            producto.imagenes.map((img, index) => (
+                                <div
+                                    key={index}
+                                    className={cn(
+                                        "w-full h-full absolute inset-0 p-4 transition-opacity duration-300",
+                                        selectedImage === index ? "opacity-100 z-10" : "opacity-0 z-0"
+                                    )}
+                                >
+                                    <Image
+                                        src={img || "/icons/producto-64.png"}
+                                        alt={`${producto.nombre} - vista ${index + 1}`}
+                                        fill
+                                        className="object-cover rounded-md"
+                                        sizes="(min-width: 1024px) 50vw, 100vw"
+                                        priority={index === 0}
+                                    />
+                                </div>
+                            ))
+                        ) : (
+                            <div className="w-full h-full relative">
+                                <Image
+                                    src="/icons/producto-64.png"
+                                    alt={producto.nombre}
+                                    fill
+                                    className="object-cover rounded-md"
+                                    sizes="(min-width: 1024px) 50vw, 100vw"
+                                    priority
+                                />
+                            </div>
+                        )}
                     </div>
                     <div className="grid grid-cols-4 gap-2">
                         {producto.imagenes.map((image, index) => (
                             <Button
                                 key={index}
                                 onClick={() => setSelectedImage(index)}
-                                className={`aspect-square bg-white rounded-md p-2 border-2 ${selectedImage === index ? "border-blue-500" : "border-gray-200"
-                                    }`}
+                                className={cn(
+                                    "aspect-square bg-white rounded-md p-1 border-2 relative overflow-hidden h-auto",
+                                    selectedImage === index ? "border-blue-500" : "border-gray-200"
+                                )}
                             >
-                                <img src={image || "/placeholder.svg"} alt="" className="w-full h-full object-cover rounded" />
+                                <div className="relative w-full h-full">
+                                    <Image
+                                        src={image || "/placeholder.svg"}
+                                        alt={`Thumbnail ${index + 1}`}
+                                        fill
+                                        className="object-cover rounded"
+                                        sizes="(max-width: 768px) 25vw, 10vw"
+                                    />
+                                </div>
                             </Button>
                         ))}
                     </div>
@@ -242,22 +281,24 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                     </div>
 
                     {/* Price */}
-                    <div className="flex items-center gap-4">
-                        <span className="text-3xl font-bold text-red-600">{producto.precio}</span>
-                        <div className=" flex gap-2 text-3xl font-bold text-blue-500 items-center"><Heart className="w-5 h-5 text-gray-400" /> {producto.megusta || 0}</div>
+                    <div className="flex items-center gap-4 justify-between">
+                        <span className="text-3xl font-bold text-green-600">C$ {producto.precio}</span>
+                        <div className=" flex gap-2 text-3xl font-bold text-blue-500 items-center">
+                            <Heart className="w-5 h-5 text-red-600 fill-red-600" /> {producto.megusta || 0}
+                        </div>
 
-
+                        {/* 
                         {discount > 0 && (
                             <Badge className="bg-red-500 text-white">
                                 Guardar {discount.toFixed(2)}
                             </Badge>
-                        )}
+                        )} */}
                     </div>
 
                     {/* Seller Info */}
                     {tienda && (
                         <Card>
-                            <CardContent className="p-2">
+                            <CardContent className="px-3">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <div className="font-medium">Vendido por {tienda.nombre}</div>
