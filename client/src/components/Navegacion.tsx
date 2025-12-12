@@ -1,6 +1,6 @@
 "use client"
 import Link from "next/link"
-import { BadgePlus, Bell, Cog, LogOut, Moon, Store, Sun, User2 } from 'lucide-react';
+import { BadgePlus, Cog, LayoutDashboard, LogOut, Moon, Store, Sun } from 'lucide-react';
 
 // Componentes de shadcn
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -127,7 +127,7 @@ const Navegacion = () => {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>
                             <Link href="/user/dashboard" className="flex gap-2">
-                                <User2 className="mr-2 h-4 w-4" />
+                                <LayoutDashboard className="mr-2 h-4 w-4" />
                                 Mi Tablero</Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem>
