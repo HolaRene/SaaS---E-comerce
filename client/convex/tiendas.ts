@@ -640,3 +640,160 @@ export const crearTienda = mutation({
     return tiendaId
   },
 })
+
+// obtener datos metricas
+export const getMetricasTienda = query({
+  args: {
+    tiendaId: v.id('tiendas'),
+    periodo: v.union(
+      v.literal('today'),
+      v.literal('week'),
+      v.literal('month')
+    )
+  },
+  handler: async (ctx, args) => {
+    const ahora = new Date()
+    let inicioPeriodo = new Date()
+    let inicioAnterior = new Date()
+
+    // Calcular rangos de fechas
+    switch (args.periodo) {
+      case 'today':
+        inicioPeriodo = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate())
+        inicioAnterior = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - 1)
+        break
+      case 'week':
+        const diaSemana = ahora.getDay() // 0 = domingo
+        inicioPeriodo = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - diaSemana)
+        inicioAnterior = new Date(inicioPeriodo.getTime() - 7 * 24 * 60 * 60 * 1000)
+        break
+      case 'month':
+        inicioPeriodo = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
+        inicioAnterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1)
+        break
+    }
+
+    // Obtener todas las ventas de la tienda
+    const ventas = await ctx.db
+      .query('ventas')
+      .withIndex('by_tienda', q => q.eq('tiendaId', args.tiendaId))
+      .collect()
+
+    // Filtrar ventas por período
+    const ventasPeriodoActual = ventas.filter(v => {
+      const fecha = new Date(v.fecha)
+      return fecha >= inicioPeriodo && v.estado === 'completada'
+    })
+
+    const ventasPeriodoAnterior = ventas.filter(v => {
+      const fecha = new Date(v.fecha)
+      return fecha >= inicioAnterior && fecha < inicioPeriodo && v.estado === 'completada'
+    })
+
+    // Calcular métricas
+    const ventasTotales = ventasPeriodoActual.reduce((sum, v) => sum + (v.total || 0), 0)
+    const pedidos = ventasPeriodoActual.length
+    const ventasAnterior = ventasPeriodoAnterior.reduce((sum, v) => sum + (v.total || 0), 0)
+    
+    // Calcular crecimiento (evitar división por cero)
+    const crecimiento = ventasAnterior > 0 
+      ? ((ventasTotales - ventasAnterior) / ventasAnterior) * 100 
+      : 0
+
+    // ========== ALERTAS ==========
+    let alertasCount = 0
+
+    // Alerta 1: Productos con stock bajo (< 10 unidades)
+    const productos = await ctx.db
+      .query('productos')
+      .withIndex('by_tienda', q => q.eq('tiendaId', args.tiendaId))
+      .collect()
+    
+    const stockBajo = productos.filter(p => p.cantidad < 10).length
+    alertasCount += stockBajo
+
+    // Alerta 2: Créditos vencidos o próximos a vencer
+    const creditos = await ctx.db
+      .query('creditos')
+      .withIndex('by_tienda', q => q.eq('tiendaId', args.tiendaId))
+      .filter(q => q.eq(q.field('estado'), 'activo'))
+      .collect()
+
+    const hoy = new Date()
+    const creditosVencidos = creditos.filter(c => {
+      if (!c.fechaVencimiento) return false
+      const fechaVenc = new Date(c.fechaVencimiento)
+      const diasDiferencia = Math.ceil((fechaVenc.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
+      return diasDiferencia <= 3 // Vence en 3 días o ya vencido
+    }).length
+    alertasCount += creditosVencidos
+
+    // Alerta 3: Ventas pendientes
+    const ventasPendientes = ventas.filter(v => v.estado === 'pendiente').length
+    alertasCount += ventasPendientes
+
+    return {
+      ventas: Math.round(ventasTotales),
+      pedidos,
+      crecimiento: Number(crecimiento.toFixed(1)),
+      alertas: alertasCount,
+      detallesAlertas: {
+        stockBajo,
+        creditosVencidos,
+        ventasPendientes
+      }
+    }
+  },
+})
+
+// obtener ventas diarias por propietario
+
+export const getVentasDiariasByPropietario = query({
+  args: {
+    propietarioId: v.id('usuarios'),
+    dias: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const dias = args.dias || 7
+    const hoy = new Date()
+    const inicio = new Date(hoy.getTime() - dias * 24 * 60 * 60 * 1000)
+
+    // 1. Obtener TODAS las tiendas del propietario
+    const tiendas = await ctx.db
+      .query('tiendas')
+      .withIndex('by_propietario', q => q.eq('propietario', args.propietarioId))
+      .collect()
+
+    const tiendaIds = tiendas.map(t => t._id)
+
+    if (tiendaIds.length === 0) return []
+
+    // 2. Obtener ventas de TODAS las tiendas en el período
+    const ventas = await ctx.db
+      .query('ventas')
+      .withIndex('by_fecha') // Necesitas este índice: .index('by_fecha', ['fecha'])
+      .filter(q => q.gte(q.field('fecha'), inicio.toISOString()))
+      .filter(q => q.eq(q.field('estado'), 'completada'))
+      .collect()
+
+    // Filtrar solo las ventas de las tiendas del propietario
+    const ventasPropietario = ventas.filter(v => tiendaIds.includes(v.tiendaId))
+
+    // 3. Agrupar por fecha y sumar
+    const ventasPorFecha: Record<string, { sales: number; orders: number }> = {}
+    
+    for (const venta of ventasPropietario) {
+      const fecha = new Date(venta.fecha).toLocaleDateString('es-AR')
+      if (!ventasPorFecha[fecha]) {
+        ventasPorFecha[fecha] = { sales: 0, orders: 0 }
+      }
+      ventasPorFecha[fecha].sales += venta.total || 0
+      ventasPorFecha[fecha].orders += 1
+    }
+
+    return Object.entries(ventasPorFecha).map(([date, metrics]) => ({
+      date,
+      ...metrics,
+    }))
+  },
+})

@@ -1,27 +1,22 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { DailySalesData } from "@/lib/datos.empresarial"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
-
-/**
- * PerformanceChart Component
- * Displays sales and orders trends over time using Recharts
- * Shows dual-axis line chart with formatted tooltips
- */
+import { useQuery } from "convex/react"
+import { Id } from "../../../../../convex/_generated/dataModel"
+import { api } from "../../../../../convex/_generated/api"
 
 interface PerformanceChartProps {
-    data: DailySalesData[]
+    propietarioId: Id<"usuarios">
 }
 
-export function PerformanceChart({ data }: PerformanceChartProps) {
-    // Format date for display (e.g., "14 Oct")
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString)
-        return date.toLocaleDateString("es-AR", { day: "numeric", month: "short" })
-    }
+export function PerformanceChart({ propietarioId }: PerformanceChartProps) {
+    // Obtener datos agregados de TODAS las tiendas
+    const data = useQuery(api.tiendas.getVentasDiariasByPropietario, {
+        propietarioId,
+        dias: 7
+    })
 
-    // Format currency for tooltip
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat("es-AR", {
             style: "currency",
@@ -30,21 +25,34 @@ export function PerformanceChart({ data }: PerformanceChartProps) {
         }).format(value)
     }
 
-    // Transform data for chart display
-    const chartData = data.map((item) => ({
-        date: formatDate(item.date),
+    const chartData = data?.map((item) => ({
+        date: item.date,
         ventas: item.sales,
         pedidos: item.orders,
-    }))
+    })) || []
+
+    if (!data) {
+        return (
+            <Card className="col-span-full lg:col-span-2">
+                <CardHeader>
+                    <CardTitle>Rendimiento de Ventas</CardTitle>
+                    <CardDescription>Cargando datos de todas tus tiendas...</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[350px] flex items-center justify-center">
+                    <div className="animate-pulse text-muted-foreground">Cargando gráfico...</div>
+                </CardContent>
+            </Card>
+        )
+    }
 
     return (
         <Card className="shadow-sm col-span-full lg:col-span-2">
             <CardHeader>
                 <CardTitle>Rendimiento de Ventas</CardTitle>
-                <CardDescription>Evolución diaria de ventas y pedidos - Últimos 7 días</CardDescription>
+                <CardDescription>Evolución diaria de ventas y pedidos - Últimos 7 días (Todas tus tiendas)</CardDescription>
             </CardHeader>
             <CardContent>
-                <ResponsiveContainer width="100%" height={350} >
+                <ResponsiveContainer width="100%" height={350}>
                     <LineChart data={chartData} margin={{ top: 1, right: 0, left: 0, bottom: 1 }}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                         <XAxis dataKey="date" className="text-xs" tick={{ fill: "var(--muted-foreground)" }} />
@@ -68,9 +76,9 @@ export function PerformanceChart({ data }: PerformanceChartProps) {
                             }}
                             formatter={(value: number, name: string) => {
                                 if (name === "ventas") {
-                                    return [formatCurrency(value), "Ventas"]
+                                    return [formatCurrency(value), "Ventas Totales"]
                                 }
-                                return [value.toLocaleString(), "Pedidos"]
+                                return [value.toLocaleString(), "Pedidos Totales"]
                             }}
                         />
                         <Legend

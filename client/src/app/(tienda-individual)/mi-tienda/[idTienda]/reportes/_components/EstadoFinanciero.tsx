@@ -29,8 +29,6 @@ const EstadoFinanciero = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
         mesesProyectados: 3
     })
 
-    // Loading states
-    const isLoading = !flujoCaja || !cuentasPorCobrar || !resumenFinanciero || !proyeccionVentas
 
     return (
         <div className='space-y-3'>
@@ -152,13 +150,13 @@ const EstadoFinanciero = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                                     </span>
                                 </div>
                                 <div className={`flex justify-between items-center p-4 rounded-lg border-2 ${resumenFinanciero.resultado >= 0
-                                        ? "bg-primary/5 border-primary/20"
-                                        : "bg-destructive/5 border-destructive/20"
+                                    ? "bg-primary/5 border-primary/20"
+                                    : "bg-destructive/5 border-destructive/20"
                                     }`}>
                                     <span className="font-medium">Resultado</span>
                                     <span className={`text-2xl font-bold ${resumenFinanciero.resultado >= 0
-                                            ? "text-primary"
-                                            : "text-destructive"
+                                        ? "text-primary"
+                                        : "text-destructive"
                                         }`}>
                                         C${resumenFinanciero.resultado.toLocaleString()}
                                     </span>
