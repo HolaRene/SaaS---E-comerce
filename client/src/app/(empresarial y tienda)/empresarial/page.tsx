@@ -8,6 +8,7 @@ import { PerformanceChart } from "./_components/perfomance-chart"
 import { AlertsPanel } from "./_components/alert-panel"
 import { TopStoresTable } from "./_components/top-store-table"
 import { ComparativeMetrics } from "./_components/comparative-metrics"
+import { useClerk } from "@clerk/nextjs"
 
 const Page = () => {
 
@@ -46,6 +47,9 @@ const Page = () => {
                 }
         }
     }
+
+    const { user } = useClerk()
+    console.log("Usuario autenticado:", user)
 
     const currentMetrics = getMetricsForPeriod()
     return (

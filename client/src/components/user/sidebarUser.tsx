@@ -196,7 +196,7 @@ export function Sidebar() {
                                     <item.icon className="h-5 w-5" />
                                     <span>{item.name}</span>
                                     {item.badge > 0 && (
-                                        <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[0.625rem] font-medium text-primary-foreground">
+                                        <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[0.625rem] font-medium text-primary-foreground">
                                             {item.badge}
                                         </span>
                                     )}

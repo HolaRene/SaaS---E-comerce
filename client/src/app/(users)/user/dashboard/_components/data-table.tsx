@@ -67,27 +67,7 @@ export function DataTable<TData, TValue>({
 
     return (
         <div className="space-y-2">
-            <div className="flex items-center py-4 gap-2">
-                {/* Filtro global o simple búsqueda */}
-                <Input
-                    placeholder="Filtrar..."
-                    value={(table.getColumn("detalle")?.getFilterValue() as string) ?? ""}
-                    onChange={(event) =>
-                        // Note: 'detalle' is a virtual column so filtering might require a different approach or custom accessor
-                        // For now let's try filtering on 'fecha' or just no filter if complicated
-                        // Or we can add an 'id' filter if we had one.
-                        // Let's rely on simple string matching if we had a string column.
-                        // If 'detalle' doesn't exist as a key with data associated, this might fail.
-                        // It's safer to filter on a robust column or remove for now if overkill.
-                        // User asked for "like the one I use", which has a filter.
-                        // Let's filter on global data or remove if not easily mappable.
-                        // For Dashboard, a filter might be overkill for "Recent Activity".
-                        // I'll leave the input but maybe disable it or filter by nothing for now to avoid crashes.
-                        table.getAllColumns()[0]?.setFilterValue(event.target.value)
-                    }
-                    className="max-w-sm hidden" // Hidden for now as filtering mixed types is tricky without row model custom logic
-                />
-            </div>
+
             <div className="rounded-md border">
                 <Table>
                     <TableHeader>

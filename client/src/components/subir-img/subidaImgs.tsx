@@ -97,17 +97,17 @@ const SubidaImgs = ({ imageUrls, setImageUrls, imageStorageIds, setImageStorageI
                 {
                     !isImageLoading ? (
                         <>
-                            <UploadCloud size={40} className="text-gray-400" />
+                            <UploadCloud size={40} className="text-green-400" />
                         </>
                     ) : (
-                        <div className="text-[16px] flex items-center justify-center font-medium text-black">
+                        <div className="text-[16px] flex items-center justify-center font-medium text-red">
                             Subiendo...
                             <Loader size={20} className="animate-spin ml-2" />
                         </div>
                     )
                 }
                 <div className="flex flex-col items-center gap-1">
-                    <h2 className="text-[12px] font-bold text-orange-600">
+                    <h2 className="text-[12px] font-bold text-blue-600">
                         Click para subir imágenes
                     </h2>
                     <p className="text-[12px] font-normal text-gray-500">Máximo 5 imágenes (JPG, PNG, GIF)</p>

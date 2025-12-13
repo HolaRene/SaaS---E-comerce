@@ -12,7 +12,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useState } from "react"
 import { Badge } from "../ui/badge"
 import Link from "next/link"
 import { useQuery } from "convex/react"

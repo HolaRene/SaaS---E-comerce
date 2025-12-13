@@ -70,32 +70,32 @@ export const crearNotificacionesParaFavoritos = internalMutation({
         case 'nuevo_producto':
           titulo = `Nuevo producto en ${args.datos?.nombreTienda}`
           mensaje = `${args.datos?.nombreProducto} - $${args.datos?.precio}`
-          url = `/tienda/${args.tiendaId}/producto/${args.productoId}`
+          url = `/user/productos/${args.productoId}`
           break
         case 'precio_bajado':
           titulo = `¡Precio bajado! ${args.datos?.nombreProducto}`
           mensaje = `Ahora $${args.datos?.precioNuevo} (antes $${args.datos?.precioAntiguo})`
-          url = `/tienda/${args.tiendaId}/producto/${args.productoId}`
+          url = `/user/productos/${args.productoId}`
           break
         case 'precio_subido':
           titulo = `Precio aumentado ${args.datos?.nombreProducto}`
           mensaje = `De $${args.datos?.precioAntiguo} a $${args.datos?.precioNuevo}`
-          url = `/tienda/${args.tiendaId}/producto/${args.productoId}`
+          url = `/user/productos/${args.productoId}`
           break
         case 'producto_eliminado':
           titulo = `Producto ya no disponible`
           mensaje = `${args.datos?.nombreProducto} fue eliminado`
-          url = `/tienda/${args.tiendaId}`
+          url = `/user/negocio/${args.tiendaId}`
           break
         case 'tienda_nombre_cambiado':
           titulo = `Tienda actualizó su nombre`
           mensaje = `${args.datos?.nombreAntiguo} → ${args.datos?.nombreNuevo}`
-          url = `/tienda/${args.tiendaId}`
+          url = `/user/negocio/${args.tiendaId}`
           break
         case 'tienda_datos_actualizados':
           titulo = `Tienda actualizada`
           mensaje = `${args.datos?.nombreTienda} modificó sus datos`
-          url = `/tienda/${args.tiendaId}`
+          url = `/user/negocio/${args.tiendaId}`
           break
       }
 

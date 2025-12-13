@@ -360,53 +360,98 @@ export default function CreateStoreForm() {
                                 </div>
 
                                 <TooltipProvider>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Campo Latitud */}
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-2">
-                                                <Label>Latitud *</Label>
+                                                <Label htmlFor="lat">Latitud *</Label>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                                                        <Info className="h-4 w-4 text-muted-foreground cursor-help hidden sm:inline-block" />
                                                     </TooltipTrigger>
                                                     <TooltipContent className="max-w-xs">
                                                         <p className="text-sm">
-                                                            Coordenada geográfica que indica la posición norte-sur de tu tienda.
-                                                            Puedes obtenerla desde Google Maps haciendo clic derecho en tu ubicación.
-                                                            Rango: -90 a 90, puedes obtener tu lat y long en <Link className="text-blue-500 underline" href={'https://www.latlong.net/'}>lalong</Link>
+                                                            Coordenada geográfica norte-sur. Obténla desde Google Maps con clic derecho.
+                                                            Rango: -90 a 90. Verifica en {" "}
+                                                            <Link
+                                                                href="https://www.latlong.net"
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-blue-500 underline hover:text-blue-600"
+                                                            >
+                                                                latlong.net
+                                                            </Link>
                                                         </p>
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </div>
                                             <Input
+                                                id="lat"
                                                 type="number"
                                                 step="any"
                                                 placeholder="Ej: 12.8654"
                                                 {...register("lat", { valueAsNumber: true })}
                                             />
+                                            {/* Ayuda visible solo en móvil */}
+                                            <p className="text-xs text-muted-foreground sm:hidden flex items-center gap-1">
+                                                <Info className="h-3 w-3" />
+                                                <span>Clic derecho en Google Maps para copiar. Rango: -90 a 90, o en <Link
+                                                    href="https://www.latlong.net"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-500 underline hover:text-blue-600"
+                                                >
+                                                    latlong.net
+                                                </Link></span>
+                                            </p>
                                             <ErrorMessage message={errors.lat?.message} />
                                         </div>
+
+                                        {/* Campo Longitud */}
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-2">
-                                                <Label>Longitud *</Label>
+                                                <Label htmlFor="lng">Longitud *</Label>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                                                        <Info className="h-4 w-4 text-muted-foreground cursor-help hidden sm:inline-block" />
                                                     </TooltipTrigger>
                                                     <TooltipContent className="max-w-xs">
                                                         <p className="text-sm">
-                                                            Coordenada geográfica que indica la posición este-oeste de tu tienda.
-                                                            Puedes obtenerla desde Google Maps haciendo clic derecho en tu ubicación.
-                                                            Rango: -180 a 180, puedes obtener tu lat y long en <Link target="_blank" className="text-blue-500 underline" href={'https://www.latlong.net/'}>lalong</Link>
+                                                            Coordenada geográfica este-oeste. Obténla desde Google Maps con clic derecho.
+                                                            Rango: -180 a 180. Verifica en {" "}
+                                                            <Link
+                                                                href="https://www.latlong.net"
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-blue-500 underline hover:text-blue-600"
+                                                            >
+                                                                latlong.net
+                                                            </Link>
                                                         </p>
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </div>
                                             <Input
+                                                id="lng"
                                                 type="number"
                                                 step="any"
                                                 placeholder="Ej: -85.2072"
                                                 {...register("lng", { valueAsNumber: true })}
                                             />
+                                            {/* Ayuda visible solo en móvil */}
+                                            <p className="text-xs text-muted-foreground sm:hidden flex items-center gap-1">
+                                                <Info className="h-3 w-3" />
+                                                <span>Clic derecho en Google Maps para copiar. Rango: -180 a 180
+                                                    en <Link
+                                                        href="https://www.latlong.net"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-blue-500 underline hover:text-blue-600"
+                                                    >
+                                                        latlong.net
+                                                    </Link>
+                                                </span>
+                                            </p>
                                             <ErrorMessage message={errors.lng?.message} />
                                         </div>
                                     </div>

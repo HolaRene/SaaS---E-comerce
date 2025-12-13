@@ -8,7 +8,7 @@ import { cookies } from "next/headers"
 import AppSidebarEnterprise from "@/components/AppSideBar-enterprise"
 
 export const metadata: Metadata = {
-    title: "MiPulperia Digital",
+    title: "MiComercio Digital",
     description: "Tienda en línea",
     icons: {
         icon: "/logo-flexi.ico",
