@@ -123,7 +123,8 @@ export const crearNotificacionUsuario = internalMutation({
       v.literal('compra_estado'),
       v.literal('credito_movimiento'),
       v.literal('sistema'),
-      v.literal('recordatorio')
+      v.literal('recordatorio'),
+      v.literal('miembro_agregado') // NUEVO
     ),
     titulo: v.string(),
     mensaje: v.string(),

@@ -51,6 +51,9 @@ export function Header() {
         idUser ? { propietarioId: idUser } : "skip"
     );
 
+    // Obtener tiendas donde es miembro (no propietario)
+    const tiendasComoMiembro = useQuery(api.tiendas.getTiendasDondeSoyMiembro);
+
     // Mientras carga o no hay usuario
     if (!isLoaded || !clerkUser) {
         return null; // o un skeleton
@@ -64,7 +67,6 @@ export function Header() {
     const imagenUrl = usuario?.imgUrl
         || clerkUser.imageUrl
         || "/default-avatar.png";
-
 
 
 
@@ -155,15 +157,46 @@ export function Header() {
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            {tiendaUser?.map((t) => (
-                                <DropdownMenuItem key={t._id}>
-                                    <Link href={`/mi-tienda/${t._id}`} className="flex gap-2">
-                                        <Store />
-                                        {t.nombre}
-                                    </Link>
-                                </DropdownMenuItem>
-                            ))}
-                            <DropdownMenuSeparator />
+
+                            {/* Mis Tiendas (Propietario) */}
+                            {tiendaUser && tiendaUser.length > 0 && (
+                                <>
+                                    <DropdownMenuLabel className="text-xs text-muted-foreground">
+                                        Mis Tiendas
+                                    </DropdownMenuLabel>
+                                    {tiendaUser.map((t) => (
+                                        <DropdownMenuItem key={t._id}>
+                                            <Link href={`/mi-tienda/${t._id}`} className="flex gap-2">
+                                                <Store className="h-4 w-4 text-orange-500" />
+                                                {t.nombre}
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    ))}
+                                    <DropdownMenuSeparator />
+                                </>
+                            )}
+
+                            {/* Tiendas donde soy miembro */}
+                            {tiendasComoMiembro && tiendasComoMiembro.length > 0 && (
+                                <>
+                                    <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <User2 className="h-3 w-3" />
+                                        Miembro del Equipo
+                                    </DropdownMenuLabel>
+                                    {tiendasComoMiembro.map((t) => (
+                                        <DropdownMenuItem key={t._id}>
+                                            <Link href={`/mi-tienda/${t._id}`} className="flex gap-2 items-center w-full">
+                                                <User2 className="h-4 w-4 text-blue-500" />
+                                                <span className="flex-1">{t.nombre}</span>
+                                                <Badge variant="outline" className="text-[10px] px-1">
+                                                    {t.rol}
+                                                </Badge>
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    ))}
+                                    <DropdownMenuSeparator />
+                                </>
+                            )}
                             <DropdownMenuItem>
                                 <Link href="/user/dashboard" className="flex gap-2">
                                     <LayoutDashboard className="mr-2 h-4 w-4" />

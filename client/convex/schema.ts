@@ -609,7 +609,8 @@ export default defineSchema({
       v.literal('compra_estado'), // Nuevo: Estado de pedido
       v.literal('credito_movimiento'), // Nuevo: Pagos o cargos extra
       v.literal('nueva_tienda'), // Nuevo: Tienda nueva en zona
-      v.literal('recordatorio') // Nuevo: Recordatorios de cobro
+      v.literal('recordatorio'), // Nuevo: Recordatorios de cobro
+      v.literal('miembro_agregado') // Nuevo: Agregado como miembro de equipo
     ),
     titulo: v.string(),
     mensaje: v.string(),

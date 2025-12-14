@@ -320,7 +320,7 @@ const ProductCard = ({ id }: { id: Id<"productos"> }) => {
                                             {tienda.puntuacion || 0}★ puntuación
                                         </div>
                                     </div>
-                                    <Link href={`/comercio/${tienda._id}`}>
+                                    <Link href={`/user/negocio/${tienda._id}`}>
                                         <Button variant="outline" size="sm">
                                             Ver Tienda
                                         </Button>

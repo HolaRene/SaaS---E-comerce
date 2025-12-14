@@ -139,8 +139,8 @@ export default function Perfil({ id }: PerfilProps) {
                                     <Button variant="outline">
                                         <Star className="mr-2 h-4 w-4" />Ver Reseñas
                                     </Button>
-                                    <span className="flex items-center gap-2"><Eye className="mr-1 h-4 w-4" /> {tienda.visitas || 0}</span>
-                                    <span className="flex items-center gap-2"><User className="mr-1 h-4 w-4" /> {tienda.favoritos || 0} Seguidores</span>
+
+                                    <span className="flex items-center gap-2"><User className="mr-1 h-4 w-4" /> {tienda.favoritos || 0} Personas que te siguen</span>
 
                                 </div>
                             </CardContent>

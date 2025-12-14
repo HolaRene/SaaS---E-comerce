@@ -1034,6 +1034,24 @@ export const agregarMiembro = mutation({
     metricasEquipo.totalVendedores = miembrosActualizados.length
     await ctx.db.patch(args.tiendaId, { metricasEquipo })
 
+    // Enviar notificación al usuario agregado
+    await ctx.scheduler.runAfter(
+      0,
+      internal.notificaciones.crearNotificacionUsuario,
+      {
+        usuarioId: args.usuarioId,
+        tipo: 'miembro_agregado',
+        titulo: `Has sido agregado como ${args.rol} en ${tienda.nombre}`,
+        mensaje: `Ahora formas parte del equipo de ${tienda.nombre}. Accede desde tu menú de usuario.`,
+        url: `/mi-tienda/${args.tiendaId}`,
+        tiendaId: args.tiendaId,
+        datos: {
+          rol: args.rol,
+          nombreTienda: tienda.nombre,
+        },
+      }
+    )
+
     return {
       success: true,
       miembroId: args.usuarioId,
@@ -1231,5 +1249,48 @@ export const getMiembrosTienda = query({
       plan: limites.nombre,
       puedeAgregarMas: tienda.miembros.length < limites.miembros,
     }
+  },
+})
+
+/**
+ * Obtener tiendas donde el usuario es miembro (pero no propietario)
+ */
+export const getTiendasDondeSoyMiembro = query({
+  args: {},
+  handler: async ctx => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) return []
+
+    const usuario = await ctx.db
+      .query('usuarios')
+      .withIndex('by_clerkId', q => q.eq('clerkId', identity.subject))
+      .unique()
+
+    if (!usuario) return []
+
+    // Obtener todas las tiendas
+    const todasLasTiendas = await ctx.db.query('tiendas').collect()
+
+    // Filtrar tiendas donde el usuario es miembro pero NO propietario
+    const tiendasComoMiembro = todasLasTiendas.filter(tienda => {
+      const esPropietario = String(tienda.propietario) === String(usuario._id)
+      const esMiembro = tienda.miembros.some(
+        m => String(m.usuarioId) === String(usuario._id)
+      )
+      return esMiembro && !esPropietario
+    })
+
+    return tiendasComoMiembro.map(tienda => {
+      const miembro = tienda.miembros.find(
+        m => String(m.usuarioId) === String(usuario._id)
+      )
+      return {
+        _id: tienda._id,
+        nombre: tienda.nombre,
+        avatar: tienda.avatar,
+        rol: miembro?.rol || 'vendedor',
+        fechaUnion: miembro?.fechaUnion,
+      }
+    })
   },
 })

@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Package, Tag, Settings, Search, Bell, BellOff, Store, TrendingDown } from "lucide-react"
+import { Package, Tag, Settings, Search, Bell, BellOff, Store, TrendingDown, Users } from "lucide-react"
 import NotificacionOder from "./_components/notificacion-order"
 import Notificacionpromocion from "./_components/notificacion-promocion"
 import Notificacionprecios from "./_components/notificacion-precios"
@@ -44,6 +44,7 @@ export default function NotificationsTab() {
         if (n.tipo === "sistema") icon = <Settings className="h-5 w-5 text-muted-foreground" />
         if (n.tipo === "compra_estado") icon = <Package className="h-5 w-5 text-green-600" />
         if (n.tipo === "recordatorio") icon = <Bell className="h-5 w-5 text-destructive" />
+        if (n.tipo === "miembro_agregado") icon = <Users className="h-5 w-5 text-blue-500" />
 
         return {
             id: n._id,
