@@ -50,9 +50,15 @@ interface AppSideBarProps {
 
 import { useClerk } from "@clerk/nextjs";
 
+import { useQuery } from "convex/react";
+import { Badge } from "@/components/ui/badge";
+import { api } from "../../convex/_generated/api";
+
 const AppSideBar = ({ idTienda }: AppSideBarProps) => {
     const pathname = usePathname()
     const { signOut } = useClerk()
+
+    const pedidosPendientes = useQuery(api.ventas.getVentasPendientesCount, idTienda ? { tiendaId: idTienda as any } : "skip");
 
     // Construir las rutas dinámicamente con el idTienda
     const menuItems = [
@@ -75,11 +81,17 @@ const AppSideBar = ({ idTienda }: AppSideBarProps) => {
         {
             title: "Pedidos Web",
             url: idTienda ? `/mi-tienda/${idTienda}/pedidos` : "/mi-tienda/pedidos",
-            icon: PackageOpen, // Or another icon like Inbox or Bell
+            icon: PackageOpen,
+            badge: pedidosPendientes // Count to show
         },
         {
             title: "Clientes",
             url: idTienda ? `/mi-tienda/${idTienda}/clientes` : "/mi-tienda/clientes",
+            icon: Users,
+        },
+        {
+            title: "Equipo",
+            url: idTienda ? `/mi-tienda/${idTienda}/equipo` : "/mi-tienda/equipo",
             icon: Users,
         },
         {
@@ -135,7 +147,7 @@ const AppSideBar = ({ idTienda }: AppSideBarProps) => {
                     <SidebarGroupLabel>Menú</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {menuItems.map(({ icon: Icon, title, url, exact }) => {
+                            {menuItems.map(({ icon: Icon, title, url, exact, badge }) => {
                                 const active = isActive(url, exact);
                                 return (
                                     <SidebarMenuItem key={title}>
@@ -143,7 +155,7 @@ const AppSideBar = ({ idTienda }: AppSideBarProps) => {
                                             <Link
                                                 href={url}
                                                 className={cn(
-                                                    "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group",
+                                                    "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group relative",
                                                     active
                                                         ? "border-orange-400 border-r-2 border-b-2 font-bold shadow-md"
                                                         : "text-slate-600 hover:bg-gray-400 hover:text-slate-500"
@@ -154,11 +166,16 @@ const AppSideBar = ({ idTienda }: AppSideBarProps) => {
 
                                                 )} />
                                                 <span className={cn(
-                                                    "font-medium transition-colors",
+                                                    "font-medium transition-colors flex-1",
 
                                                 )}>
                                                     {title}
                                                 </span>
+                                                {badge !== undefined && badge > 0 && (
+                                                    <Badge variant="destructive" className="ml-auto h-5 w-5 flex items-center justify-center rounded-full p-0 text-[10px]">
+                                                        {badge}
+                                                    </Badge>
+                                                )}
                                             </Link>
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
@@ -186,15 +203,9 @@ const AppSideBar = ({ idTienda }: AppSideBarProps) => {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem asChild>
-                                    <Link href={'/user/dashboard'} className="w-full cursor-pointer">
-                                        <User2 className="mr-2 h-4 w-4" />
-                                        <span>Cuenta</span>
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
                                     <Link href={`/mi-tienda/${idTienda}/configuracion`} className="w-full cursor-pointer">
                                         <Settings className="mr-2 h-4 w-4" />
-                                        <span>Ajustes</span>
+                                        <span>Ajustes de la tienda</span>
                                     </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem

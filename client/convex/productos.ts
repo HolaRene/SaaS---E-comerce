@@ -41,6 +41,24 @@ export const crearProducto = mutation({
       .collect()
     if (user.length === 0) throw new ConvexError('Usuario no encontrado')
 
+    // Validar límite de productos según plan
+    const { getLimitesPlan, excedeLimite } = await import('./planes')
+    const tiendaValidacion = await ctx.db.get(args.tiendaId)
+    if (!tiendaValidacion) throw new ConvexError('Tienda no encontrada')
+
+    const productosActuales = await ctx.db
+      .query('productos')
+      .withIndex('by_tienda', q => q.eq('tiendaId', args.tiendaId))
+      .collect()
+
+    const limites = getLimitesPlan(tiendaValidacion.plan)
+
+    if (excedeLimite(productosActuales.length, limites.productos)) {
+      throw new ConvexError(
+        `Límite alcanzado. El plan ${limites.nombre} permite máximo ${limites.productos} productos. Actualiza tu plan.`
+      )
+    }
+
     const newProduct = await ctx.db.insert('productos', {
       nombre: args.nombre,
       autorId: [user[0]._id],
@@ -776,5 +794,22 @@ export const getPrecioMaximoProductos = query({
     const maxPrecio = Math.max(...productos.map(p => p.precio))
     // Redondear al siguiente múltiplo de 100 para mejor UX
     return Math.ceil(maxPrecio / 100) * 100
+  },
+})
+
+// ==================== INCREMENTAR VISTAS ====================
+/**
+ * Incrementa el contador de vistas totales de un producto
+ * Se debe llamar desde el frontend cuando un usuario accede a la página del producto
+ */
+export const incrementarVistasProducto = mutation({
+  args: { productoId: v.id('productos') },
+  handler: async (ctx, args) => {
+    const producto = await ctx.db.get(args.productoId)
+    if (producto) {
+      await ctx.db.patch(args.productoId, {
+        vistasTotales: (producto.vistasTotales || 0) + 1,
+      })
+    }
   },
 })

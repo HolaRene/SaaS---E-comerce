@@ -563,6 +563,26 @@ export const crearTienda = mutation({
       .collect()
     if (user.length === 0) throw new ConvexError('Usuario no encontrado')
 
+    // Validar límite de tiendas según plan del usuario
+    const { getLimitesPlan, excedeLimite } = await import('./planes')
+
+    // Contar tiendas actuales del usuario
+    const tiendasActuales = await ctx.db
+      .query('tiendas')
+      .withIndex('by_propietario', q => q.eq('propietario', user[0]._id))
+      .collect()
+
+    // Por ahora asumimos plan gratis, cuando implementes usuarios con planes,
+    // deberás obtener el plan del usuario desde la tabla usuarios
+    const planUsuario = 'gratis' // TODO: Obtener de user[0].plan cuando exista
+    const limites = getLimitesPlan(planUsuario)
+
+    if (excedeLimite(tiendasActuales.length, limites.tiendas)) {
+      throw new ConvexError(
+        `Límite alcanzado. El plan ${limites.nombre} permite máximo ${limites.tiendas} tienda(s). Actualiza tu plan para crear más.`
+      )
+    }
+
     const tiendaId = await ctx.db.insert('tiendas', {
       avatar: args.avatar ?? '/icons/icons8-tienda-80.png',
       imgBanner: args.imgBanner ?? '/icons/icons8-tienda-80.png',
@@ -645,11 +665,7 @@ export const crearTienda = mutation({
 export const getMetricasTienda = query({
   args: {
     tiendaId: v.id('tiendas'),
-    periodo: v.union(
-      v.literal('today'),
-      v.literal('week'),
-      v.literal('month')
-    )
+    periodo: v.union(v.literal('today'), v.literal('week'), v.literal('month')),
   },
   handler: async (ctx, args) => {
     const ahora = new Date()
@@ -659,13 +675,27 @@ export const getMetricasTienda = query({
     // Calcular rangos de fechas
     switch (args.periodo) {
       case 'today':
-        inicioPeriodo = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate())
-        inicioAnterior = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - 1)
+        inicioPeriodo = new Date(
+          ahora.getFullYear(),
+          ahora.getMonth(),
+          ahora.getDate()
+        )
+        inicioAnterior = new Date(
+          ahora.getFullYear(),
+          ahora.getMonth(),
+          ahora.getDate() - 1
+        )
         break
       case 'week':
         const diaSemana = ahora.getDay() // 0 = domingo
-        inicioPeriodo = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - diaSemana)
-        inicioAnterior = new Date(inicioPeriodo.getTime() - 7 * 24 * 60 * 60 * 1000)
+        inicioPeriodo = new Date(
+          ahora.getFullYear(),
+          ahora.getMonth(),
+          ahora.getDate() - diaSemana
+        )
+        inicioAnterior = new Date(
+          inicioPeriodo.getTime() - 7 * 24 * 60 * 60 * 1000
+        )
         break
       case 'month':
         inicioPeriodo = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
@@ -687,18 +717,29 @@ export const getMetricasTienda = query({
 
     const ventasPeriodoAnterior = ventas.filter(v => {
       const fecha = new Date(v.fecha)
-      return fecha >= inicioAnterior && fecha < inicioPeriodo && v.estado === 'completada'
+      return (
+        fecha >= inicioAnterior &&
+        fecha < inicioPeriodo &&
+        v.estado === 'completada'
+      )
     })
 
     // Calcular métricas
-    const ventasTotales = ventasPeriodoActual.reduce((sum, v) => sum + (v.total || 0), 0)
+    const ventasTotales = ventasPeriodoActual.reduce(
+      (sum, v) => sum + (v.total || 0),
+      0
+    )
     const pedidos = ventasPeriodoActual.length
-    const ventasAnterior = ventasPeriodoAnterior.reduce((sum, v) => sum + (v.total || 0), 0)
-    
+    const ventasAnterior = ventasPeriodoAnterior.reduce(
+      (sum, v) => sum + (v.total || 0),
+      0
+    )
+
     // Calcular crecimiento (evitar división por cero)
-    const crecimiento = ventasAnterior > 0 
-      ? ((ventasTotales - ventasAnterior) / ventasAnterior) * 100 
-      : 0
+    const crecimiento =
+      ventasAnterior > 0
+        ? ((ventasTotales - ventasAnterior) / ventasAnterior) * 100
+        : 0
 
     // ========== ALERTAS ==========
     let alertasCount = 0
@@ -708,7 +749,7 @@ export const getMetricasTienda = query({
       .query('productos')
       .withIndex('by_tienda', q => q.eq('tiendaId', args.tiendaId))
       .collect()
-    
+
     const stockBajo = productos.filter(p => p.cantidad < 10).length
     alertasCount += stockBajo
 
@@ -723,7 +764,9 @@ export const getMetricasTienda = query({
     const creditosVencidos = creditos.filter(c => {
       if (!c.fechaVencimiento) return false
       const fechaVenc = new Date(c.fechaVencimiento)
-      const diasDiferencia = Math.ceil((fechaVenc.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
+      const diasDiferencia = Math.ceil(
+        (fechaVenc.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24)
+      )
       return diasDiferencia <= 3 // Vence en 3 días o ya vencido
     }).length
     alertasCount += creditosVencidos
@@ -740,8 +783,8 @@ export const getMetricasTienda = query({
       detallesAlertas: {
         stockBajo,
         creditosVencidos,
-        ventasPendientes
-      }
+        ventasPendientes,
+      },
     }
   },
 })
@@ -781,7 +824,7 @@ export const getVentasDiariasByPropietario = query({
 
     // 3. Agrupar por fecha y sumar
     const ventasPorFecha: Record<string, { sales: number; orders: number }> = {}
-    
+
     for (const venta of ventasPropietario) {
       const fecha = new Date(venta.fecha).toLocaleDateString('es-AR')
       if (!ventasPorFecha[fecha]) {
@@ -795,5 +838,398 @@ export const getVentasDiariasByPropietario = query({
       date,
       ...metrics,
     }))
+  },
+})
+
+// ==================== MUTATIONS INTERNAS PARA ESTADÍSTICAS ====================
+/**
+ * Actualiza las estadísticas principales de una tienda
+ * Esta es una función interna que se llama desde otras mutations
+ */
+export const actualizarEstadisticasTienda = mutation({
+  args: {
+    tiendaId: v.id('tiendas'),
+    tipo: v.union(
+      v.literal('venta'),
+      v.literal('cliente'),
+      v.literal('producto')
+    ),
+    incremento: v.number(), // Puede ser positivo o negativo
+  },
+  handler: async (ctx, args) => {
+    const tienda = await ctx.db.get(args.tiendaId)
+    if (!tienda) return
+
+    const estadisticas = { ...tienda.estadisticas }
+
+    switch (args.tipo) {
+      case 'venta':
+        estadisticas.ventasTotales += args.incremento
+        break
+      case 'cliente':
+        estadisticas.clientesTotales = Math.max(
+          0,
+          estadisticas.clientesTotales + args.incremento
+        )
+        break
+      case 'producto':
+        estadisticas.productosActivos = Math.max(
+          0,
+          estadisticas.productosActivos + args.incremento
+        )
+        break
+    }
+
+    await ctx.db.patch(args.tiendaId, { estadisticas })
+  },
+})
+
+/**
+ * Actualiza las métricas del equipo de una tienda
+ */
+export const actualizarMetricasEquipo = mutation({
+  args: {
+    tiendaId: v.id('tiendas'),
+    ventasEsteMes: v.optional(v.number()),
+    productoMasVendido: v.optional(v.id('productos')),
+  },
+  handler: async (ctx, args) => {
+    const tienda = await ctx.db.get(args.tiendaId)
+    if (!tienda) return
+
+    const metricasEquipo = { ...tienda.metricasEquipo }
+
+    if (args.ventasEsteMes !== undefined) {
+      metricasEquipo.ventasEsteMes += args.ventasEsteMes
+    }
+
+    if (args.productoMasVendido !== undefined) {
+      metricasEquipo.productoMasVendido = args.productoMasVendido
+    }
+
+    // Actualizar total de vendedores (miembros)
+    metricasEquipo.totalVendedores = tienda.miembros.length
+
+    await ctx.db.patch(args.tiendaId, { metricasEquipo })
+  },
+})
+
+// ==================== GESTIÓN DE MIEMBROS/VENDEDORES ====================
+
+import { getLimitesPlan, excedeLimite } from './planes'
+
+/**
+ * Agregar un nuevo miembro al equipo de la tienda
+ * Solo propietario o admin pueden agregar miembros
+ */
+export const agregarMiembro = mutation({
+  args: {
+    tiendaId: v.id('tiendas'),
+    usuarioId: v.id('usuarios'),
+    rol: v.union(
+      v.literal('admin'),
+      v.literal('vendedor'),
+      v.literal('asistente')
+    ),
+    permisos: v.optional(v.array(v.string())),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) throw new Error('No autenticado')
+
+    const usuario = await ctx.db
+      .query('usuarios')
+      .withIndex('by_clerkId', q => q.eq('clerkId', identity.subject))
+      .unique()
+
+    if (!usuario) throw new Error('Usuario no encontrado')
+
+    const tienda = await ctx.db.get(args.tiendaId)
+    if (!tienda) throw new Error('Tienda no encontrada')
+
+    // Verificar permisos
+    const esPropietario = String(tienda.propietario) === String(usuario._id)
+    const esAdmin = tienda.miembros.some(
+      m => String(m.usuarioId) === String(usuario._id) && m.rol === 'admin'
+    )
+
+    if (!esPropietario && !esAdmin) {
+      throw new Error('No tienes permiso para agregar miembros')
+    }
+
+    // Verificar que el miembro no exista ya
+    const yaExiste = tienda.miembros.some(
+      m => String(m.usuarioId) === String(args.usuarioId)
+    )
+
+    if (yaExiste) {
+      throw new Error('Este usuario ya es miembro de la tienda')
+    }
+
+    // Validar límite según plan
+    const limites = getLimitesPlan(tienda.plan)
+
+    if (excedeLimite(tienda.miembros.length, limites.miembros)) {
+      throw new Error(
+        `Límite alcanzado. El plan ${limites.nombre} permite máximo ${limites.miembros} miembros. Actualiza tu plan.`
+      )
+    }
+
+    // Verificar que el usuario a agregar exista
+    const usuarioAAgregar = await ctx.db.get(args.usuarioId)
+    if (!usuarioAAgregar) {
+      throw new Error('El usuario a agregar no existe')
+    }
+
+    // Definir permisos según rol
+    let permisos = args.permisos
+    if (!permisos || permisos.length === 0) {
+      switch (args.rol) {
+        case 'admin':
+          permisos = ['full_access']
+          break
+        case 'vendedor':
+          permisos = [
+            'crear_venta',
+            'ver_productos',
+            'ver_clientes',
+            'crear_cliente',
+          ]
+          if (
+            tienda.configuracion.permisosTienda.vendedoresPuedenCrearProductos
+          ) {
+            permisos.push('crear_producto')
+          }
+          if (
+            tienda.configuracion.permisosTienda.vendedoresPuedenModificarPrecios
+          ) {
+            permisos.push('editar_precio')
+          }
+          if (tienda.configuracion.permisosTienda.vendedoresPuedenVerReportes) {
+            permisos.push('ver_reportes')
+          }
+          break
+        case 'asistente':
+          permisos = ['ver_productos', 'ver_clientes']
+          break
+      }
+    }
+
+    // Agregar nuevo miembro
+    const nuevoMiembro = {
+      usuarioId: args.usuarioId,
+      rol: args.rol,
+      fechaUnion: new Date().toISOString(),
+      permisos,
+    }
+
+    const miembrosActualizados = [...tienda.miembros, nuevoMiembro]
+
+    await ctx.db.patch(args.tiendaId, {
+      miembros: miembrosActualizados,
+    })
+
+    // Actualizar metricasEquipo.totalVendedores
+    const metricasEquipo = { ...tienda.metricasEquipo }
+    metricasEquipo.totalVendedores = miembrosActualizados.length
+    await ctx.db.patch(args.tiendaId, { metricasEquipo })
+
+    return {
+      success: true,
+      miembroId: args.usuarioId,
+      nombreMiembro: usuarioAAgregar.nombre,
+      totalMiembros: miembrosActualizados.length,
+      limiteMaximo: limites.miembros,
+    }
+  },
+})
+
+/**
+ * Remover un miembro del equipo de la tienda
+ */
+export const removerMiembro = mutation({
+  args: {
+    tiendaId: v.id('tiendas'),
+    usuarioId: v.id('usuarios'),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) throw new Error('No autenticado')
+
+    const usuario = await ctx.db
+      .query('usuarios')
+      .withIndex('by_clerkId', q => q.eq('clerkId', identity.subject))
+      .unique()
+
+    if (!usuario) throw new Error('Usuario no encontrado')
+
+    const tienda = await ctx.db.get(args.tiendaId)
+    if (!tienda) throw new Error('Tienda no encontrada')
+
+    // Verificar permisos
+    const esPropietario = String(tienda.propietario) === String(usuario._id)
+    const esAdmin = tienda.miembros.some(
+      m => String(m.usuarioId) === String(usuario._id) && m.rol === 'admin'
+    )
+
+    if (!esPropietario && !esAdmin) {
+      throw new Error('No tienes permiso para remover miembros')
+    }
+
+    // No se puede remover al propietario
+    if (String(args.usuarioId) === String(tienda.propietario)) {
+      throw new Error('No se puede remover al propietario de la tienda')
+    }
+
+    // Remover miembro
+    const miembrosActualizados = tienda.miembros.filter(
+      m => String(m.usuarioId) !== String(args.usuarioId)
+    )
+
+    await ctx.db.patch(args.tiendaId, {
+      miembros: miembrosActualizados,
+    })
+
+    // Actualizar metricasEquipo.totalVendedores
+    const metricasEquipo = { ...tienda.metricasEquipo }
+    metricasEquipo.totalVendedores = miembrosActualizados.length
+    await ctx.db.patch(args.tiendaId, { metricasEquipo })
+
+    return {
+      success: true,
+      totalMiembros: miembrosActualizados.length,
+    }
+  },
+})
+
+/**
+ * Actualizar rol de un miembro
+ */
+export const actualizarRolMiembro = mutation({
+  args: {
+    tiendaId: v.id('tiendas'),
+    usuarioId: v.id('usuarios'),
+    nuevoRol: v.union(
+      v.literal('admin'),
+      v.literal('vendedor'),
+      v.literal('asistente')
+    ),
+    nuevosPermisos: v.optional(v.array(v.string())),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) throw new Error('No autenticado')
+
+    const usuario = await ctx.db
+      .query('usuarios')
+      .withIndex('by_clerkId', q => q.eq('clerkId', identity.subject))
+      .unique()
+
+    if (!usuario) throw new Error('Usuario no encontrado')
+
+    const tienda = await ctx.db.get(args.tiendaId)
+    if (!tienda) throw new Error('Tienda no encontrada')
+
+    // Solo propietario puede cambiar roles
+    const esPropietario = String(tienda.propietario) === String(usuario._id)
+    if (!esPropietario) {
+      throw new Error('Solo el propietario puede cambiar roles')
+    }
+
+    // No se puede cambiar rol del propietario
+    if (String(args.usuarioId) === String(tienda.propietario)) {
+      throw new Error('No se puede cambiar el rol del propietario')
+    }
+
+    // Actualizar rol y permisos
+    const miembrosActualizados = tienda.miembros.map(m => {
+      if (String(m.usuarioId) === String(args.usuarioId)) {
+        let permisos = args.nuevosPermisos
+        if (!permisos || permisos.length === 0) {
+          switch (args.nuevoRol) {
+            case 'admin':
+              permisos = ['full_access']
+              break
+            case 'vendedor':
+              permisos = [
+                'crear_venta',
+                'ver_productos',
+                'ver_clientes',
+                'crear_cliente',
+              ]
+              if (
+                tienda.configuracion.permisosTienda
+                  .vendedoresPuedenCrearProductos
+              ) {
+                permisos.push('crear_producto')
+              }
+              if (
+                tienda.configuracion.permisosTienda
+                  .vendedoresPuedenModificarPrecios
+              ) {
+                permisos.push('editar_precio')
+              }
+              if (
+                tienda.configuracion.permisosTienda.vendedoresPuedenVerReportes
+              ) {
+                permisos.push('ver_reportes')
+              }
+              break
+            case 'asistente':
+              permisos = ['ver_productos', 'ver_clientes']
+              break
+          }
+        }
+
+        return {
+          ...m,
+          rol: args.nuevoRol,
+          permisos,
+        }
+      }
+      return m
+    })
+
+    await ctx.db.patch(args.tiendaId, {
+      miembros: miembrosActualizados,
+    })
+
+    return { success: true }
+  },
+})
+
+/**
+ * Obtener lista de miembros de la tienda
+ */
+export const getMiembrosTienda = query({
+  args: { tiendaId: v.id('tiendas') },
+  handler: async (ctx, args) => {
+    const tienda = await ctx.db.get(args.tiendaId)
+    if (!tienda) return null
+
+    const limites = getLimitesPlan(tienda.plan)
+
+    // Enriquecer con datos de usuario
+    const miembrosConDatos = await Promise.all(
+      tienda.miembros.map(async miembro => {
+        const usuario = await ctx.db.get(miembro.usuarioId)
+        return {
+          ...miembro,
+          nombre: usuario?.nombre || 'Usuario desconocido',
+          correo: usuario?.correo,
+          imgUrl: usuario?.imgUrl,
+          esPropietario:
+            String(miembro.usuarioId) === String(tienda.propietario),
+        }
+      })
+    )
+
+    return {
+      miembros: miembrosConDatos,
+      totalMiembros: tienda.miembros.length,
+      limiteMaximo: limites.miembros,
+      plan: limites.nombre,
+      puedeAgregarMas: tienda.miembros.length < limites.miembros,
+    }
   },
 })

@@ -311,6 +311,24 @@ export const createCliente = mutation({
     const identity = await ctx.auth.getUserIdentity()
     if (!identity) throw new Error('No autenticado')
 
+    // Validar límite de clientes según plan
+    const { getLimitesPlan, excedeLimite } = await import('./planes')
+    const tiendaValidacion1 = await ctx.db.get(args.tiendaId)
+    if (!tiendaValidacion1) throw new Error('Tienda no encontrada')
+
+    const clientesActuales = await ctx.db
+      .query('clientes')
+      .withIndex('by_tienda', q => q.eq('tiendaId', args.tiendaId))
+      .collect()
+
+    const limites = getLimitesPlan(tiendaValidacion1.plan)
+
+    if (excedeLimite(clientesActuales.length, limites.clientes)) {
+      throw new Error(
+        `Límite alcanzado. El plan ${limites.nombre} permite máximo ${limites.clientes} clientes.`
+      )
+    }
+
     const clienteId = await ctx.db.insert('clientes', {
       tiendaId: args.tiendaId,
       nombre: args.nombre,
@@ -323,6 +341,14 @@ export const createCliente = mutation({
       totalCompras: 0,
       cantidadCompras: 0,
     })
+
+    // Incrementar contador de clientes totales en la tienda
+    const tiendaActualizar = await ctx.db.get(args.tiendaId)
+    if (tiendaActualizar) {
+      const estadisticas = { ...tiendaActualizar.estadisticas }
+      estadisticas.clientesTotales += 1
+      await ctx.db.patch(args.tiendaId, { estadisticas })
+    }
 
     return clienteId
   },
@@ -342,9 +368,27 @@ export const crearCliente = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity()
-    if (!identity) throw new Error('No autenticado')
+    if (!identity) throw new Error(' No autenticado')
 
-    return await ctx.db.insert('clientes', {
+    // Validar límite de clientes según plan
+    const { getLimitesPlan, excedeLimite } = await import('./planes')
+    const tienda = await ctx.db.get(args.tiendaId)
+    if (!tienda) throw new Error('Tienda no encontrada')
+
+    const clientesActuales = await ctx.db
+      .query('clientes')
+      .withIndex('by_tienda', q => q.eq('tiendaId', args.tiendaId))
+      .collect()
+
+    const limites = getLimitesPlan(tienda.plan)
+
+    if (excedeLimite(clientesActuales.length, limites.clientes)) {
+      throw new Error(
+        `Límite alcanzado. El plan ${limites.nombre} permite máximo ${limites.clientes} clientes.`
+      )
+    }
+
+    const clienteId = await ctx.db.insert('clientes', {
       tiendaId: args.tiendaId,
       nombre: args.nombre,
       email: args.email,
@@ -355,6 +399,16 @@ export const crearCliente = mutation({
       totalCompras: 0,
       cantidadCompras: 0,
     })
+
+    // Incrementar contador de clientes totales en la tienda
+    const tiendaParaActualizar = await ctx.db.get(args.tiendaId)
+    if (tiendaParaActualizar) {
+      const estadisticas = { ...tiendaParaActualizar.estadisticas }
+      estadisticas.clientesTotales += 1
+      await ctx.db.patch(args.tiendaId, { estadisticas })
+    }
+
+    return clienteId
   },
 })
 

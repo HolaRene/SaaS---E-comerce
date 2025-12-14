@@ -149,6 +149,35 @@ export const crearVenta = mutation({
       }
     }
 
+    // 7. Incrementar ventasTotales de cada producto
+    for (const item of args.productos) {
+      const producto = await ctx.db.get(item.productoId)
+      if (producto) {
+        await ctx.db.patch(item.productoId, {
+          ventasTotales: (producto.ventasTotales || 0) + item.cantidad,
+        })
+      }
+    }
+
+    // 8. Actualizar estadísticas de la tienda
+    const tienda = await ctx.db.get(args.tiendaId)
+    if (tienda) {
+      // Incrementar ventasTotales en estadísticas
+      const estadisticas = { ...tienda.estadisticas }
+      estadisticas.ventasTotales += args.total
+      await ctx.db.patch(args.tiendaId, { estadisticas })
+
+      // Incrementar ventasEsteMes si la venta es del mes actual
+      const fechaVenta = new Date()
+      const mesActual = fechaVenta.getMonth()
+      const anioActual = fechaVenta.getFullYear()
+
+      const metricasEquipo = { ...tienda.metricasEquipo }
+      metricasEquipo.ventasEsteMes += args.total
+      metricasEquipo.totalVendedores = tienda.miembros.length
+      await ctx.db.patch(args.tiendaId, { metricasEquipo })
+    }
+
     return ventaId
   },
 })
@@ -647,6 +676,9 @@ export const crearVentaOnline = mutation({
       }
     }
 
+    // NOTA: Las estadísticas de ventas NO se incrementan aquí porque la venta está 'pendiente'
+    // Se incrementarán en confirmarVentaOnline cuando el dueño acepte el pedido
+
     return {
       ventaId,
       compraId,
@@ -681,6 +713,36 @@ export const confirmarVentaOnline = mutation({
     await ctx.db.patch(args.ventaId, {
       estado: 'completada',
     })
+
+    // Incrementar ventasTotales de cada producto
+    const detalles = await ctx.db
+      .query('detallesVenta')
+      .withIndex('by_venta', q => q.eq('ventaId', args.ventaId))
+      .collect()
+
+    for (const detalle of detalles) {
+      const producto = await ctx.db.get(detalle.productoId)
+      if (producto) {
+        await ctx.db.patch(detalle.productoId, {
+          ventasTotales: (producto.ventasTotales || 0) + detalle.cantidad,
+        })
+      }
+    }
+
+    // Actualizar estadísticas de la tienda
+    const tienda = await ctx.db.get(venta.tiendaId)
+    if (tienda) {
+      // Incrementar ventasTotales en estadísticas
+      const estadisticas = { ...tienda.estadisticas }
+      estadisticas.ventasTotales += venta.total
+      await ctx.db.patch(venta.tiendaId, { estadisticas })
+
+      // Incrementar ventasEsteMes
+      const metricasEquipo = { ...tienda.metricasEquipo }
+      metricasEquipo.ventasEsteMes += venta.total
+      metricasEquipo.totalVendedores = tienda.miembros.length
+      await ctx.db.patch(venta.tiendaId, { metricasEquipo })
+    }
 
     // Actualizar estado compra (si existe vinculo) y Notificar
     if (venta.compraOnlineId) {
@@ -829,3 +891,15 @@ export const getVentasPendientes = query({
   },
 })
 
+export const getVentasPendientesCount = query({
+  args: { tiendaId: v.id('tiendas') },
+  handler: async (ctx, args) => {
+    const ventas = await ctx.db
+      .query('ventas')
+      .withIndex('by_tienda', q => q.eq('tiendaId', args.tiendaId))
+      .filter(q => q.eq(q.field('estado'), 'pendiente'))
+      .collect()
+
+    return ventas.length
+  },
+})

@@ -85,6 +85,7 @@ export default function Perfil({ id }: PerfilProps) {
     if (tienda === undefined) {
         return <LoadingState />;
     }
+    console.log(tienda.visitas)
 
     // null = error o no encontrado
     if (tienda === null) {

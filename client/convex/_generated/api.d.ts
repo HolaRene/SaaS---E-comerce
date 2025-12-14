@@ -23,6 +23,7 @@ import type * as historial from "../historial.js";
 import type * as http from "../http.js";
 import type * as movimientos from "../movimientos.js";
 import type * as notificaciones from "../notificaciones.js";
+import type * as planes from "../planes.js";
 import type * as productoEtiquetas from "../productoEtiquetas.js";
 import type * as productos from "../productos.js";
 import type * as recordatorios from "../recordatorios.js";
@@ -53,6 +54,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   movimientos: typeof movimientos;
   notificaciones: typeof notificaciones;
+  planes: typeof planes;
   productoEtiquetas: typeof productoEtiquetas;
   productos: typeof productos;
   recordatorios: typeof recordatorios;

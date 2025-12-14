@@ -105,6 +105,16 @@ export default defineSchema({
 
     creadoEn: v.string(),
     ultimaActualizacion: v.string(),
+
+    // Plan de suscripción
+    plan: v.optional(
+      v.union(
+        v.literal('gratis'),
+        v.literal('basico'),
+        v.literal('profesional'),
+        v.literal('empresarial')
+      )
+    ),
   })
     .index('by_propietario', ['propietario'])
     .index('by_categoria', ['categoria'])
