@@ -20,18 +20,29 @@ import { api } from "../../../../../../../convex/_generated/api"
 import { DataTableVentas } from "./TablaDatodVentas"
 import { getColumnsVentas } from "./columnsVentas"
 
-const HistorialVentas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
+interface Permisos {
+    canSell: boolean;
+    role: string;
+}
+
+interface HistorialVentasProps {
+    idTienda: Id<"tiendas">;
+    permisos: Permisos;
+}
+
+const HistorialVentas = ({ idTienda, permisos }: HistorialVentasProps) => {
     // State para el diálogo de detalle
     const [ventaIdSeleccionada, setVentaIdSeleccionada] = useState<Id<"ventas"> | null>(null)
 
-    // Queries de Convex
+    // Queries de Convex (estas se mantienen aquí por paginación y especificidad)
     const ventas = useQuery(api.ventas.getVentasByTienda, { tiendaId: idTienda, limit: 50 })
     const estadisticas = useQuery(api.ventas.getEstadisticasVentas, { tiendaId: idTienda })
+
+    // Solo fetching detalle si hay uno seleccionado
     const detalleVenta = useQuery(
         api.ventas.getDetalleVenta,
         ventaIdSeleccionada ? { ventaId: ventaIdSeleccionada } : "skip"
     )
-    console.log(detalleVenta)
 
     const columns = useMemo(() => getColumnsVentas(setVentaIdSeleccionada), [])
 
@@ -89,7 +100,7 @@ const HistorialVentas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>
-                            Detalle de Venta #{ventaIdSeleccionada?.slice(-6)}
+                            Detalles de Venta #{ventaIdSeleccionada?.slice(-6)}
                         </DialogTitle>
                         <DialogDescription>Información completa de la transacción</DialogDescription>
                     </DialogHeader>

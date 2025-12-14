@@ -13,18 +13,26 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ArrowDown, ArrowUp, Edit, Trash2, Eye } from "lucide-react";
-import { Id } from "../../../../../../../convex/_generated/dataModel";
+import { Id, Doc } from "../../../../../../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-const etiquetasData = ["Ofertas", "Nuevo", "Popular", "SinBromato", "Importado"];
+interface Permisos {
+    canManageProducts: boolean;
+    canAdjustStock: boolean;
+    role: string;
+}
 
-const CategoriasEtiquetas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
+interface CategoriasEtiquetasProps {
+    idTienda: Id<"tiendas">;
+    productos: Doc<"productos">[];
+    permisos: Permisos;
+}
 
-    // Obtener productos de Convex
-    const productsTienda = useQuery(api.productos.getProductosByTienda, { tiendaId: idTienda });
+const CategoriasEtiquetas = ({ idTienda, productos, permisos }: CategoriasEtiquetasProps) => {
+
     // Etiquetas
     const [nuevaEtiqueta, setNuevaEtiqueta] = useState("")
     const [cargando, setCargando] = useState(false)
@@ -34,20 +42,20 @@ const CategoriasEtiquetas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
 
     // Agrupar productos por categoría
     const productosPorCategoria = useMemo(() => {
-        if (!productsTienda) return [];
+        if (!productos) return [];
 
         // Obtener categorías únicas
         const categoriasUnicas = Array.from(
-            new Set(productsTienda.map(p => p.categoria))
+            new Set(productos.map(p => p.categoria))
         );
 
         // Agrupar productos por cada categoría
         return categoriasUnicas.map(categoria => ({
             id: categoria,
             nombre: categoria,
-            productos: productsTienda.filter(p => p.categoria === categoria)
+            productos: productos.filter(p => p.categoria === categoria)
         }));
-    }, [productsTienda]);
+    }, [productos]);
 
     // Función para formatear precio
     const formatearPrecio = (precio: number) => {
@@ -69,6 +77,11 @@ const CategoriasEtiquetas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
     };
 
     const handleCrearEtiqueta = async () => {
+        if (!permisos.canManageProducts) {
+            toast.error("No tienes permisos para crear etiquetas");
+            return;
+        }
+
         if (!nuevaEtiqueta.trim()) {
             toast.error("Ingresa un nombre")
             return
@@ -90,6 +103,11 @@ const CategoriasEtiquetas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
         }
     }
     const handleEliminarEtiqueta = async (etiquetaId: Id<"etiquetas">) => {
+        if (!permisos.canManageProducts) {
+            toast.error("No tienes permisos para eliminar etiquetas");
+            return;
+        }
+
         if (!confirm("¿Eliminar esta etiqueta? Se quitará de todos los productos.")) return
 
         try {
@@ -110,9 +128,7 @@ const CategoriasEtiquetas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                     <CardDescription>Organiza y gestiona tus productos según su categoría.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {productsTienda === undefined ? (
-                        <p className="text-center py-4 text-muted-foreground">Cargando productos...</p>
-                    ) : productosPorCategoria.length === 0 ? (
+                    {productosPorCategoria.length === 0 ? (
                         <p className="text-center py-4 text-muted-foreground">No hay productos en esta tienda</p>
                     ) : (
                         <Accordion type="single" collapsible className="w-full">
@@ -189,22 +205,26 @@ const CategoriasEtiquetas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                                                             >
                                                                 <Eye className="h-4 w-4" />
                                                             </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-8 w-8"
-                                                                title="Editar producto"
-                                                            >
-                                                                <Edit className="h-4 w-4" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                                                title="Eliminar producto"
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
+                                                            {permisos.canManageProducts && (
+                                                                <>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-8 w-8"
+                                                                        title="Editar producto"
+                                                                    >
+                                                                        <Edit className="h-4 w-4" />
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-8 w-8 text-destructive hover:text-destructive"
+                                                                        title="Eliminar producto"
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 ))}
@@ -217,8 +237,12 @@ const CategoriasEtiquetas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                     )}
                 </CardContent>
                 <CardFooter className="flex justify-between">
-                    <Button variant="outline">Agregar Categoría</Button>
-                    <Button>Agregar Producto</Button>
+                    {permisos.canManageProducts && (
+                        <>
+                            <Button variant="outline">Agregar Categoría</Button>
+                            <Button>Agregar Producto</Button>
+                        </>
+                    )}
                 </CardFooter>
             </Card>
 
@@ -246,12 +270,14 @@ const CategoriasEtiquetas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                                             style={{ backgroundColor: etiqueta.color }}
                                         >
                                             {etiqueta.icono} {etiqueta.nombre}
-                                            <button
-                                                className="ml-2 hover:text-destructive"
-                                                onClick={() => handleEliminarEtiqueta(etiqueta._id)}
-                                            >
-                                                ×
-                                            </button>
+                                            {permisos.canManageProducts && (
+                                                <button
+                                                    className="ml-2 hover:text-destructive"
+                                                    onClick={() => handleEliminarEtiqueta(etiqueta._id)}
+                                                >
+                                                    ×
+                                                </button>
+                                            )}
                                         </Badge>
                                     ))
                                 )}
@@ -272,24 +298,26 @@ const CategoriasEtiquetas = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                             </div>
                         </div>
                         {/* Crear nueva */}
-                        <div className="pt-4 border-t">
-                            <h4 className="text-sm font-medium mb-2">Agregar nueva etiqueta</h4>
-                            <div className="flex gap-2">
-                                <Input
-                                    placeholder="Ej: Orgánico, Sin gluten..."
-                                    value={nuevaEtiqueta}
-                                    onChange={(e) => setNuevaEtiqueta(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleCrearEtiqueta()}
-                                />
-                                <Button
-                                    size="sm"
-                                    onClick={handleCrearEtiqueta}
-                                    disabled={cargando || !nuevaEtiqueta.trim()}
-                                >
-                                    {cargando ? "Creando..." : "Agregar"}
-                                </Button>
+                        {permisos.canManageProducts && (
+                            <div className="pt-4 border-t">
+                                <h4 className="text-sm font-medium mb-2">Agregar nueva etiqueta</h4>
+                                <div className="flex gap-2">
+                                    <Input
+                                        placeholder="Ej: Orgánico, Sin gluten..."
+                                        value={nuevaEtiqueta}
+                                        onChange={(e) => setNuevaEtiqueta(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleCrearEtiqueta()}
+                                    />
+                                    <Button
+                                        size="sm"
+                                        onClick={handleCrearEtiqueta}
+                                        disabled={cargando || !nuevaEtiqueta.trim()}
+                                    >
+                                        {cargando ? "Creando..." : "Agregar"}
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>

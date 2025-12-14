@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Id, Doc } from "../../../../../../../convex/_generated/dataModel"
-import { useMutation, useQuery } from "convex/react"
+import { useMutation } from "convex/react"
 import { api } from "../../../../../../../convex/_generated/api"
 import { toast } from "sonner"
 
@@ -33,7 +33,20 @@ interface ProductoCarrito {
     imagen?: string
 }
 
-const PuntoVenta = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
+interface Permisos {
+    canSell: boolean;
+    role: string;
+}
+
+interface PuntoVentaProps {
+    idTienda: Id<"tiendas">;
+    productos: Doc<"productos">[];
+    clientes: Doc<"clientes">[];
+    usuario: Doc<"usuarios"> | null;
+    permisos: Permisos;
+}
+
+const PuntoVenta = ({ idTienda, productos, clientes, usuario, permisos }: PuntoVentaProps) => {
     // Estados principales
     const [productosSeleccionados, setProductosSeleccionados] = useState<ProductoCarrito[]>([])
     const [metodoPago, setMetodoPago] = useState("efectivo")
@@ -53,26 +66,25 @@ const PuntoVenta = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
         notas: ""
     })
 
-    // Datos simulados para cajero (esto podría venir del auth)
-    const [cajeroActual] = useState({ nombre: "Cajero Actual", rol: "Vendedor" })
+    // Datos del cajero
+    const cajeroActual = {
+        nombre: usuario?.nombre || "Cajero",
+        rol: permisos.role === 'owner' ? 'Propietario' : permisos.role
+    }
 
-    const tienda = useQuery(api.tiendas.getTiendaById, { id: idTienda })
-    // Obtener datos reales de Convex
-    const productosDB = useQuery(api.productos.getProductosByTienda, { tiendaId: idTienda })
-    const clientesDB = useQuery(api.clientes.getClientesByTienda, { tiendaId: idTienda })
     // Mutations
     const crearVentaMutation = useMutation(api.ventas.crearVenta)
     const crearClienteMutation = useMutation(api.clientes.crearCliente)
 
 
-    /// Filtrar productos basado en la búsqueda (usando datos de Convex)
-    const productosFiltrados = (productosDB || []).filter(producto =>
+    // Filtrar productos basado en la búsqueda (usando props)
+    const productosFiltrados = (productos || []).filter(producto =>
         producto.nombre.toLowerCase().includes(busquedaProducto.toLowerCase()) ||
         producto.categoria.toLowerCase().includes(busquedaProducto.toLowerCase())
     ).slice(0, 5)
 
-    // Filtrar clientes basado en la búsqueda (usando datos de Convex)
-    const clientesFiltrados = (clientesDB || []).filter(cliente =>
+    // Filtrar clientes basado en la búsqueda (usando props)
+    const clientesFiltrados = (clientes || []).filter(cliente =>
         cliente.nombre.toLowerCase().includes(busquedaCliente.toLowerCase()) ||
         cliente.telefono?.includes(busquedaCliente) ||
         cliente.email?.toLowerCase().includes(busquedaCliente.toLowerCase())
@@ -199,6 +211,7 @@ const PuntoVenta = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                 subtotal: calcularSubtotal(),
                 impuesto: calcularImpuesto(),
                 total: calcularTotal(),
+                cajero: cajeroActual.nombre // Guardamos el nombre del cajero real
             })
 
             toast.success("Venta registrada exitosamente")

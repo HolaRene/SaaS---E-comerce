@@ -32,12 +32,18 @@ import { DataTablePagination } from "@/components/DataTablePagination"
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
-    data: TData[],
+    data: TData[]
+    permisos?: {
+        canManageProducts: boolean;
+        canAdjustStock: boolean;
+        role: string;
+    }
 }
 
 export function DataTableCatalogo<TData, TValue>({
     columns,
     data,
+    permisos
 }: DataTableProps<TData, TValue>) {
 
 
@@ -68,6 +74,9 @@ export function DataTableCatalogo<TData, TValue>({
             columnVisibility,
             rowSelection,
         },
+        meta: {
+            permisos
+        }
     })
 
     return (

@@ -4,35 +4,46 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { AlertTriangle, FileText } from "lucide-react"
+import { AlertTriangle, FileText, Lock } from "lucide-react"
 import { DataTableControlInventario } from "./data-tableCInventario"
 import { columnsControlInventario } from "./columnsCInventario"
-import { Id } from "../../../../../../../convex/_generated/dataModel"
+import { Id, Doc } from "../../../../../../../convex/_generated/dataModel"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "../../../../../../../convex/_generated/api"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 
-const ControlInventario = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
+interface Permisos {
+    canManageProducts: boolean;
+    canAdjustStock: boolean;
+    role: string;
+}
+
+interface ControlInventarioProps {
+    idTienda: Id<"tiendas">;
+    productos: Doc<"productos">[];
+    permisos: Permisos;
+}
+
+const ControlInventario = ({ idTienda, productos, permisos }: ControlInventarioProps) => {
 
     const [cargando, setCargando] = useState(false)
     const [productoSeleccionado, setProductoSeleccionado] = useState<string>("")
     const [nuevaCantidad, setNuevaCantidad] = useState<number>(0)
 
-    const productsTienda = useQuery(api.productos.getProductosByTienda, { tiendaId: idTienda });
     const registrarMovimiento = useMutation(api.movimientos.registrarMovimiento);
 
     // Calcular productos con stock bajo (cantidad <= 10)
     const stockBajoData = useMemo(() => {
-        if (!productsTienda) return [];
-        return productsTienda
+        if (!productos) return [];
+        return productos
             .filter(producto => producto.cantidad <= 10)
             .map(producto => ({
                 _id: producto._id,
                 nombre: producto.nombre,
                 cantidad: producto.cantidad,
             }));
-    }, [productsTienda]);
+    }, [productos]);
 
     const historial = useQuery(api.movimientos.getMovimientosByTienda, {
         tiendaId: idTienda,
@@ -40,6 +51,11 @@ const ControlInventario = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
     });
 
     const manejoAjusteStock = async () => {
+        if (!permisos.canAdjustStock) {
+            toast.error("No tienes permisos para ajustar inventario");
+            return;
+        }
+
         try {
             if (!productoSeleccionado || nuevaCantidad === 0) {
                 toast.error("Selecciona un producto y una cantidad válida");
@@ -48,7 +64,7 @@ const ControlInventario = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
 
             setCargando(true);
 
-            const producto = productsTienda?.find(p => p._id === productoSeleccionado);
+            const producto = productos?.find(p => p._id === productoSeleccionado);
             if (!producto) {
                 toast.error("Producto no encontrado");
                 return;
@@ -97,9 +113,7 @@ const ControlInventario = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                         <CardDescription>Productos que requieren atención inmediata.</CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-2 sm:grid-cols-1 lg:grid-cols-3">
-                        {productsTienda === undefined ? (
-                            <p className="text-center py-4 text-muted-foreground col-span-3">Cargando productos...</p>
-                        ) : stockBajoData.length !== 0 ? (
+                        {stockBajoData.length !== 0 ? (
                             stockBajoData.map(item => (
                                 <Card key={item._id} className="p-4 flex justify-between bg-destructive/10 border-destructive max-w-screen">
                                     <div className="flex justify-between">
@@ -113,20 +127,25 @@ const ControlInventario = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                 </Card>
             </div>
             <div className="space-y-6">
-                <Card>
+                <Card className={!permisos.canAdjustStock ? "opacity-75" : ""}>
                     <CardHeader>
-                        <CardTitle>Ajuste Rápido de Stock</CardTitle>
+                        <CardTitle className="flex items-center gap-2">
+                            Ajuste Rápido de Stock
+                            {!permisos.canAdjustStock && <Lock className="h-4 w-4 text-muted-foreground" />}
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <Select value={productoSeleccionado} onValueChange={setProductoSeleccionado}>
+                        <Select
+                            value={productoSeleccionado}
+                            onValueChange={setProductoSeleccionado}
+                            disabled={!permisos.canAdjustStock}
+                        >
                             <SelectTrigger><SelectValue placeholder="Seleccionar producto..." /></SelectTrigger>
                             <SelectContent>
-                                {productsTienda === undefined ? (
-                                    <SelectItem value="loading" disabled>Cargando...</SelectItem>
-                                ) : productsTienda.length === 0 ? (
+                                {productos.length === 0 ? (
                                     <SelectItem value="empty" disabled>No hay productos</SelectItem>
                                 ) : (
-                                    productsTienda.map(p => <SelectItem key={p._id} value={p._id}>{p.nombre} (Stock actual: {p.cantidad})</SelectItem>)
+                                    productos.map(p => <SelectItem key={p._id} value={p._id}>{p.nombre} (Stock actual: {p.cantidad})</SelectItem>)
                                 )}
                             </SelectContent>
                         </Select>
@@ -135,14 +154,18 @@ const ControlInventario = ({ idTienda }: { idTienda: Id<"tiendas"> }) => {
                             placeholder="Cantidad nueva en stock"
                             value={nuevaCantidad || ""}
                             onChange={(e) => setNuevaCantidad(parseInt(e.target.value) || 0)}
+                            disabled={!permisos.canAdjustStock}
                         />
                         <Button
                             className="w-full"
                             onClick={manejoAjusteStock}
-                            disabled={cargando || !productoSeleccionado}
+                            disabled={cargando || !productoSeleccionado || !permisos.canAdjustStock}
                         >
                             {cargando ? "Ajustando..." : "Guardar Ajuste"}
                         </Button>
+                        {!permisos.canAdjustStock && (
+                            <p className="text-xs text-muted-foreground text-center">Permiso requerido: Propietario o Vendedor</p>
+                        )}
                     </CardContent>
                 </Card>
                 <Card>
